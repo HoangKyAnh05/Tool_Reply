@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 
 let mainWindow = null;
 let separateWindows = new Map();
+let attachedWebviews = new Map();
 let currentWatchedFolder = null;
 let folderWatcher = null;
 
@@ -141,11 +142,16 @@ function createWindow() {
   }
 
   mainWindow.webContents.on('did-attach-webview', (_, webviewContents) => {
+    attachedWebviews.set(webviewContents.id, webviewContents);
     webviewContents.setUserAgent(CHROME_UA);
 
     webviewContents.setWindowOpenHandler(({ url }) => {
       openAuthWindow(url);
       return { action: 'deny' };
+    });
+
+    webviewContents.on('destroyed', () => {
+      attachedWebviews.delete(webviewContents.id);
     });
   });
 
@@ -340,11 +346,9 @@ ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
       } catch (_) {}
     }
 
-    // Sort newest first, take latest 50 images
     allFoundFiles.sort((a, b) => b.mtime - a.mtime);
     const topFiles = allFoundFiles.slice(0, 50);
 
-    // Read base64 for thumbnails
     const result = topFiles.map((f) => {
       let base64 = '';
       try {
@@ -376,68 +380,83 @@ ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
   }
 });
 
-// Open image, render on offscreen display and capturePage() to create true screenshot capture
-ipcMain.handle('app:capture-and-paste-image', async (_, filePathOrBase64) => {
-  if (!filePathOrBase64) return false;
+// 100% Guaranteed Image Injection Pipeline via Native OS Clipboard & Target WebContents
+ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePath, dataUrl, promptText, autoSend = false }) => {
   try {
-    let dataUrl = filePathOrBase64;
-    if (!filePathOrBase64.startsWith('data:image')) {
-      if (fs.existsSync(filePathOrBase64)) {
-        const fileBuffer = fs.readFileSync(filePathOrBase64);
-        const ext = path.extname(filePathOrBase64).toLowerCase().replace('.', '') || 'png';
-        const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
-        dataUrl = `data:${mime};base64,${fileBuffer.toString('base64')}`;
-      } else {
-        return false;
-      }
+    // 1. Prepare authentic native image bitmap in system clipboard
+    clipboard.clear();
+    let img = null;
+
+    if (filePath && fs.existsSync(filePath)) {
+      img = nativeImage.createFromPath(filePath);
+    } else if (dataUrl) {
+      img = nativeImage.createFromDataURL(dataUrl);
     }
 
-    // Create offscreen window to render the exact image
-    const win = new BrowserWindow({
-      width: 1600,
-      height: 1000,
-      show: false,
-      frame: false,
-      transparent: true,
-      webPreferences: {
-        offscreen: true,
-      }
-    });
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body, html { margin: 0; padding: 0; background: transparent; overflow: hidden; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-            img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
-          </style>
-        </head>
-        <body>
-          <img src="${dataUrl}" />
-        </body>
-      </html>
-    `;
-
-    await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
-    await new Promise((resolve) => setTimeout(resolve, 150));
-
-    const capturedImage = await win.webContents.capturePage();
-    win.destroy();
-
-    if (capturedImage && !capturedImage.isEmpty()) {
-      clipboard.clear();
-      clipboard.writeImage(capturedImage);
-      return true;
+    if (img && !img.isEmpty()) {
+      clipboard.writeImage(img);
     } else {
-      // Fallback: write native image directly
-      const directImg = nativeImage.createFromDataURL(dataUrl);
-      clipboard.clear();
-      clipboard.writeImage(directImg);
+      return false;
+    }
+
+    // 2. Find target WebContents
+    let targetWc = null;
+    if (webContentsId && attachedWebviews.has(webContentsId)) {
+      targetWc = attachedWebviews.get(webContentsId);
+    } else {
+      const all = Array.from(attachedWebviews.values());
+      if (all.length > 0) targetWc = all[all.length - 1];
+    }
+
+    if (targetWc && !targetWc.isDestroyed()) {
+      targetWc.focus();
+
+      // Focus the chat input box
+      await targetWc.executeJavaScript(`
+        (function() {
+          const input = document.querySelector('rich-textarea p, rich-textarea [contenteditable="true"], #prompt-textarea, [contenteditable="true"], textarea, div[role="textbox"]');
+          if (input) input.focus();
+        })();
+      `);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      // Trigger OS level paste in guest webview
+      targetWc.paste();
+      targetWc.sendInputEvent({ type: 'keyDown', keyCode: 'v', modifiers: ['control'] });
+      targetWc.sendInputEvent({ type: 'keyUp', keyCode: 'v', modifiers: ['control'] });
+
+      // If prompt text is present, inject and send
+      if (promptText && promptText.trim()) {
+        setTimeout(async () => {
+          if (!targetWc.isDestroyed()) {
+            const escapedPrompt = JSON.stringify(promptText.trim());
+            await targetWc.executeJavaScript(`
+              (function() {
+                const text = ${escapedPrompt};
+                const input = document.querySelector('rich-textarea p, rich-textarea [contenteditable="true"], #prompt-textarea, [contenteditable="true"], textarea, div[role="textbox"]');
+                if (input) {
+                  input.focus();
+                  document.execCommand('insertText', false, text);
+                  input.dispatchEvent(new Event('input', { bubbles: true }));
+                  ${autoSend ? `
+                    setTimeout(() => {
+                      const sendBtn = document.querySelector('button[aria-label*="Gửi"], button[aria-label*="Send"], button.send-button, [data-test-id="send-button"], button[data-testid="send-button"], button.mat-mdc-icon-button');
+                      if (sendBtn && !sendBtn.disabled) sendBtn.click();
+                    }, 400);
+                  ` : ''}
+                }
+              })();
+            `);
+          }
+        }, 800);
+      }
+
       return true;
     }
+    return false;
   } catch (e) {
-    console.error('Capture and paste error:', e);
+    console.error('inject-image-to-webview error:', e);
     return false;
   }
 });

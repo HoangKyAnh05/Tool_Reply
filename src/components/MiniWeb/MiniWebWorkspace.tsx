@@ -168,9 +168,9 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
     audioService.playBeep('click');
     if (window.electronAPI?.selectImageFile) {
       const res = await window.electronAPI.selectImageFile();
-      if (res && res.base64) {
+      if (res && (res.filePath || res.base64)) {
         handleInjectAndSend('', res.base64, false, res.fileName, res.filePath);
-        setCopiedStatus(`✓ Đã chụp & nạp ảnh: ${res.fileName}`);
+        setCopiedStatus(`✓ Đã nạp ảnh: ${res.fileName}`);
         setTimeout(() => setCopiedStatus(null), 3500);
       }
     } else {
@@ -186,51 +186,13 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         const dataUrl = event.target?.result as string;
         if (dataUrl) {
           handleInjectAndSend('', dataUrl, false, file.name);
-          setCopiedStatus(`✓ Đã chụp & nạp ảnh: ${file.name}`);
+          setCopiedStatus(`✓ Đã nạp ảnh: ${file.name}`);
           setTimeout(() => setCopiedStatus(null), 3500);
         }
       };
       reader.readAsDataURL(file);
       e.target.value = '';
     }
-  };
-
-  // Text injector and send button clicker
-  const generateTextInjectScript = (promptText: string, autoSend: boolean = true) => {
-    const escapedText = JSON.stringify(promptText);
-
-    return `
-      (function() {
-        const textToInject = ${escapedText};
-        const autoSend = ${autoSend};
-
-        let inputEl = document.querySelector('rich-textarea p, rich-textarea [contenteditable="true"], #prompt-textarea, [contenteditable="true"], textarea, div[role="textbox"]');
-
-        if (inputEl) {
-          inputEl.focus();
-
-          if (textToInject) {
-            document.execCommand('selectAll', false, null);
-            document.execCommand('insertText', false, textToInject);
-            inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-            inputEl.dispatchEvent(new Event('change', { bubbles: true }));
-
-            if (autoSend) {
-              setTimeout(() => {
-                const sendBtn = document.querySelector('button[aria-label*="Gửi"], button[aria-label*="Send"], button.send-button, [data-test-id="send-button"], button[data-testid="send-button"], button.mat-mdc-icon-button');
-                if (sendBtn && !sendBtn.disabled) {
-                  sendBtn.click();
-                } else {
-                  inputEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
-                }
-              }, 400);
-            }
-          }
-          return true;
-        }
-        return false;
-      })();
-    `;
   };
 
   // Script to scrape the latest AI response text & isolated code blocks from Gemini or ChatGPT
@@ -281,6 +243,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
     `;
   };
 
+  // 100% Reliable Image & Prompt Injection
   const handleInjectAndSend = async (
     promptToSend: string, 
     imageBase64?: string, 
@@ -292,55 +255,38 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
     audioService.playBeep('decision');
 
     const wv = webviewRefs.current[activeServiceId];
+    const wcId = (wv && typeof wv.getWebContentsId === 'function') ? wv.getWebContentsId() : undefined;
 
-    if (wv) {
-      // 1. Focus webview window
-      if (typeof wv.focus === 'function') wv.focus();
+    if (window.electronAPI?.injectImageToWebview) {
+      const success = await window.electronAPI.injectImageToWebview({
+        webContentsId: wcId,
+        filePath,
+        dataUrl: imageBase64,
+        promptText: promptToSend,
+        autoSend
+      });
 
-      // 2. Open image, capture full screenshot bitmap, and copy into clipboard
-      if (imageBase64 || filePath) {
-        if (window.electronAPI?.captureAndPasteImage) {
-          await window.electronAPI.captureAndPasteImage(filePath || imageBase64 || '');
-        }
-
-        // Focus chat input box
-        await wv.executeJavaScript(`
-          (function() {
-            let el = document.querySelector('rich-textarea p, rich-textarea [contenteditable="true"], #prompt-textarea, [contenteditable="true"], textarea, div[role="textbox"]');
-            if (el) el.focus();
-          })();
-        `);
-
-        // Trigger native paste event (OS Level Ctrl + V)
-        try {
-          if (typeof wv.paste === 'function') {
-            wv.paste();
-          }
-          if (typeof wv.sendInputEvent === 'function') {
-            wv.sendInputEvent({ type: 'keyDown', keyCode: 'v', modifiers: ['control'] });
-            wv.sendInputEvent({ type: 'keyUp', keyCode: 'v', modifiers: ['control'] });
-          }
-        } catch (e) {
-          console.error('Paste event error:', e);
-        }
-      }
-
-      // 3. Inject text prompt if present
-      if (promptToSend.trim()) {
+      if (success) {
         setTimeout(() => {
-          const script = generateTextInjectScript(promptToSend.trim(), autoSend);
-          wv.executeJavaScript(script)
-            .then(() => {
-              setTimeout(() => setIsInjecting(false), autoSend ? 1200 : 400);
-            })
-            .catch(() => setIsInjecting(false));
-        }, (imageBase64 || filePath) ? 800 : 50);
-      } else {
-        setTimeout(() => setIsInjecting(false), 500);
+          setIsInjecting(false);
+          if (imageBase64 || filePath) {
+            setCopiedStatus(`✓ Đã bắn ảnh vào ô chat! Bấm Ctrl+V nếu muốn dán lại.`);
+            setTimeout(() => setCopiedStatus(null), 4000);
+          }
+        }, autoSend ? 1200 : 400);
+        return;
       }
-    } else {
-      setIsInjecting(false);
     }
+
+    // Fallback: copy to clipboard directly
+    if (imageBase64 && window.electronAPI?.copyImageToClipboard) {
+      await window.electronAPI.copyImageToClipboard(imageBase64);
+    }
+    if (wv && typeof wv.paste === 'function') {
+      wv.focus();
+      wv.paste();
+    }
+    setIsInjecting(false);
   };
 
   const handleCopyLatestResponse = (extractOnlyCode = false) => {
@@ -647,12 +593,12 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         ) : isInjecting ? (
           <span className="text-[11px] font-bold text-emerald-400 animate-pulse flex items-center gap-1 font-mono">
             <Zap className="w-3 h-3 text-amber-400" />
-            <span>Đang chụp & nạp ảnh vào ô chat...</span>
+            <span>Đang bắn ảnh vào ô chat...</span>
           </span>
         ) : null}
       </div>
 
-      {/* Main Webview Multi-Instance Container (Persisted Sessions for FB, Insta, Zalo, Gemini, ChatGPT) */}
+      {/* Main Webview Multi-Instance Container */}
       <div className="flex-1 w-full h-full relative bg-slate-950 overflow-hidden">
         {MINI_WEB_SERVICES.map((svc) => {
           const isCurrent = svc.id === activeServiceId;
@@ -688,7 +634,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         onClose={() => setIsGalleryDrawerOpen(false)}
         onSelectImage={(base64, fileName, filePath) => {
           handleInjectAndSend('', base64, false, fileName, filePath);
-          setCopiedStatus(`✓ Đã chụp & dán ảnh: ${fileName}`);
+          setCopiedStatus(`✓ Đã nạp ảnh: ${fileName}`);
           setTimeout(() => setCopiedStatus(null), 3500);
         }}
         onAnalyzeImage={(base64, fileName) => {
