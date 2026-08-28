@@ -22,7 +22,7 @@ declare global {
       selectScreenshotFolder: () => Promise<string | null>;
       getDefaultScreenshotFolder: () => Promise<string>;
       scanFolderImages: (folder?: string) => Promise<{ folder: string; files: ScannedImageFile[] }>;
-      writeImageBitmapToClipboard: (filePathOrBase64: string) => Promise<boolean>;
+      captureAndPasteImage: (filePathOrBase64: string) => Promise<boolean>;
       copyImageToClipboard: (dataUrl: string) => Promise<boolean>;
       onFolderUpdated: (callback: (folder: string) => void) => void;
       onAuthCompleted: (callback: () => void) => void;

@@ -170,7 +170,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
       const res = await window.electronAPI.selectImageFile();
       if (res && res.base64) {
         handleInjectAndSend('', res.base64, false, res.fileName, res.filePath);
-        setCopiedStatus(`✓ Đã nạp ảnh: ${res.fileName}`);
+        setCopiedStatus(`✓ Đã chụp & nạp ảnh: ${res.fileName}`);
         setTimeout(() => setCopiedStatus(null), 3500);
       }
     } else {
@@ -186,7 +186,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         const dataUrl = event.target?.result as string;
         if (dataUrl) {
           handleInjectAndSend('', dataUrl, false, file.name);
-          setCopiedStatus(`✓ Đã nạp ảnh: ${file.name}`);
+          setCopiedStatus(`✓ Đã chụp & nạp ảnh: ${file.name}`);
           setTimeout(() => setCopiedStatus(null), 3500);
         }
       };
@@ -297,10 +297,10 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
       // 1. Focus webview window
       if (typeof wv.focus === 'function') wv.focus();
 
-      // 2. If image is provided, transform into authentic OS Screenshot Bitmap in clipboard
+      // 2. Open image, capture full screenshot bitmap, and copy into clipboard
       if (imageBase64 || filePath) {
-        if (window.electronAPI?.writeImageBitmapToClipboard) {
-          await window.electronAPI.writeImageBitmapToClipboard(filePath || imageBase64 || '');
+        if (window.electronAPI?.captureAndPasteImage) {
+          await window.electronAPI.captureAndPasteImage(filePath || imageBase64 || '');
         }
 
         // Focus chat input box
@@ -647,7 +647,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         ) : isInjecting ? (
           <span className="text-[11px] font-bold text-emerald-400 animate-pulse flex items-center gap-1 font-mono">
             <Zap className="w-3 h-3 text-amber-400" />
-            <span>Đang nạp ảnh vào ô chat...</span>
+            <span>Đang chụp & nạp ảnh vào ô chat...</span>
           </span>
         ) : null}
       </div>
@@ -688,7 +688,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         onClose={() => setIsGalleryDrawerOpen(false)}
         onSelectImage={(base64, fileName, filePath) => {
           handleInjectAndSend('', base64, false, fileName, filePath);
-          setCopiedStatus(`✓ Đã dán ảnh: ${fileName}`);
+          setCopiedStatus(`✓ Đã chụp & dán ảnh: ${fileName}`);
           setTimeout(() => setCopiedStatus(null), 3500);
         }}
         onAnalyzeImage={(base64, fileName) => {

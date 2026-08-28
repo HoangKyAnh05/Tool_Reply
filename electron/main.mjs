@@ -376,26 +376,68 @@ ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
   }
 });
 
-// Convert disk image to true OS Bitmap screenshot format in Clipboard
-ipcMain.handle('app:write-image-bitmap-to-clipboard', async (_, filePathOrBase64) => {
+// Open image, render on offscreen display and capturePage() to create true screenshot capture
+ipcMain.handle('app:capture-and-paste-image', async (_, filePathOrBase64) => {
   if (!filePathOrBase64) return false;
   try {
-    clipboard.clear();
-    let img = null;
-
-    if (filePathOrBase64.startsWith('data:image')) {
-      img = nativeImage.createFromDataURL(filePathOrBase64);
-    } else if (fs.existsSync(filePathOrBase64)) {
-      img = nativeImage.createFromPath(filePathOrBase64);
+    let dataUrl = filePathOrBase64;
+    if (!filePathOrBase64.startsWith('data:image')) {
+      if (fs.existsSync(filePathOrBase64)) {
+        const fileBuffer = fs.readFileSync(filePathOrBase64);
+        const ext = path.extname(filePathOrBase64).toLowerCase().replace('.', '') || 'png';
+        const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
+        dataUrl = `data:${mime};base64,${fileBuffer.toString('base64')}`;
+      } else {
+        return false;
+      }
     }
 
-    if (img && !img.isEmpty()) {
-      clipboard.writeImage(img);
+    // Create offscreen window to render the exact image
+    const win = new BrowserWindow({
+      width: 1600,
+      height: 1000,
+      show: false,
+      frame: false,
+      transparent: true,
+      webPreferences: {
+        offscreen: true,
+      }
+    });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body, html { margin: 0; padding: 0; background: transparent; overflow: hidden; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+            img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+          </style>
+        </head>
+        <body>
+          <img src="${dataUrl}" />
+        </body>
+      </html>
+    `;
+
+    await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    const capturedImage = await win.webContents.capturePage();
+    win.destroy();
+
+    if (capturedImage && !capturedImage.isEmpty()) {
+      clipboard.clear();
+      clipboard.writeImage(capturedImage);
+      return true;
+    } else {
+      // Fallback: write native image directly
+      const directImg = nativeImage.createFromDataURL(dataUrl);
+      clipboard.clear();
+      clipboard.writeImage(directImg);
       return true;
     }
-    return false;
   } catch (e) {
-    console.error('Error writing bitmap to clipboard:', e);
+    console.error('Capture and paste error:', e);
     return false;
   }
 });
@@ -423,12 +465,6 @@ ipcMain.handle('app:select-image-file', async () => {
     const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
     const base64 = `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
     const fileName = path.basename(filePath);
-
-    try {
-      clipboard.clear();
-      const img = nativeImage.createFromPath(filePath);
-      clipboard.writeImage(img);
-    } catch (_) {}
 
     return {
       filePath,
