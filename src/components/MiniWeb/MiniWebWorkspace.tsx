@@ -33,7 +33,8 @@ import {
   ImageUp, 
   Bug, 
   Plus,
-  FolderOpen
+  FolderOpen,
+  ClipboardPaste
 } from 'lucide-react';
 import { audioService } from '../../services/audioService';
 import { storageService } from '../../services/storageService';
@@ -46,7 +47,7 @@ const CHROME_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
 const FIREFOX_UA = 
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0';
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) rv:128.0) Gecko/20100101 Firefox/128.0';
 
 export interface MiniWebService {
   id: string;
@@ -133,6 +134,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState<boolean>(false);
   const [isGalleryDrawerOpen, setIsGalleryDrawerOpen] = useState<boolean>(false);
+  const [latestScreenshotPath, setLatestScreenshotPath] = useState<string | null>(null);
   const webviewRefs = useRef<Record<string, any>>({});
   const quickImageInputRef = useRef<HTMLInputElement>(null);
 
@@ -148,6 +150,22 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Listen for newly taken screenshot from disk
+  useEffect(() => {
+    if (window.electronAPI?.onFolderUpdated) {
+      window.electronAPI.onFolderUpdated(async (folder: string) => {
+        if (window.electronAPI?.scanFolderImages) {
+          const res = await window.electronAPI.scanFolderImages(folder);
+          if (res.files && res.files.length > 0) {
+            setLatestScreenshotPath(res.files[0].fullPath);
+            setCopiedStatus(`📸 Ảnh mới vừa chụp! Bấm [Dán Vào Gemini] để Ctrl+V`);
+            setTimeout(() => setCopiedStatus(null), 6000);
+          }
+        }
+      });
+    }
   }, []);
 
   const handleToggleDevTools = () => {
@@ -176,6 +194,27 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
     } else {
       quickImageInputRef.current?.click();
     }
+  };
+
+  // Dedicated 1-Click: Auto Ctrl+V Latest Screenshot into Gemini
+  const handlePasteLatestScreenshotToGemini = async () => {
+    audioService.playBeep('decision');
+    setActiveServiceId('gemini');
+
+    let targetFile = latestScreenshotPath;
+    let targetBase64: string | undefined = undefined;
+
+    if (!targetFile && window.electronAPI?.scanFolderImages) {
+      const res = await window.electronAPI.scanFolderImages();
+      if (res.files && res.files.length > 0) {
+        targetFile = res.files[0].fullPath;
+        targetBase64 = res.files[0].base64;
+      }
+    }
+
+    handleInjectAndSend('', targetBase64, false, 'latest_screenshot.png', targetFile || undefined);
+    setCopiedStatus('✓ Đã tự động Ctrl+V ảnh mới chụp vào Gemini!');
+    setTimeout(() => setCopiedStatus(null), 4000);
   };
 
   const handleFallbackFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -270,7 +309,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         setTimeout(() => {
           setIsInjecting(false);
           if (imageBase64 || filePath) {
-            setCopiedStatus(`✓ Đã bắn ảnh vào ô chat! Bấm Ctrl+V nếu muốn dán lại.`);
+            setCopiedStatus(`✓ Đã tự động Ctrl+V ảnh vào ô chat!`);
             setTimeout(() => setCopiedStatus(null), 4000);
           }
         }, autoSend ? 1200 : 400);
@@ -278,7 +317,6 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
       }
     }
 
-    // Fallback: copy to clipboard directly
     if (imageBase64 && window.electronAPI?.copyImageToClipboard) {
       await window.electronAPI.copyImageToClipboard(imageBase64);
     }
@@ -533,6 +571,16 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
             ⚡ TIỆN ÍCH TIN NHẮN & PROMPT:
           </span>
 
+          {/* DEDICATED BUTTON: TỰ ĐỘNG CTRL+V ẢNH VÀO GEMINI */}
+          <button
+            onClick={handlePasteLatestScreenshotToGemini}
+            className="flex items-center gap-1 px-3 py-0.5 rounded-lg bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white font-extrabold text-[11px] shadow-md hover:scale-105 active:scale-95 transition animate-pulse"
+            title="Tự động lấy ảnh vừa chụp và dán (Ctrl+V) ngay vào ô chat Gemini"
+          >
+            <ClipboardPaste className="w-3.5 h-3.5 text-yellow-200" />
+            <span>⚡ Dán Ngay Vào Gemini (Auto Ctrl+V)</span>
+          </button>
+
           {/* BUTTON: Screenshot Analyzer & Message Generator */}
           <button
             onClick={() => setIsScreenshotModalOpen(true)}
@@ -549,7 +597,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
             title="Mở hộp thoại Windows để chọn đúng file ảnh từ ổ cứng"
           >
             <ImageUp className="w-3.5 h-3.5 text-amber-400" />
-            <span>📷 Bắn Ảnh Vào Chat</span>
+            <span>📷 Chọn Ảnh Từ Máy</span>
           </button>
 
           {/* BUTTON: LIVE SCREENSHOT FOLDER GALLERY */}
@@ -593,7 +641,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         ) : isInjecting ? (
           <span className="text-[11px] font-bold text-emerald-400 animate-pulse flex items-center gap-1 font-mono">
             <Zap className="w-3 h-3 text-amber-400" />
-            <span>Đang bắn ảnh vào ô chat...</span>
+            <span>Đang dán ảnh vào Gemini...</span>
           </span>
         ) : null}
       </div>
