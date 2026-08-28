@@ -733,31 +733,25 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
                   style={{ width: '100%', height: '100%', display: 'flex' }}
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 p-6 text-center space-y-4">
-                  <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-3xl shadow-xl shadow-indigo-600/30">
-                    {svc.icon}
-                  </div>
-                  <div className="max-w-md space-y-1.5">
-                    <h3 className="text-xl font-extrabold text-white flex items-center justify-center gap-2">
-                      <span>{svc.name}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono border border-indigo-500/30">
-                        {svc.badge}
-                      </span>
-                    </h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      Trên phiên bản Web (GitHub Pages/Browser), bạn có thể mở trực tiếp trang web dịch vụ hoặc sử dụng đầy đủ các module IELTS, GenZ Studio, Action Engine, và Fishbone!
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-2">
+                <div className="w-full h-full relative flex flex-col bg-slate-950">
+                  <iframe
+                    src={svc.url}
+                    title={svc.name}
+                    className="w-full h-full border-0 bg-slate-950 flex-1"
+                    allow="camera; microphone; clipboard-read; clipboard-write; display-capture"
+                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-downloads"
+                  />
+                  <div className="absolute top-2 right-4 z-20 flex items-center gap-2 bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-xl border border-slate-800 shadow-md">
+                    <span className="text-[11px] text-slate-400 font-medium">Trình duyệt Web nhúng</span>
                     <a
                       href={svc.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold transition shadow-lg shadow-indigo-600/30 hover:scale-105"
+                      className="text-[11px] font-bold text-indigo-300 hover:text-white flex items-center gap-1 hover:underline"
+                      title="Mở trong tab trình duyệt riêng"
                     >
-                      <span>Mở {svc.name} Trên Tab Mới</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Mở Tab Riêng</span>
+                      <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                 </div>
