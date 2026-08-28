@@ -414,14 +414,15 @@ ipcMain.on('app:start-drag-image', (event, filePath) => {
   }
 });
 
-// Select folder for screenshot watching without blocking window
+// Select folder for screenshot watching as a true modal dialog on mainWindow
 ipcMain.handle('app:select-screenshot-folder', async () => {
   try {
     const defaultDir = 'D:\\Work_Code_22_26\\Work_ImageScreenshot_24_26\\Work_Video';
-    const result = await dialog.showOpenDialog({
+    const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
+    const result = await dialog.showOpenDialog(win, {
       title: 'Chọn thư mục chứa ảnh chụp màn hình',
       defaultPath: fs.existsSync(defaultDir) ? defaultDir : undefined,
-      properties: ['openDirectory', 'dontAddToRecent']
+      properties: ['openDirectory', 'dontAddToRecent', 'createDirectory']
     });
 
     if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
