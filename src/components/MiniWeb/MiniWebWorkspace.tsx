@@ -669,7 +669,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
             <div
               key={svc.id}
               className={`w-full h-full absolute inset-0 ${
-                isCurrent ? 'block z-10' : 'hidden z-0 pointer-events-none'
+                isCurrent ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none -z-10'
               }`}
             >
               <webview

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, session, clipboard, nativeImage, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, shell, session, clipboard, nativeImage, dialog, Notification } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -12,6 +12,47 @@ let separateWindows = new Map();
 let attachedWebviews = new Map();
 let currentWatchedFolder = null;
 let folderWatcher = null;
+const recentNotificationsCache = new Map();
+
+function dispatchSocialNotification(data) {
+  if (!data || (!data.title && !data.message)) return;
+  const key = `${data.platform}:${data.title}:${data.message}`;
+  const now = Date.now();
+  if (recentNotificationsCache.has(key)) {
+    const lastSent = recentNotificationsCache.get(key);
+    if (now - lastSent < 20000) {
+      return; // Deduplicate within 20s
+    }
+  }
+  recentNotificationsCache.set(key, now);
+
+  // 1. Send to renderer
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('social:new-notification', data);
+  }
+
+  // 2. Show Native Windows Toast Notification
+  try {
+    if (Notification.isSupported()) {
+      const toast = new Notification({
+        title: data.title || 'Thông Báo Mới',
+        body: data.message || '',
+        icon: path.join(__dirname, '../assets/app-icon.png'),
+        silent: false,
+      });
+      toast.show();
+      toast.on('click', () => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          if (mainWindow.isMinimized()) mainWindow.restore();
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Show native notification error:', err);
+  }
+}
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.WAIT_ON_DEV === 'true' || !app.isPackaged;
 
@@ -277,9 +318,7 @@ function createWindow() {
         try {
           const jsonStr = message.substring('__IMAGINE_NOTIF__'.length);
           const data = JSON.parse(jsonStr);
-          if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send('social:new-notification', data);
-          }
+          dispatchSocialNotification(data);
         } catch (e) {
           console.error('Parse social notification error:', e);
         }
@@ -303,7 +342,7 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  // Active recurring social notification polling timer (every 4s)
+  // Active recurring social notification polling timer (every 3.5s)
   const socialPollTimer = setInterval(async () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
 
@@ -332,7 +371,7 @@ function createWindow() {
                   items.push({ sender: name, text });
                 });
               } else if (window.location.host.includes('facebook.com')) {
-                const fbBadge = document.querySelector('[aria-label*="Messenger"] span, [aria-label*="Thông báo"] span');
+                const fbBadge = document.querySelector('[aria-label*="Messenger"] span, [aria-label*="Thông báo"] span, [aria-label*="Notifications"] span');
                 if (fbBadge && fbBadge.innerText && fbBadge.innerText.trim() !== '0') {
                   items.push({ sender: 'Facebook', text: 'Có ' + fbBadge.innerText.trim() + ' thông báo/tin nhắn mới' });
                 }
@@ -351,7 +390,7 @@ function createWindow() {
           if (res) {
             if (res.items && res.items.length > 0) {
               res.items.forEach((item) => {
-                mainWindow.webContents.send('social:new-notification', {
+                dispatchSocialNotification({
                   platform: plat,
                   title: (plat === 'zalo' ? 'Zalo: ' : plat === 'facebook' ? 'Facebook: ' : 'Instagram: ') + item.sender,
                   message: item.text,
@@ -361,7 +400,7 @@ function createWindow() {
                 });
               });
             } else if (res.unreadNum > 0) {
-              mainWindow.webContents.send('social:new-notification', {
+              dispatchSocialNotification({
                 platform: plat,
                 title: plat.toUpperCase() + ' Thông Báo Mới',
                 message: 'Bạn có ' + res.unreadNum + ' tin nhắn/thông báo mới',
@@ -374,7 +413,7 @@ function createWindow() {
         }
       } catch (_) {}
     }
-  }, 4000);
+  }, 3500);
 
   setupFolderWatcher(getDefaultScreenshotFolder());
 
