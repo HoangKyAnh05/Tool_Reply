@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { audioService } from '../../services/audioService';
 
+const DEFAULT_TARGET_DIR = 'D:\\Work_Code_22_26\\Work_ImageScreenshot_24_26\\Work_Video';
+
 export interface ScannedImage {
   name: string;
   fullPath: string;
@@ -37,21 +39,26 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
   onSelectImage,
   onAnalyzeImage
 }) => {
-  const [currentFolder, setCurrentFolder] = useState<string>('');
-  const [inputFolder, setInputFolder] = useState<string>('');
+  const [currentFolder, setCurrentFolder] = useState<string>(() => {
+    return localStorage.getItem('imagine_screenshot_folder') || DEFAULT_TARGET_DIR;
+  });
+  const [inputFolder, setInputFolder] = useState<string>(() => {
+    return localStorage.getItem('imagine_screenshot_folder') || DEFAULT_TARGET_DIR;
+  });
   const [images, setImages] = useState<ScannedImage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  const loadImages = async (folder?: string) => {
+  const loadImages = async (folderToScan?: string) => {
     setIsLoading(true);
+    const target = folderToScan || currentFolder || DEFAULT_TARGET_DIR;
     if (window.electronAPI?.scanFolderImages) {
       try {
-        const res = await window.electronAPI.scanFolderImages(folder);
-        if (res.folder) {
-          setCurrentFolder(res.folder);
-          setInputFolder(res.folder);
-        }
+        const res = await window.electronAPI.scanFolderImages(target);
+        const activeDir = res.folder || target;
+        setCurrentFolder(activeDir);
+        setInputFolder(activeDir);
+        localStorage.setItem('imagine_screenshot_folder', activeDir);
         setImages(res.files || []);
       } catch (e) {
         console.error('Scan folder error:', e);
@@ -62,7 +69,7 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
 
   useEffect(() => {
     if (isOpen) {
-      loadImages();
+      loadImages(currentFolder);
     }
   }, [isOpen]);
 
@@ -82,6 +89,7 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
       if (folder) {
         setCurrentFolder(folder);
         setInputFolder(folder);
+        localStorage.setItem('imagine_screenshot_folder', folder);
         loadImages(folder);
       }
     }
@@ -116,17 +124,17 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
             <span className="hidden sm:inline">Thư Mục Ảnh:</span>
           </div>
 
-          <div className="flex items-center bg-slate-950 border border-slate-800 focus-within:border-cyan-500 rounded-lg px-2 py-1 flex-1 max-w-lg">
+          <div className="flex items-center bg-slate-950 border border-slate-800 focus-within:border-cyan-500 rounded-lg px-2 py-1 flex-1 max-w-xl">
             <input
               type="text"
               value={inputFolder}
               onChange={(e) => setInputFolder(e.target.value)}
-              placeholder="Dán hoặc nhập đường dẫn thư mục ảnh (VD: C:\Users\Admin\Pictures)..."
+              placeholder="Nhập đường dẫn thư mục ảnh..."
               className="w-full bg-transparent border-0 outline-none text-slate-200 text-xs font-mono placeholder-slate-600"
             />
             <button
               type="submit"
-              className="px-2 py-0.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[10px] ml-1 shrink-0 transition"
+              className="px-2.5 py-0.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[10px] ml-1.5 shrink-0 transition"
             >
               Quét
             </button>
@@ -164,11 +172,16 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
 
       {/* Grid of scanned images */}
       <div className="flex-1 overflow-x-auto overflow-y-hidden p-3 flex items-center gap-3 no-scrollbar">
-        {images.length === 0 ? (
+        {isLoading ? (
+          <div className="w-full flex items-center justify-center text-cyan-400 gap-2">
+            <RefreshCw className="w-5 h-5 animate-spin" />
+            <span className="text-xs font-bold font-mono">Đang quét ảnh trong thư mục...</span>
+          </div>
+        ) : images.length === 0 ? (
           <div className="w-full flex flex-col items-center justify-center text-slate-400 space-y-2">
             <ImageIcon className="w-8 h-8 opacity-40 text-cyan-400" />
             <p className="text-xs font-semibold">
-              Chưa tìm thấy ảnh. Bấm <span className="text-amber-300 font-bold">"📁 Chọn Thư Mục"</span> ở trên hoặc dán đường dẫn thư mục ảnh của bạn vào ô tìm kiếm!
+              Chưa tìm thấy ảnh trong thư mục này. Hãy chụp màn hình mới (Win + Shift + S) để tự động xuất hiện tại đây!
             </p>
           </div>
         ) : (

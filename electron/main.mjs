@@ -49,6 +49,8 @@ function configureSession() {
 function getAllCommonImageFolders() {
   const home = os.homedir();
   const candidates = [
+    'D:\\Work_Code_22_26\\Work_ImageScreenshot_24_26\\Work_Video',
+    'D:\\Work_Code_22_26\\Work_ImageScreenshot_24_26',
     path.join(home, 'Pictures', 'Screenshots'),
     path.join(home, 'OneDrive', 'Pictures', 'Screenshots'),
     path.join(home, 'OneDrive', 'Pictures'),
@@ -56,8 +58,7 @@ function getAllCommonImageFolders() {
     path.join(home, 'OneDrive', 'Desktop'),
     path.join(home, 'Desktop'),
     path.join(home, 'Downloads'),
-    path.join(home, 'Pictures', 'Saved Pictures'),
-    path.join(home, 'Pictures', 'Camera Roll')
+    path.join(home, 'Pictures', 'Saved Pictures')
   ];
 
   return candidates.filter((p) => {
@@ -70,6 +71,11 @@ function getAllCommonImageFolders() {
 }
 
 function getDefaultScreenshotFolder() {
+  const customCandidate = 'D:\\Work_Code_22_26\\Work_ImageScreenshot_24_26\\Work_Video';
+  if (fs.existsSync(customCandidate)) {
+    return customCandidate;
+  }
+
   const folders = getAllCommonImageFolders();
   const validExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'];
   for (const f of folders) {
@@ -268,7 +274,7 @@ ipcMain.handle('app:open-google-login', (_, url) => {
   return true;
 });
 
-// Select folder for screenshot watching
+// Select folder for screenshot watching without blocking window
 ipcMain.handle('app:select-screenshot-folder', async () => {
   try {
     const result = await dialog.showOpenDialog({
@@ -299,7 +305,7 @@ ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
   const validExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'];
 
   let foldersToScan = [folder];
-  if (!targetFolder) {
+  if (!targetFolder && !fs.existsSync(folder)) {
     foldersToScan = getAllCommonImageFolders();
   }
 
@@ -332,9 +338,9 @@ ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
       } catch (_) {}
     }
 
-    // Sort newest first, take latest 40 images
+    // Sort newest first, take latest 50 images
     allFoundFiles.sort((a, b) => b.mtime - a.mtime);
-    const topFiles = allFoundFiles.slice(0, 40);
+    const topFiles = allFoundFiles.slice(0, 50);
 
     // Read base64 for thumbnails
     const result = topFiles.map((f) => {
