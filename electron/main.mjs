@@ -277,8 +277,10 @@ ipcMain.handle('app:open-google-login', (_, url) => {
 // Select folder for screenshot watching without blocking window
 ipcMain.handle('app:select-screenshot-folder', async () => {
   try {
+    const defaultDir = 'D:\\Work_Code_22_26\\Work_ImageScreenshot_24_26\\Work_Video';
     const result = await dialog.showOpenDialog({
       title: 'Chọn thư mục chứa ảnh chụp màn hình',
+      defaultPath: fs.existsSync(defaultDir) ? defaultDir : undefined,
       properties: ['openDirectory', 'dontAddToRecent']
     });
 
@@ -374,11 +376,37 @@ ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
   }
 });
 
+// Convert disk image to true OS Bitmap screenshot format in Clipboard
+ipcMain.handle('app:write-image-bitmap-to-clipboard', async (_, filePathOrBase64) => {
+  if (!filePathOrBase64) return false;
+  try {
+    clipboard.clear();
+    let img = null;
+
+    if (filePathOrBase64.startsWith('data:image')) {
+      img = nativeImage.createFromDataURL(filePathOrBase64);
+    } else if (fs.existsSync(filePathOrBase64)) {
+      img = nativeImage.createFromPath(filePathOrBase64);
+    }
+
+    if (img && !img.isEmpty()) {
+      clipboard.writeImage(img);
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.error('Error writing bitmap to clipboard:', e);
+    return false;
+  }
+});
+
 // Select exact image file
 ipcMain.handle('app:select-image-file', async () => {
   try {
+    const defaultDir = 'D:\\Work_Code_22_26\\Work_ImageScreenshot_24_26\\Work_Video';
     const result = await dialog.showOpenDialog({
       title: 'Chọn đúng ảnh chụp màn hình từ máy tính',
+      defaultPath: fs.existsSync(defaultDir) ? defaultDir : undefined,
       properties: ['openFile', 'dontAddToRecent'],
       filters: [
         { name: 'Ảnh chụp (PNG, JPG, WebP)', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] }

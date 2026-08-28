@@ -169,8 +169,8 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
     if (window.electronAPI?.selectImageFile) {
       const res = await window.electronAPI.selectImageFile();
       if (res && res.base64) {
-        handleInjectAndSend('', res.base64, false, res.fileName);
-        setCopiedStatus(`✓ Đã nạp file từ ổ cứng: ${res.fileName}`);
+        handleInjectAndSend('', res.base64, false, res.fileName, res.filePath);
+        setCopiedStatus(`✓ Đã nạp ảnh: ${res.fileName}`);
         setTimeout(() => setCopiedStatus(null), 3500);
       }
     } else {
@@ -186,7 +186,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         const dataUrl = event.target?.result as string;
         if (dataUrl) {
           handleInjectAndSend('', dataUrl, false, file.name);
-          setCopiedStatus(`✓ Đã nạp file từ ổ cứng: ${file.name}`);
+          setCopiedStatus(`✓ Đã nạp ảnh: ${file.name}`);
           setTimeout(() => setCopiedStatus(null), 3500);
         }
       };
@@ -195,97 +195,39 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
     }
   };
 
-  // Direct disk-file injector script
-  const generateDirectDiskFileInjectScript = (
-    promptText: string, 
-    dataUrl: string | null = null, 
-    fileName: string = 'image.png',
-    autoSend: boolean = true
-  ) => {
+  // Text injector and send button clicker
+  const generateTextInjectScript = (promptText: string, autoSend: boolean = true) => {
     const escapedText = JSON.stringify(promptText);
-    const escapedDataUrl = JSON.stringify(dataUrl || '');
-    const escapedFileName = JSON.stringify(fileName);
 
     return `
       (function() {
         const textToInject = ${escapedText};
-        const imageBase64 = ${escapedDataUrl};
-        const fname = ${escapedFileName};
         const autoSend = ${autoSend};
 
-        function dataURLtoFile(dataurl, filename) {
-          try {
-            var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-            while(n--){
-                u8arr[n] = bstr.charCodeAt(n);
-            }
-            return new File([u8arr], filename, {type:mime});
-          } catch(e) {
-            return null;
-          }
-        }
-
-        // 1. Direct File Injection into DOM
-        if (imageBase64 && imageBase64.length > 50) {
-          const file = dataURLtoFile(imageBase64, fname);
-          if (file) {
-            const dt = new DataTransfer();
-            dt.items.add(file);
-
-            // A. Synthetic Paste event carrying ONLY this disk file
-            const pasteEvent = new ClipboardEvent('paste', {
-              clipboardData: dt,
-              bubbles: true,
-              cancelable: true
-            });
-
-            const inputContainer = document.querySelector('rich-textarea, #prompt-textarea, [contenteditable="true"], .input-area, div[role="textbox"]');
-            if (inputContainer) {
-              inputContainer.dispatchEvent(pasteEvent);
-            }
-
-            // B. Also feed file input
-            const fileInput = document.querySelector('input[type="file"]');
-            if (fileInput) {
-              fileInput.files = dt.files;
-              fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-          }
-        }
-
-        // 2. Inject Prompt Text if requested
         let inputEl = document.querySelector('rich-textarea p, rich-textarea [contenteditable="true"], #prompt-textarea, [contenteditable="true"], textarea, div[role="textbox"]');
 
         if (inputEl) {
           inputEl.focus();
 
           if (textToInject) {
-            setTimeout(() => {
-              document.execCommand('selectAll', false, null);
-              document.execCommand('insertText', false, textToInject);
-              inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-              inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+            document.execCommand('selectAll', false, null);
+            document.execCommand('insertText', false, textToInject);
+            inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+            inputEl.dispatchEvent(new Event('change', { bubbles: true }));
 
-              if (autoSend) {
-                setTimeout(() => {
-                  const sendBtn = document.querySelector('button[aria-label*="Gửi"], button[aria-label*="Send"], button.send-button, [data-test-id="send-button"], button[data-testid="send-button"], button.mat-mdc-icon-button');
-                  if (sendBtn && !sendBtn.disabled) {
-                    sendBtn.click();
-                  } else {
-                    inputEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
-                  }
-                }, 500);
-              }
-            }, imageBase64 ? 800 : 50);
-          } else {
-            setTimeout(() => {
-              inputEl.focus();
-            }, 400);
+            if (autoSend) {
+              setTimeout(() => {
+                const sendBtn = document.querySelector('button[aria-label*="Gửi"], button[aria-label*="Send"], button.send-button, [data-test-id="send-button"], button[data-testid="send-button"], button.mat-mdc-icon-button');
+                if (sendBtn && !sendBtn.disabled) {
+                  sendBtn.click();
+                } else {
+                  inputEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+                }
+              }, 400);
+            }
           }
           return true;
         }
-
         return false;
       })();
     `;
@@ -343,7 +285,8 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
     promptToSend: string, 
     imageBase64?: string, 
     autoSend: boolean = true,
-    fileName: string = 'image.png'
+    fileName: string = 'image.png',
+    filePath?: string
   ) => {
     setIsInjecting(true);
     audioService.playBeep('decision');
@@ -351,25 +294,50 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
     const wv = webviewRefs.current[activeServiceId];
 
     if (wv) {
+      // 1. Focus webview window
       if (typeof wv.focus === 'function') wv.focus();
 
-      const script = generateDirectDiskFileInjectScript(
-        promptToSend.trim(), 
-        imageBase64 || null, 
-        fileName, 
-        autoSend
-      );
+      // 2. If image is provided, transform into authentic OS Screenshot Bitmap in clipboard
+      if (imageBase64 || filePath) {
+        if (window.electronAPI?.writeImageBitmapToClipboard) {
+          await window.electronAPI.writeImageBitmapToClipboard(filePath || imageBase64 || '');
+        }
 
-      wv.executeJavaScript(script)
-        .then(() => {
-          setTimeout(() => {
-            setIsInjecting(false);
-          }, autoSend ? 1200 : 400);
-        })
-        .catch((err: any) => {
-          console.error('Inject error:', err);
-          setIsInjecting(false);
-        });
+        // Focus chat input box
+        await wv.executeJavaScript(`
+          (function() {
+            let el = document.querySelector('rich-textarea p, rich-textarea [contenteditable="true"], #prompt-textarea, [contenteditable="true"], textarea, div[role="textbox"]');
+            if (el) el.focus();
+          })();
+        `);
+
+        // Trigger native paste event (OS Level Ctrl + V)
+        try {
+          if (typeof wv.paste === 'function') {
+            wv.paste();
+          }
+          if (typeof wv.sendInputEvent === 'function') {
+            wv.sendInputEvent({ type: 'keyDown', keyCode: 'v', modifiers: ['control'] });
+            wv.sendInputEvent({ type: 'keyUp', keyCode: 'v', modifiers: ['control'] });
+          }
+        } catch (e) {
+          console.error('Paste event error:', e);
+        }
+      }
+
+      // 3. Inject text prompt if present
+      if (promptToSend.trim()) {
+        setTimeout(() => {
+          const script = generateTextInjectScript(promptToSend.trim(), autoSend);
+          wv.executeJavaScript(script)
+            .then(() => {
+              setTimeout(() => setIsInjecting(false), autoSend ? 1200 : 400);
+            })
+            .catch(() => setIsInjecting(false));
+        }, (imageBase64 || filePath) ? 800 : 50);
+      } else {
+        setTimeout(() => setIsInjecting(false), 500);
+      }
     } else {
       setIsInjecting(false);
     }
@@ -486,19 +454,6 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
       noOldVocab: false,
       partPreference: lesson.part
     });
-    handleInjectAndSend(prompt, undefined, true);
-  };
-
-  const handleInjectFishbonePrompt = () => {
-    const project = storageService.getFishboneProject();
-    const prompt = fishboneService.generateAiPrompt(project, 'upgrade');
-    handleInjectAndSend(prompt, undefined, true);
-  };
-
-  const handleInjectUniversePrompt = () => {
-    const list = storageService.getSimulations();
-    const sim = list[0];
-    const prompt = `Phân tích chuyên sâu 5 vũ trụ quyết định và đề xuất bước đòn bẩy lớn nhất (Biggest Lever) cho kịch bản: "${sim?.title || 'Quyết định sự nghiệp và tài chính'}".`;
     handleInjectAndSend(prompt, undefined, true);
   };
 
@@ -692,7 +647,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         ) : isInjecting ? (
           <span className="text-[11px] font-bold text-emerald-400 animate-pulse flex items-center gap-1 font-mono">
             <Zap className="w-3 h-3 text-amber-400" />
-            <span>Đang nạp file ảnh vào ô chat...</span>
+            <span>Đang nạp ảnh vào ô chat...</span>
           </span>
         ) : null}
       </div>
@@ -731,9 +686,9 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
       <ScreenshotGalleryDrawer
         isOpen={isGalleryDrawerOpen}
         onClose={() => setIsGalleryDrawerOpen(false)}
-        onSelectImage={(base64, fileName) => {
-          handleInjectAndSend('', base64, false, fileName);
-          setCopiedStatus(`✓ Đã nạp ảnh từ thư viện: ${fileName}`);
+        onSelectImage={(base64, fileName, filePath) => {
+          handleInjectAndSend('', base64, false, fileName, filePath);
+          setCopiedStatus(`✓ Đã dán ảnh: ${fileName}`);
           setTimeout(() => setCopiedStatus(null), 3500);
         }}
         onAnalyzeImage={(base64, fileName) => {

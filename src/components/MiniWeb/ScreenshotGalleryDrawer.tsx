@@ -29,7 +29,7 @@ export interface ScannedImage {
 interface ScreenshotGalleryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectImage: (base64: string, fileName: string) => void;
+  onSelectImage: (base64: string, fileName: string, filePath?: string) => void;
   onAnalyzeImage: (base64: string, fileName: string) => void;
 }
 
@@ -105,8 +105,8 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
 
   const handleCopyImageToClipboard = async (img: ScannedImage, index: number) => {
     audioService.playBeep('click');
-    if (window.electronAPI?.copyImageToClipboard) {
-      await window.electronAPI.copyImageToClipboard(img.base64);
+    if (window.electronAPI?.writeImageBitmapToClipboard) {
+      await window.electronAPI.writeImageBitmapToClipboard(img.fullPath);
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
     }
@@ -212,9 +212,9 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
                 {/* Actions */}
                 <div className="flex items-center gap-1 mt-1">
                   <button
-                    onClick={() => onSelectImage(img.base64, img.name)}
+                    onClick={() => onSelectImage(img.base64, img.name, img.fullPath)}
                     className="flex-1 py-1 rounded-lg bg-amber-600/30 hover:bg-amber-600 border border-amber-500/40 text-amber-200 hover:text-white text-[10px] font-bold flex items-center justify-center gap-1 transition"
-                    title="Bắn thẳng ảnh này vào ô chat"
+                    title="Chuyển thành Bitmap chụp màn hình và dán thẳng vào chat"
                   >
                     <Zap className="w-3 h-3 text-amber-400" />
                     <span>Dán Vào Chat</span>
