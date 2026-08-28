@@ -5,7 +5,7 @@ $vbsPath = Join-Path $appDir "launch-silent.vbs"
 $icoPath = Join-Path $appDir "assets\app-icon.ico"
 $shortcutName = "Imagine AI Studio.lnk"
 
-# Get All Desktop paths (D:\Desktop and C:\Users\Admin\Desktop)
+# Get All Desktop paths
 $desktopPaths = @(
     [Environment]::GetFolderPath("Desktop"),
     "C:\Users\Admin\Desktop",
@@ -19,8 +19,10 @@ foreach ($dPath in $desktopPaths) {
         $Shortcut.TargetPath = "wscript.exe"
         $Shortcut.Arguments = "`"$vbsPath`""
         $Shortcut.WorkingDirectory = $appDir
-        $Shortcut.IconLocation = "$icoPath, 0"
-        $Shortcut.Description = "Imagine AI Studio - IELTS Visual Vocabulary, GenZify & Parallel Universe"
+        if (Test-Path $icoPath) {
+            $Shortcut.IconLocation = "$icoPath, 0"
+        }
+        $Shortcut.Description = "Imagine AI Studio - Gemini, ChatGPT, Facebook, Instagram, Zalo Mini Browser"
         $Shortcut.Save()
         Write-Host "Created Desktop Shortcut at: $shortcutFile"
     }

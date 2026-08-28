@@ -240,10 +240,15 @@ function createWindow() {
     icon: path.join(__dirname, '../assets/app-icon.png'),
   });
 
-  if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+  const distHtml = path.join(__dirname, '../dist/index.html');
+  if (process.env.WAIT_ON_DEV === 'true') {
+    mainWindow.loadURL('http://localhost:5173').catch(() => {
+      if (fs.existsSync(distHtml)) mainWindow.loadFile(distHtml);
+    });
+  } else if (fs.existsSync(distHtml)) {
+    mainWindow.loadFile(distHtml);
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    mainWindow.loadURL('http://localhost:5173');
   }
 
   mainWindow.webContents.on('did-attach-webview', (_, webviewContents) => {
