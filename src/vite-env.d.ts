@@ -8,6 +8,16 @@ export interface ScannedImageFile {
   base64: string;
 }
 
+export interface RawSocialNotification {
+  platform: 'facebook' | 'instagram' | 'zalo';
+  type?: string;
+  title: string;
+  message: string;
+  avatarUrl?: string;
+  link?: string;
+  timestamp: number;
+}
+
 declare global {
   interface Window {
     electronAPI?: {
@@ -32,6 +42,7 @@ declare global {
       startDragImage: (filePath: string) => void;
       copyImageToClipboard: (dataUrl: string) => Promise<boolean>;
       onFolderUpdated: (callback: (folder: string) => void) => void;
+      onSocialNotification: (callback: (notif: RawSocialNotification) => void) => void;
       onAuthCompleted: (callback: () => void) => void;
       isElectron: boolean;
     };

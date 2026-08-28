@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BrainCircuit,
   Sparkles,
@@ -15,10 +15,12 @@ import {
   HelpCircle,
   BookMarked,
   Bot,
-  Globe
+  Globe,
+  Bell
 } from 'lucide-react';
 import { AppSettings } from '../../types/settings';
 import { audioService } from '../../services/audioService';
+import { notificationService } from '../../services/notificationService';
 
 export type ActiveTab = 'ielts' | 'genz' | 'universe' | 'action' | 'fishbone' | 'miniweb' | 'library' | 'settings';
 
@@ -29,6 +31,7 @@ interface NavbarProps {
   onToggleSound: () => void;
   openSettingsModal: () => void;
   openGuideModal: () => void;
+  openNotificationHub: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -37,9 +40,18 @@ export const Navbar: React.FC<NavbarProps> = ({
   settings,
   onToggleSound,
   openSettingsModal,
-  openGuideModal
+  openGuideModal,
+  openNotificationHub
 }) => {
   const [isRestarting, setIsRestarting] = useState(false);
+  const [unreadNotifs, setUnreadNotifs] = useState<number>(0);
+
+  useEffect(() => {
+    const unsubscribe = notificationService.subscribe((list) => {
+      setUnreadNotifs(list.filter((n) => !n.isRead).length);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleRestart = async () => {
     setIsRestarting(true);
@@ -76,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               ULTIMATE
             </span>
           </div>
-          <p className="text-[10px] text-slate-400 font-medium">Gemini • ChatGPT • FB • Insta • Zalo • IELTS</p>
+          <p className="text-[10px] text-slate-400 font-medium">Gemini • ChatGPT • FB • Insta • Zalo • Hub</p>
         </div>
       </div>
 
@@ -99,51 +111,39 @@ export const Navbar: React.FC<NavbarProps> = ({
         <button
           onClick={() => onTabChange('ielts')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${activeTab === 'ielts'
-              ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-600/30 scale-[1.02]'
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/30 scale-[1.02]'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
         >
-          <BrainCircuit className="w-3.5 h-3.5 text-indigo-300" />
+          <BrainCircuit className="w-3.5 h-3.5 text-indigo-400" />
           <span>IELTS Map</span>
         </button>
 
-        {/* 3. GenZify Meme */}
+        {/* 3. GenZ Studio */}
         <button
           onClick={() => onTabChange('genz')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${activeTab === 'genz'
-              ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md shadow-pink-600/30 scale-[1.02]'
+              ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-md shadow-pink-600/30 scale-[1.02]'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-pink-300" />
-          <span>GenZify</span>
+          <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+          <span>Gen Z Studio</span>
         </button>
 
-        {/* 4. Parallel Universe */}
-        <button
-          onClick={() => onTabChange('universe')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${activeTab === 'universe'
-              ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/30 scale-[1.02]'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-        >
-          <Orbit className="w-3.5 h-3.5 text-cyan-300" />
-          <span>Universes</span>
-        </button>
-
-        {/* 5. Action Engine */}
+        {/* 4. Action Engine */}
         <button
           onClick={() => onTabChange('action')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${activeTab === 'action'
-              ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-md shadow-rose-600/30 scale-[1.02]'
+              ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30 scale-[1.02]'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
         >
-          <Flame className="w-3.5 h-3.5 text-rose-300" />
+          <Flame className="w-3.5 h-3.5 text-orange-400" />
           <span>Action Engine</span>
         </button>
 
-        {/* 6. Fishbone Evolution */}
+        {/* 5. Fishbone */}
         <button
           onClick={() => onTabChange('fishbone')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${activeTab === 'fishbone'
@@ -155,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span>Fishbone</span>
         </button>
 
-        {/* 7. Library */}
+        {/* 6. Library */}
         <button
           onClick={() => onTabChange('library')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${activeTab === 'library'
@@ -170,6 +170,23 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Action utilities */}
       <div className="flex items-center gap-2">
+        {/* Social Notification Hub Bell Button */}
+        <button
+          onClick={() => {
+            audioService.playBeep('click');
+            openNotificationHub();
+          }}
+          className="relative p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 text-slate-300 hover:text-indigo-300 transition shadow-sm"
+          title="Mở Trung Tâm Thông Báo Tập Trung (Facebook, Instagram, Zalo)"
+        >
+          <Bell className="w-4 h-4 text-indigo-400" />
+          {unreadNotifs > 0 && (
+            <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-extrabold shadow-md animate-bounce">
+              {unreadNotifs > 99 ? '99+' : unreadNotifs}
+            </span>
+          )}
+        </button>
+
         {/* Guide Button */}
         <button
           onClick={openGuideModal}

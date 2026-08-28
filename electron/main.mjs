@@ -114,6 +114,111 @@ function setupFolderWatcher(folderPath) {
   }
 }
 
+// Script to inject inside Facebook, Instagram, and Zalo webviews to intercept notifications
+function getSocialObserverScript(platform) {
+  return `
+    (function() {
+      if (window.__socialObserverInjected) return;
+      window.__socialObserverInjected = true;
+
+      function dispatchSocialEvent(type, title, message, avatarUrl, link) {
+        if (!title && !message) return;
+        try {
+          window.dispatchEvent(new CustomEvent('imagine:social-notif', {
+            detail: {
+              platform: '${platform}',
+              type: type || 'message',
+              title: title || '${platform.toUpperCase()}',
+              message: message || '',
+              avatarUrl: avatarUrl || '',
+              link: link || window.location.href,
+              timestamp: Date.now()
+            }
+          }));
+        } catch(_) {}
+      }
+
+      // 1. Intercept window.Notification
+      const OrigNotification = window.Notification;
+      window.Notification = function(title, options = {}) {
+        dispatchSocialEvent(
+          'message',
+          title,
+          options.body || '',
+          options.icon || '',
+          options.data?.url || window.location.href
+        );
+        return {
+          close: () => {},
+          addEventListener: () => {},
+          removeEventListener: () => {}
+        };
+      };
+      window.Notification.permission = 'granted';
+      window.Notification.requestPermission = () => Promise.resolve('granted');
+
+      // 2. Platform specific observers
+      let lastTitle = document.title;
+      setInterval(() => {
+        if (document.title !== lastTitle) {
+          lastTitle = document.title;
+          const match = lastTitle.match(/\\((\\d+)\\)/);
+          if (match && parseInt(match[1]) > 0) {
+            dispatchSocialEvent(
+              'message',
+              '${platform.toUpperCase()} Thông Báo Mới',
+              'Bạn có ' + match[1] + ' tin nhắn/thông báo mới trên ${platform.toUpperCase()}',
+              '',
+              window.location.href
+            );
+          }
+        }
+      }, 3000);
+
+      // 3. Monitor DOM badges
+      let lastNotifText = '';
+      const observer = new MutationObserver(() => {
+        try {
+          if ('${platform}' === 'zalo') {
+            const unreadItems = document.querySelectorAll('.conv-item.unread, .chat-message-unread, .nav-sub-item .badge');
+            if (unreadItems.length > 0) {
+              const nameEl = document.querySelector('.conv-item.unread .conv-item-title__name');
+              const msgEl = document.querySelector('.conv-item.unread .conv-message');
+              const sender = nameEl ? nameEl.innerText.trim() : 'Bạn bè Zalo';
+              const text = msgEl ? msgEl.innerText.trim() : 'Có tin nhắn mới';
+              const key = sender + ':' + text;
+              if (key !== lastNotifText && text) {
+                lastNotifText = key;
+                dispatchSocialEvent('message', 'Zalo: ' + sender, text, '', window.location.href);
+              }
+            }
+          } else if ('${platform}' === 'facebook') {
+            const fbBadge = document.querySelector('[aria-label*="Messenger"] span, [aria-label*="Thông báo"] span');
+            if (fbBadge && fbBadge.innerText) {
+              const count = fbBadge.innerText.trim();
+              if (count && count !== '0' && count !== lastNotifText) {
+                lastNotifText = count;
+                dispatchSocialEvent('other', 'Facebook', 'Có ' + count + ' tương tác/tin nhắn mới', '', window.location.href);
+              }
+            }
+          } else if ('${platform}' === 'instagram') {
+            const instaBadge = document.querySelector('svg[aria-label*="Direct"] + div, svg[aria-label*="Tin nhắn"] + div, svg[aria-label*="Activity"] + div');
+            if (instaBadge && instaBadge.innerText) {
+              const count = instaBadge.innerText.trim();
+              if (count && count !== lastNotifText) {
+                lastNotifText = count;
+                dispatchSocialEvent('message', 'Instagram Direct', 'Có ' + count + ' tin nhắn/hoạt động mới', '', window.location.href);
+              }
+            }
+          }
+        } catch(_) {}
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    })();
+  `;
+}
+
 function createWindow() {
   configureSession();
 
@@ -148,6 +253,24 @@ function createWindow() {
     webviewContents.setWindowOpenHandler(({ url }) => {
       openAuthWindow(url);
       return { action: 'deny' };
+    });
+
+    webviewContents.on('did-finish-load', () => {
+      const currentUrl = webviewContents.getURL() || '';
+      let platform = null;
+      if (currentUrl.includes('zalo.me')) platform = 'zalo';
+      else if (currentUrl.includes('facebook.com')) platform = 'facebook';
+      else if (currentUrl.includes('instagram.com')) platform = 'instagram';
+
+      if (platform) {
+        webviewContents.executeJavaScript(getSocialObserverScript(platform)).catch(() => {});
+      }
+    });
+
+    webviewContents.on('ipc-message', (event, channel, ...args) => {
+      if (channel === 'imagine:social-notif' && mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('social:new-notification', args[0]);
+      }
     });
 
     webviewContents.on('destroyed', () => {
@@ -394,7 +517,6 @@ ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
 // Automated Native Drag & Drop Simulation + Clipboard Injection
 ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePath, dataUrl, promptText, autoSend = false }) => {
   try {
-    // 1. Prepare authentic native image bitmap in system clipboard
     clipboard.clear();
     let img = null;
     let base64Str = dataUrl || '';
@@ -415,7 +537,6 @@ ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePat
       clipboard.writeImage(img);
     }
 
-    // 2. Find target WebContents
     let targetWc = null;
     if (webContentsId && attachedWebviews.has(webContentsId)) {
       targetWc = attachedWebviews.get(webContentsId);
@@ -427,7 +548,6 @@ ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePat
     if (targetWc && !targetWc.isDestroyed()) {
       targetWc.focus();
 
-      // Dispatch full automated Drag & Drop event sequence directly onto Gemini/ChatGPT drop target
       const escapedBase64 = JSON.stringify(base64Str);
       const escapedFileName = JSON.stringify(fileName);
 
@@ -506,12 +626,10 @@ ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePat
 
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      // Trigger OS level paste in guest webview
       targetWc.paste();
       targetWc.sendInputEvent({ type: 'keyDown', keyCode: 'v', modifiers: ['control'] });
       targetWc.sendInputEvent({ type: 'keyUp', keyCode: 'v', modifiers: ['control'] });
 
-      // If prompt text is present, inject and send
       if (promptText && promptText.trim()) {
         setTimeout(async () => {
           if (!targetWc.isDestroyed()) {

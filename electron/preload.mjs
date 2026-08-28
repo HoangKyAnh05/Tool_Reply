@@ -18,6 +18,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onFolderUpdated: (callback) => {
     ipcRenderer.on('screenshot:folder-updated', (_, folder) => callback(folder));
   },
+  onSocialNotification: (callback) => {
+    ipcRenderer.on('social:new-notification', (_, notif) => callback(notif));
+  },
   onAuthCompleted: (callback) => {
     ipcRenderer.on('auth:completed', () => callback());
   },

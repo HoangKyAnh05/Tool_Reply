@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar, ActiveTab } from './components/common/Navbar';
 import { IeltsWorkspace } from './components/IeltsModule/IeltsWorkspace';
 import { GenzWorkspace } from './components/GenzModule/GenzWorkspace';
@@ -10,16 +10,38 @@ import { FishboneWorkspace } from './components/Fishbone/FishboneWorkspace';
 import { MiniWebWorkspace } from './components/MiniWeb/MiniWebWorkspace';
 import { SettingsModal } from './components/Settings/SettingsModal';
 import { AppGuideModal } from './components/common/AppGuideModal';
+import { SocialNotificationHubModal } from './components/Notifications/SocialNotificationHubModal';
 import { storageService } from './services/storageService';
+import { notificationService } from './services/notificationService';
+import { audioService } from './services/audioService';
 import { GenzVisualIdea } from './types/genz';
 import { AppSettings } from './types/settings';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('miniweb');
+  const [activeMiniWebServiceId, setActiveMiniWebServiceId] = useState<string>('gemini');
   const [settings, setSettings] = useState<AppSettings>(() => storageService.getSettings());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isNotificationHubOpen, setIsNotificationHubOpen] = useState(false);
   const [activeMemeModalIdea, setActiveMemeModalIdea] = useState<GenzVisualIdea | null>(null);
+
+  // Listen for real-time social notifications from Facebook, Instagram, and Zalo webviews
+  useEffect(() => {
+    if (window.electronAPI?.onSocialNotification) {
+      window.electronAPI.onSocialNotification((notif) => {
+        notificationService.addNotification({
+          platform: notif.platform,
+          title: notif.title,
+          message: notif.message,
+          avatarUrl: notif.avatarUrl,
+          link: notif.link,
+          type: (notif.type as any) || 'message'
+        });
+        audioService.playBeep('success');
+      });
+    }
+  }, []);
 
   const handleToggleSound = () => {
     const updated = { ...settings, soundEffects: !settings.soundEffects };
@@ -37,11 +59,14 @@ export const App: React.FC = () => {
         onToggleSound={handleToggleSound}
         openSettingsModal={() => setIsSettingsOpen(true)}
         openGuideModal={() => setIsGuideOpen(true)}
+        openNotificationHub={() => setIsNotificationHubOpen(true)}
       />
 
       {/* Main Workspace Container */}
       <main className="flex-1 flex overflow-hidden relative">
-        {activeTab === 'miniweb' && <MiniWebWorkspace initialServiceId="gemini" />}
+        {activeTab === 'miniweb' && (
+          <MiniWebWorkspace initialServiceId={activeMiniWebServiceId} />
+        )}
         {activeTab === 'ielts' && <IeltsWorkspace />}
         {activeTab === 'genz' && <GenzWorkspace />}
         {activeTab === 'universe' && <UniverseWorkspace />}
@@ -51,6 +76,20 @@ export const App: React.FC = () => {
           <GenzSavedLibrary onOpenImageModal={(idea) => setActiveMemeModalIdea(idea)} />
         )}
       </main>
+
+      {/* Social Notification Hub Modal */}
+      <SocialNotificationHubModal
+        isOpen={isNotificationHubOpen}
+        onClose={() => setIsNotificationHubOpen(false)}
+        onNavigateToService={(platformId) => {
+          setActiveMiniWebServiceId(platformId);
+          setActiveTab('miniweb');
+        }}
+        onOpenAIReply={(initialMessage) => {
+          setActiveMiniWebServiceId('gemini');
+          setActiveTab('miniweb');
+        }}
+      />
 
       {/* Settings Modal */}
       <SettingsModal
