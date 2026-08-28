@@ -733,26 +733,70 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
                   style={{ width: '100%', height: '100%', display: 'flex' }}
                 />
               ) : (
-                <div className="w-full h-full relative flex flex-col bg-slate-950">
-                  <iframe
-                    src={svc.url}
-                    title={svc.name}
-                    className="w-full h-full border-0 bg-slate-950 flex-1"
-                    allow="camera; microphone; clipboard-read; clipboard-write; display-capture"
-                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-downloads"
-                  />
-                  <div className="absolute top-2 right-4 z-20 flex items-center gap-2 bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-xl border border-slate-800 shadow-md">
-                    <span className="text-[11px] text-slate-400 font-medium">Trình duyệt Web nhúng</span>
-                    <a
-                      href={svc.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] font-bold text-indigo-300 hover:text-white flex items-center gap-1 hover:underline"
-                      title="Mở trong tab trình duyệt riêng"
-                    >
-                      <span>Mở Tab Riêng</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                <div className="w-full h-full relative flex flex-col items-center justify-center bg-slate-950 p-6 overflow-y-auto">
+                  {/* Decorative background glow */}
+                  <div className="absolute w-96 h-96 rounded-full bg-indigo-600/10 blur-3xl pointer-events-none -top-10 -left-10" />
+                  <div className="absolute w-96 h-96 rounded-full bg-purple-600/10 blur-3xl pointer-events-none -bottom-10 -right-10" />
+
+                  <div className="max-w-xl w-full bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-xl relative z-10 flex flex-col items-center text-center space-y-5">
+                    {/* Service Icon */}
+                    <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 p-0.5 shadow-2xl shadow-indigo-600/30">
+                      <div className="w-full h-full bg-slate-950 rounded-[22px] flex items-center justify-center text-4xl">
+                        {svc.icon}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-center gap-2">
+                        <h3 className="text-2xl font-black text-white tracking-tight">
+                          {svc.name}
+                        </h3>
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono font-bold border border-indigo-500/30">
+                          {svc.badge}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed max-w-md">
+                        Google, OpenAI & Facebook áp dụng chính sách bảo mật <span className="text-amber-300 font-mono font-bold">X-Frame-Options</span> toàn cầu, không cho phép nhúng trực tiếp trang đăng nhập vào trình duyệt web thứ ba.
+                      </p>
+                    </div>
+
+                    {/* Launch Actions */}
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full justify-center pt-2">
+                      <button
+                        onClick={() => {
+                          audioService.playBeep('decision');
+                          window.open(svc.url, '_blank', 'width=1280,height=850,menubar=no,toolbar=no,location=yes,status=no');
+                        }}
+                        className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white text-xs font-extrabold transition shadow-lg shadow-indigo-600/30 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 cursor-pointer ring-1 ring-white/20"
+                      >
+                        <span>🚀 Mở Cửa Sổ Popup Riêng</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+
+                      <a
+                        href={svc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-bold transition flex items-center justify-center gap-2 hover:scale-105"
+                      >
+                        <span>Mở Tab Trình Duyệt Mới</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                      </a>
+                    </div>
+
+                    {/* Info Notice Box */}
+                    <div className="w-full p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 text-left text-[11px] text-slate-400 space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-cyan-300 font-bold">
+                        <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Mẹo hữu ích:</span>
+                      </div>
+                      <p>
+                        • <strong>Bản Web:</strong> Bấm <em>"Mở Cửa Sổ Popup Riêng"</em> để đặt cửa sổ chat AI / Zalo song song với ứng dụng cực kỳ tiện lợi.
+                      </p>
+                      <p>
+                        • <strong>Bản Desktop (Electron):</strong> Chạy trực tiếp từ máy tính để nhúng 100% không bị chặn và tự động Ctrl+V dán ảnh chụp tức thì!
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
