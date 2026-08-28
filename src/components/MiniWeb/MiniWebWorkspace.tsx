@@ -152,21 +152,33 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Listen for newly taken screenshot from disk
+  // Automatically trigger Auto Ctrl+V into Gemini whenever a new screenshot is taken
   useEffect(() => {
     if (window.electronAPI?.onFolderUpdated) {
       window.electronAPI.onFolderUpdated(async (folder: string) => {
         if (window.electronAPI?.scanFolderImages) {
-          const res = await window.electronAPI.scanFolderImages(folder);
-          if (res.files && res.files.length > 0) {
-            setLatestScreenshotPath(res.files[0].fullPath);
-            setCopiedStatus(`📸 Ảnh mới vừa chụp! Bấm [Dán Vào Gemini] để Ctrl+V`);
-            setTimeout(() => setCopiedStatus(null), 6000);
+          try {
+            const res = await window.electronAPI.scanFolderImages(folder);
+            if (res.files && res.files.length > 0) {
+              const newestImg = res.files[0];
+              setLatestScreenshotPath(newestImg.fullPath);
+
+              // Auto switch to Gemini & paste
+              setActiveServiceId('gemini');
+              setTimeout(() => {
+                handleInjectAndSend('', newestImg.base64, false, newestImg.name, newestImg.fullPath);
+                audioService.playBeep('success');
+                setCopiedStatus(`⚡ Đã tự động Ctrl+V ảnh vừa chụp vào Gemini!`);
+                setTimeout(() => setCopiedStatus(null), 4500);
+              }, 350);
+            }
+          } catch (err) {
+            console.error('Auto paste error on screenshot capture:', err);
           }
         }
       });
     }
-  }, []);
+  }, [activeServiceId]);
 
   const handleToggleDevTools = () => {
     audioService.playBeep('click');
