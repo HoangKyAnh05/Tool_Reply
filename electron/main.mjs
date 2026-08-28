@@ -124,17 +124,16 @@ function getSocialObserverScript(platform) {
       function dispatchSocialEvent(type, title, message, avatarUrl, link) {
         if (!title && !message) return;
         try {
-          window.dispatchEvent(new CustomEvent('imagine:social-notif', {
-            detail: {
-              platform: '${platform}',
-              type: type || 'message',
-              title: title || '${platform.toUpperCase()}',
-              message: message || '',
-              avatarUrl: avatarUrl || '',
-              link: link || window.location.href,
-              timestamp: Date.now()
-            }
-          }));
+          const payload = {
+            platform: '${platform}',
+            type: type || 'message',
+            title: title || '${platform.toUpperCase()}',
+            message: message || '',
+            avatarUrl: avatarUrl || '',
+            link: link || window.location.href,
+            timestamp: Date.now()
+          };
+          console.log('__IMAGINE_NOTIF__' + JSON.stringify(payload));
         } catch(_) {}
       }
 
@@ -157,7 +156,7 @@ function getSocialObserverScript(platform) {
       window.Notification.permission = 'granted';
       window.Notification.requestPermission = () => Promise.resolve('granted');
 
-      // 2. Platform specific observers
+      // 2. Monitor title changes
       let lastTitle = document.title;
       setInterval(() => {
         if (document.title !== lastTitle) {
@@ -166,24 +165,24 @@ function getSocialObserverScript(platform) {
           if (match && parseInt(match[1]) > 0) {
             dispatchSocialEvent(
               'message',
-              '${platform.toUpperCase()} Thông Báo Mới',
-              'Bạn có ' + match[1] + ' tin nhắn/thông báo mới trên ${platform.toUpperCase()}',
+              '${platform.toUpperCase()}',
+              'Bạn có ' + match[1] + ' tin nhắn/thông báo mới',
               '',
               window.location.href
             );
           }
         }
-      }, 3000);
+      }, 2500);
 
-      // 3. Monitor DOM badges
+      // 3. Monitor DOM mutations for unread items
       let lastNotifText = '';
       const observer = new MutationObserver(() => {
         try {
           if ('${platform}' === 'zalo') {
-            const unreadItems = document.querySelectorAll('.conv-item.unread, .chat-message-unread, .nav-sub-item .badge');
+            const unreadItems = document.querySelectorAll('.conv-item.unread, .chat-message-unread, .nav-sub-item .badge, [data-id*="conv-item"].unread');
             if (unreadItems.length > 0) {
-              const nameEl = document.querySelector('.conv-item.unread .conv-item-title__name');
-              const msgEl = document.querySelector('.conv-item.unread .conv-message');
+              const nameEl = document.querySelector('.conv-item.unread .conv-item-title__name, .conv-item.unread .truncate');
+              const msgEl = document.querySelector('.conv-item.unread .conv-message, .conv-item.unread .preview-message');
               const sender = nameEl ? nameEl.innerText.trim() : 'Bạn bè Zalo';
               const text = msgEl ? msgEl.innerText.trim() : 'Có tin nhắn mới';
               const key = sender + ':' + text;
@@ -193,7 +192,7 @@ function getSocialObserverScript(platform) {
               }
             }
           } else if ('${platform}' === 'facebook') {
-            const fbBadge = document.querySelector('[aria-label*="Messenger"] span, [aria-label*="Thông báo"] span');
+            const fbBadge = document.querySelector('[aria-label*="Messenger"] span, [aria-label*="Thông báo"] span, [aria-label*="Notifications"] span');
             if (fbBadge && fbBadge.innerText) {
               const count = fbBadge.innerText.trim();
               if (count && count !== '0' && count !== lastNotifText) {
@@ -202,12 +201,12 @@ function getSocialObserverScript(platform) {
               }
             }
           } else if ('${platform}' === 'instagram') {
-            const instaBadge = document.querySelector('svg[aria-label*="Direct"] + div, svg[aria-label*="Tin nhắn"] + div, svg[aria-label*="Activity"] + div');
+            const instaBadge = document.querySelector('svg[aria-label*="Direct"] + div, svg[aria-label*="Tin nhắn"] + div, a[href*="/direct/"] span');
             if (instaBadge && instaBadge.innerText) {
               const count = instaBadge.innerText.trim();
               if (count && count !== lastNotifText) {
                 lastNotifText = count;
-                dispatchSocialEvent('message', 'Instagram Direct', 'Có ' + count + ' tin nhắn/hoạt động mới', '', window.location.href);
+                dispatchSocialEvent('message', 'Instagram Direct', 'Có ' + count + ' tin nhắn mới', '', window.location.href);
               }
             }
           }
@@ -272,9 +271,18 @@ function createWindow() {
       }
     });
 
-    webviewContents.on('ipc-message', (event, channel, ...args) => {
-      if (channel === 'imagine:social-notif' && mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('social:new-notification', args[0]);
+    // Listen for bridged console notifications
+    webviewContents.on('console-message', (_, level, message) => {
+      if (typeof message === 'string' && message.startsWith('__IMAGINE_NOTIF__')) {
+        try {
+          const jsonStr = message.substring('__IMAGINE_NOTIF__'.length);
+          const data = JSON.parse(jsonStr);
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('social:new-notification', data);
+          }
+        } catch (e) {
+          console.error('Parse social notification error:', e);
+        }
       }
     });
 
@@ -295,9 +303,83 @@ function createWindow() {
     return { action: 'deny' };
   });
 
+  // Active recurring social notification polling timer (every 4s)
+  const socialPollTimer = setInterval(async () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+
+    for (const [_, wc] of attachedWebviews.entries()) {
+      if (!wc || wc.isDestroyed()) continue;
+      try {
+        const url = wc.getURL() || '';
+        let plat = null;
+        if (url.includes('zalo.me')) plat = 'zalo';
+        else if (url.includes('facebook.com')) plat = 'facebook';
+        else if (url.includes('instagram.com')) plat = 'instagram';
+
+        if (plat) {
+          const script = `
+            (() => {
+              const title = document.title || '';
+              const match = title.match(/\\((\\d+)\\)/);
+              const unreadNum = match ? parseInt(match[1]) : 0;
+              let items = [];
+
+              if (window.location.host.includes('zalo.me')) {
+                const unreads = document.querySelectorAll('.conv-item.unread, .chat-message-unread, [data-id*="conv-item"].unread');
+                unreads.forEach(el => {
+                  const name = el.querySelector('.conv-item-title__name, .truncate')?.innerText?.trim() || 'Bạn bè Zalo';
+                  const text = el.querySelector('.conv-message, .preview-message')?.innerText?.trim() || 'Có tin nhắn mới';
+                  items.push({ sender: name, text });
+                });
+              } else if (window.location.host.includes('facebook.com')) {
+                const fbBadge = document.querySelector('[aria-label*="Messenger"] span, [aria-label*="Thông báo"] span');
+                if (fbBadge && fbBadge.innerText && fbBadge.innerText.trim() !== '0') {
+                  items.push({ sender: 'Facebook', text: 'Có ' + fbBadge.innerText.trim() + ' thông báo/tin nhắn mới' });
+                }
+              } else if (window.location.host.includes('instagram.com')) {
+                const directBadge = document.querySelector('svg[aria-label*="Direct"] + div, a[href*="/direct/"] span');
+                if (directBadge && directBadge.innerText) {
+                  items.push({ sender: 'Instagram', text: 'Có ' + directBadge.innerText.trim() + ' tin nhắn Direct mới' });
+                }
+              }
+
+              return { title, unreadNum, items };
+            })()
+          `;
+
+          const res = await wc.executeJavaScript(script);
+          if (res) {
+            if (res.items && res.items.length > 0) {
+              res.items.forEach((item) => {
+                mainWindow.webContents.send('social:new-notification', {
+                  platform: plat,
+                  title: (plat === 'zalo' ? 'Zalo: ' : plat === 'facebook' ? 'Facebook: ' : 'Instagram: ') + item.sender,
+                  message: item.text,
+                  link: url,
+                  type: 'message',
+                  timestamp: Date.now()
+                });
+              });
+            } else if (res.unreadNum > 0) {
+              mainWindow.webContents.send('social:new-notification', {
+                platform: plat,
+                title: plat.toUpperCase() + ' Thông Báo Mới',
+                message: 'Bạn có ' + res.unreadNum + ' tin nhắn/thông báo mới',
+                link: url,
+                type: 'message',
+                timestamp: Date.now()
+              });
+            }
+          }
+        }
+      } catch (_) {}
+    }
+  }, 4000);
+
   setupFolderWatcher(getDefaultScreenshotFolder());
 
   mainWindow.on('closed', () => {
+    clearInterval(socialPollTimer);
     if (folderWatcher) {
       folderWatcher.close();
       folderWatcher = null;
