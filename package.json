@@ -9,7 +9,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"vite\" \"cross-env WAIT_ON_DEV=true node electron/run-electron.mjs\"",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "deploy:gh-pages": "node deploy-gh-pages.mjs"
   },
   "keywords": [
     "electron",

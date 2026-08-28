@@ -64,6 +64,13 @@ const CHROME_UA =
 
 app.commandLine.appendSwitch('disable-blink-features', 'AutomationControlled');
 app.commandLine.appendSwitch('disable-features', 'UserAgentClientHint,OutOfBlinkCors');
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('enable-accelerated-video-decode');
+app.commandLine.appendSwitch('enable-accelerated-2d-canvas');
+app.commandLine.appendSwitch('disable-background-timer-throttling', 'false');
+app.commandLine.appendSwitch('disable-renderer-backgrounding', 'false');
 app.userAgentFallback = FIREFOX_UA;
 
 function configureSession() {
@@ -342,12 +349,12 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  // Active recurring social notification polling timer (every 3.5s)
+  // Active recurring social notification polling timer (throttled to 10s to prevent UI lag)
   const socialPollTimer = setInterval(async () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
 
     for (const [_, wc] of attachedWebviews.entries()) {
-      if (!wc || wc.isDestroyed()) continue;
+      if (!wc || wc.isDestroyed() || (typeof wc.isLoading === 'function' && wc.isLoading())) continue;
       try {
         const url = wc.getURL() || '';
         let plat = null;
@@ -568,7 +575,7 @@ ipcMain.handle('app:get-default-screenshot-folder', () => {
   return currentWatchedFolder || getDefaultScreenshotFolder();
 });
 
-// Scan folder for images
+// Scan folder for images (Ultra-fast, non-blocking scan with thumbnail generation)
 ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
   let folder = targetFolder || currentWatchedFolder || getDefaultScreenshotFolder();
   const validExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'];
@@ -608,14 +615,19 @@ ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
     }
 
     allFoundFiles.sort((a, b) => b.mtime - a.mtime);
-    const topFiles = allFoundFiles.slice(0, 50);
+    const topFiles = allFoundFiles.slice(0, 30);
 
-    const result = topFiles.map((f) => {
+    const result = topFiles.map((f, idx) => {
       let base64 = '';
+      // Generate lightweight thumbnail only for top preview items (prevents multi-megabyte IPC lag)
       try {
-        const buf = fs.readFileSync(f.fullPath);
-        const mime = f.ext === '.jpg' || f.ext === '.jpeg' ? 'image/jpeg' : `image/${f.ext.replace('.', '')}`;
-        base64 = `data:${mime};base64,${buf.toString('base64')}`;
+        if (idx < 15) {
+          const nativeImg = nativeImage.createFromPath(f.fullPath);
+          if (!nativeImg.isEmpty()) {
+            const resized = nativeImg.resize({ width: 260, quality: 'good' });
+            base64 = resized.toDataURL();
+          }
+        }
       } catch (_) {}
 
       return {
@@ -641,21 +653,14 @@ ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
   }
 });
 
-// Automated Native Drag & Drop Simulation + Clipboard Injection
+// Automated Super-Fast Image & Prompt Injection
 ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePath, dataUrl, promptText, autoSend = false }) => {
   try {
     clipboard.clear();
     let img = null;
-    let base64Str = dataUrl || '';
-    let fileName = 'screenshot_' + Date.now() + '.png';
 
     if (filePath && fs.existsSync(filePath)) {
       img = nativeImage.createFromPath(filePath);
-      fileName = path.basename(filePath);
-      const buf = fs.readFileSync(filePath);
-      const ext = path.extname(filePath).toLowerCase().replace('.', '') || 'png';
-      const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
-      base64Str = `data:${mime};base64,${buf.toString('base64')}`;
     } else if (dataUrl) {
       img = nativeImage.createFromDataURL(dataUrl);
     }
@@ -675,88 +680,25 @@ ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePat
     if (targetWc && !targetWc.isDestroyed()) {
       targetWc.focus();
 
-      const escapedBase64 = JSON.stringify(base64Str);
-      const escapedFileName = JSON.stringify(fileName);
-
+      // Instantly focus active input area in the webview
       await targetWc.executeJavaScript(`
         (function() {
-          const b64 = ${escapedBase64};
-          const fname = ${escapedFileName};
-          
-          function b64toBlob(dataURI) {
+          const input = document.querySelector('rich-textarea p, rich-textarea [contenteditable="true"], #prompt-textarea, [contenteditable="true"], textarea, div[role="textbox"]') || document.body;
+          if (input) {
+            input.focus();
             try {
-              var byteString = atob(dataURI.split(',')[1]);
-              var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
-              var ab = new ArrayBuffer(byteString.length);
-              var ia = new Uint8Array(ab);
-              for (var i = 0; i < byteString.length; i++) {
-                ia[i] = byteString.charCodeAt(i);
-              }
-              return new Blob([ab], {type: mimeString});
-            } catch(e) { return null; }
+              document.execCommand('paste');
+            } catch (_) {}
           }
-
-          if (b64) {
-            const blob = b64toBlob(b64);
-            if (blob) {
-              const file = new File([blob], fname, { type: blob.type, lastModified: Date.now() });
-              const dt = new DataTransfer();
-              dt.items.add(file);
-
-              const dropTarget = document.querySelector('rich-textarea, rich-textarea p, #prompt-textarea, [contenteditable="true"], .input-area, div[role="textbox"]') || document.body;
-
-              // 1. Dispatch DragEnter
-              dropTarget.dispatchEvent(new DragEvent('dragenter', {
-                bubbles: true,
-                cancelable: true,
-                dataTransfer: dt
-              }));
-
-              // 2. Dispatch DragOver
-              dropTarget.dispatchEvent(new DragEvent('dragover', {
-                bubbles: true,
-                cancelable: true,
-                dataTransfer: dt
-              }));
-
-              // 3. Dispatch Drop
-              dropTarget.dispatchEvent(new DragEvent('drop', {
-                bubbles: true,
-                cancelable: true,
-                dataTransfer: dt
-              }));
-
-              // 4. Dispatch Paste as backup
-              dropTarget.dispatchEvent(new ClipboardEvent('paste', {
-                bubbles: true,
-                cancelable: true,
-                clipboardData: dt
-              }));
-
-              // 5. Feed File Inputs
-              const fileInputs = document.querySelectorAll('input[type="file"]');
-              fileInputs.forEach(fi => {
-                try {
-                  fi.files = dt.files;
-                  fi.dispatchEvent(new Event('change', { bubbles: true }));
-                  fi.dispatchEvent(new Event('input', { bubbles: true }));
-                } catch(_) {}
-              });
-            }
-          }
-
-          // Focus the text area
-          const input = document.querySelector('rich-textarea p, rich-textarea [contenteditable="true"], #prompt-textarea, [contenteditable="true"], textarea, div[role="textbox"]');
-          if (input) input.focus();
         })();
-      `);
+      `).catch(() => {});
 
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
+      // Native IPC paste command & synthetic Ctrl+V keystroke
       targetWc.paste();
       targetWc.sendInputEvent({ type: 'keyDown', keyCode: 'v', modifiers: ['control'] });
       targetWc.sendInputEvent({ type: 'keyUp', keyCode: 'v', modifiers: ['control'] });
 
+      // Handle prompt injection if specified
       if (promptText && promptText.trim()) {
         setTimeout(async () => {
           if (!targetWc.isDestroyed()) {
@@ -773,13 +715,13 @@ ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePat
                     setTimeout(() => {
                       const sendBtn = document.querySelector('button[aria-label*="Gửi"], button[aria-label*="Send"], button.send-button, [data-test-id="send-button"], button[data-testid="send-button"], button.mat-mdc-icon-button');
                       if (sendBtn && !sendBtn.disabled) sendBtn.click();
-                    }, 400);
+                    }, 250);
                   ` : ''}
                 }
               })();
-            `);
+            `).catch(() => {});
           }
-        }, 800);
+        }, 150);
       }
 
       return true;

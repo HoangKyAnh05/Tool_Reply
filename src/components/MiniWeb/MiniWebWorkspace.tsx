@@ -114,19 +114,37 @@ export const MINI_WEB_SERVICES: MiniWebService[] = [
     icon: '🎵',
     themeColor: 'from-purple-600 to-pink-600',
     badge: 'Suno AI'
+  },
+  {
+    id: 'imagine_web',
+    name: 'Tool Imagine Web',
+    url: 'https://hoangkyanh05.github.io/Tool_Reply/',
+    icon: '✨',
+    themeColor: 'from-violet-600 via-indigo-600 to-pink-600',
+    badge: 'GitHub Page'
   }
 ];
 
 interface MiniWebWorkspaceProps {
   initialServiceId?: string;
+  activeServiceId?: string;
+  onServiceChange?: (serviceId: string) => void;
   autoInjectPrompt?: string;
+  targetUrl?: string;
+  switchToken?: number;
 }
 
 export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
   initialServiceId = 'gemini',
-  autoInjectPrompt
+  activeServiceId: controlledServiceId,
+  onServiceChange,
+  autoInjectPrompt,
+  targetUrl,
+  switchToken
 }) => {
-  const [activeServiceId, setActiveServiceId] = useState<string>(initialServiceId);
+  const [internalServiceId, setInternalServiceId] = useState<string>(controlledServiceId || initialServiceId);
+  const activeServiceId = controlledServiceId || internalServiceId;
+  const [loadedServiceIds, setLoadedServiceIds] = useState<string[]>(() => [activeServiceId || 'gemini']);
   const [quickPromptText, setQuickPromptText] = useState<string>('');
   const [isInjecting, setIsInjecting] = useState<boolean>(false);
   const [isCopying, setIsCopying] = useState<boolean>(false);
@@ -137,8 +155,23 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
   const [latestScreenshotPath, setLatestScreenshotPath] = useState<string | null>(null);
   const webviewRefs = useRef<Record<string, any>>({});
   const quickImageInputRef = useRef<HTMLInputElement>(null);
-
   const activeService = MINI_WEB_SERVICES.find((s) => s.id === activeServiceId) || MINI_WEB_SERVICES[0];
+
+  // Sync active service when navigating from notification or navbar
+  useEffect(() => {
+    const target = (controlledServiceId || initialServiceId || 'gemini').toLowerCase();
+    setInternalServiceId(target);
+    setLoadedServiceIds((prev) => (prev.includes(target) ? prev : [...prev, target]));
+
+    if (targetUrl) {
+      setTimeout(() => {
+        const wv = webviewRefs.current[target];
+        if (wv && typeof wv.loadURL === 'function') {
+          wv.loadURL(targetUrl);
+        }
+      }, 100);
+    }
+  }, [controlledServiceId, initialServiceId, switchToken, targetUrl]);
 
   // Handle F12 shortcut for DevTools Console
   useEffect(() => {
@@ -152,7 +185,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Automatically trigger Auto Ctrl+V into Gemini whenever a new screenshot is taken
+  // Automatically trigger Auto Ctrl+V into Gemini whenever a new screenshot is taken (Instant!)
   useEffect(() => {
     if (window.electronAPI?.onFolderUpdated) {
       window.electronAPI.onFolderUpdated(async (folder: string) => {
@@ -163,14 +196,17 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
               const newestImg = res.files[0];
               setLatestScreenshotPath(newestImg.fullPath);
 
-              // Auto switch to Gemini & paste
-              setActiveServiceId('gemini');
+              // Auto switch to Gemini & paste instantly
+              setInternalServiceId('gemini');
+              onServiceChange?.('gemini');
+              setLoadedServiceIds((prev) => (prev.includes('gemini') ? prev : [...prev, 'gemini']));
+              
               setTimeout(() => {
-                handleInjectAndSend('', newestImg.base64, false, newestImg.name, newestImg.fullPath);
+                handleInjectAndSend('', undefined, false, newestImg.name, newestImg.fullPath);
                 audioService.playBeep('success');
-                setCopiedStatus(`⚡ Đã tự động Ctrl+V ảnh vừa chụp vào Gemini!`);
-                setTimeout(() => setCopiedStatus(null), 4500);
-              }, 350);
+                setCopiedStatus(`⚡ Đã tự động dán ảnh chụp vào Gemini!`);
+                setTimeout(() => setCopiedStatus(null), 3000);
+              }, 50);
             }
           } catch (err) {
             console.error('Auto paste error on screenshot capture:', err);
@@ -178,7 +214,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         }
       });
     }
-  }, [activeServiceId]);
+  }, []);
 
   const handleToggleDevTools = () => {
     audioService.playBeep('click');
@@ -199,34 +235,40 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
     if (window.electronAPI?.selectImageFile) {
       const res = await window.electronAPI.selectImageFile();
       if (res && (res.filePath || res.base64)) {
-        handleInjectAndSend('', res.base64, false, res.fileName, res.filePath);
+        handleInjectAndSend('', undefined, false, res.fileName, res.filePath);
         setCopiedStatus(`✓ Đã nạp ảnh: ${res.fileName}`);
-        setTimeout(() => setCopiedStatus(null), 3500);
+        setTimeout(() => setCopiedStatus(null), 3000);
       }
     } else {
       quickImageInputRef.current?.click();
     }
   };
 
-  // Dedicated 1-Click: Auto Ctrl+V Latest Screenshot into Gemini
+  // Dedicated 1-Click: Auto Ctrl+V Latest Screenshot into Gemini (Super-Fast)
   const handlePasteLatestScreenshotToGemini = async () => {
     audioService.playBeep('decision');
-    setActiveServiceId('gemini');
+    setInternalServiceId('gemini');
+    onServiceChange?.('gemini');
+    setLoadedServiceIds((prev) => (prev.includes('gemini') ? prev : [...prev, 'gemini']));
 
     let targetFile = latestScreenshotPath;
-    let targetBase64: string | undefined = undefined;
 
     if (!targetFile && window.electronAPI?.scanFolderImages) {
       const res = await window.electronAPI.scanFolderImages();
       if (res.files && res.files.length > 0) {
         targetFile = res.files[0].fullPath;
-        targetBase64 = res.files[0].base64;
+        setLatestScreenshotPath(targetFile);
       }
     }
 
-    handleInjectAndSend('', targetBase64, false, 'latest_screenshot.png', targetFile || undefined);
-    setCopiedStatus('✓ Đã tự động Ctrl+V ảnh mới chụp vào Gemini!');
-    setTimeout(() => setCopiedStatus(null), 4000);
+    if (targetFile) {
+      handleInjectAndSend('', undefined, false, 'latest_screenshot.png', targetFile);
+      setCopiedStatus('✓ Đã dán ảnh mới chụp vào Gemini!');
+      setTimeout(() => setCopiedStatus(null), 3000);
+    } else {
+      setCopiedStatus('Chưa có ảnh chụp nào trong thư mục.');
+      setTimeout(() => setCopiedStatus(null), 2500);
+    }
   };
 
   const handleFallbackFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -391,7 +433,9 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
 
   const handleSelectService = (serviceId: string) => {
     audioService.playBeep('click');
-    setActiveServiceId(serviceId);
+    setInternalServiceId(serviceId);
+    onServiceChange?.(serviceId);
+    setLoadedServiceIds((prev) => (prev.includes(serviceId) ? prev : [...prev, serviceId]));
   };
 
   const handleReload = () => {
@@ -658,9 +702,12 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         ) : null}
       </div>
 
-      {/* Main Webview Multi-Instance Container */}
+      {/* Main Webview Multi-Instance Container (Lazy Loaded on Demand) */}
       <div className="flex-1 w-full h-full relative bg-slate-950 overflow-hidden">
         {MINI_WEB_SERVICES.map((svc) => {
+          const isLoaded = loadedServiceIds.includes(svc.id);
+          if (!isLoaded) return null;
+
           const isCurrent = svc.id === activeServiceId;
           const isGoogleService = svc.id === 'gemini';
           const uaToUse = isGoogleService ? FIREFOX_UA : CHROME_UA;

@@ -16,7 +16,8 @@ import {
   BookMarked,
   Bot,
   Globe,
-  Bell
+  Bell,
+  ExternalLink
 } from 'lucide-react';
 import { AppSettings } from '../../types/settings';
 import { audioService } from '../../services/audioService';
@@ -27,6 +28,7 @@ export type ActiveTab = 'ielts' | 'genz' | 'universe' | 'action' | 'fishbone' | 
 interface NavbarProps {
   activeTab: ActiveTab;
   onTabChange: (tab: ActiveTab) => void;
+  onNavigateToMiniWeb?: (serviceId: string) => void;
   settings: AppSettings;
   onToggleSound: () => void;
   openSettingsModal: () => void;
@@ -37,6 +39,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   onTabChange,
+  onNavigateToMiniWeb,
   settings,
   onToggleSound,
   openSettingsModal,
@@ -67,6 +70,16 @@ export const Navbar: React.FC<NavbarProps> = ({
       setTimeout(() => {
         window.location.reload();
       }, 400);
+    }
+  };
+
+  const handleOpenGitHubPage = () => {
+    audioService.playBeep('click');
+    const url = 'https://hoangkyanh05.github.io/Tool_Reply/';
+    if (window.electronAPI?.openExternal) {
+      window.electronAPI.openExternal(url);
+    } else {
+      window.open(url, '_blank');
     }
   };
 
@@ -170,6 +183,45 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Action utilities */}
       <div className="flex items-center gap-2">
+        {/* Quick Direct 1-Click Social Switchers */}
+        <div className="hidden md:flex items-center gap-1 bg-slate-900/90 p-0.5 rounded-xl border border-slate-800">
+          <button
+            onClick={() => {
+              audioService.playBeep('click');
+              onNavigateToMiniWeb?.('zalo');
+            }}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-cyan-950/80 border border-transparent hover:border-cyan-500/40 text-cyan-300 text-xs font-bold transition hover:scale-105 active:scale-95"
+            title="Mở ngay màn hình Zalo Web"
+          >
+            <span>💬</span>
+            <span className="text-[11px]">Zalo</span>
+          </button>
+
+          <button
+            onClick={() => {
+              audioService.playBeep('click');
+              onNavigateToMiniWeb?.('facebook');
+            }}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-blue-950/80 border border-transparent hover:border-blue-500/40 text-blue-300 text-xs font-bold transition hover:scale-105 active:scale-95"
+            title="Mở ngay màn hình Facebook"
+          >
+            <span>📘</span>
+            <span className="text-[11px]">Facebook</span>
+          </button>
+
+          <button
+            onClick={() => {
+              audioService.playBeep('click');
+              onNavigateToMiniWeb?.('instagram');
+            }}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-pink-950/80 border border-transparent hover:border-pink-500/40 text-pink-300 text-xs font-bold transition hover:scale-105 active:scale-95"
+            title="Mở ngay màn hình Instagram"
+          >
+            <span>📸</span>
+            <span className="text-[11px]">Instagram</span>
+          </button>
+        </div>
+
         {/* Social Notification Hub Bell Button */}
         <button
           onClick={() => {
@@ -185,6 +237,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               {unreadNotifs > 99 ? '99+' : unreadNotifs}
             </span>
           )}
+        </button>
+
+        {/* Tool Imagine GitHub Page Button */}
+        <button
+          onClick={handleOpenGitHubPage}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white text-xs font-extrabold transition shadow-md shadow-indigo-600/30 hover:scale-105 active:scale-95 cursor-pointer ring-1 ring-white/20"
+          title="Mở ứng dụng Tool Imagine trên GitHub Page (Web Version)"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
+          <span>Tool Imagine Web</span>
+          <ExternalLink className="w-3 h-3 text-white/90" />
         </button>
 
         {/* Guide Button */}

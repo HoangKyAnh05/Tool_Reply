@@ -291,15 +291,27 @@ export const SocialNotificationHubModal: React.FC<SocialNotificationHubModalProp
             </button>
           </div>
 
-          <span className="text-[11px] text-slate-500 font-medium hidden md:inline">
-            Tự động đồng bộ theo thời gian thực
-          </span>
+          <div className="flex items-center gap-2">
+            {selectedFilter !== 'all' && (
+              <button
+                onClick={() => {
+                  audioService.playBeep('click');
+                  onNavigateToService(selectedFilter);
+                  onClose();
+                }}
+                className="px-3 py-1 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-bold transition shadow-md flex items-center gap-1.5 active:scale-95"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Mở Màn Hình {selectedFilter === 'zalo' ? 'Zalo' : selectedFilter === 'facebook' ? 'Facebook' : 'Instagram'}</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Notification List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2.5 max-h-[50vh]">
           {filteredNotifications.length === 0 ? (
-            <div className="py-10 flex flex-col items-center justify-center text-slate-500 space-y-2.5 text-center px-4">
+            <div className="py-8 flex flex-col items-center justify-center text-slate-500 space-y-3 text-center px-4">
               <div className="w-12 h-12 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center text-indigo-400 shadow-inner">
                 <Bell className="w-6 h-6 opacity-40 animate-pulse" />
               </div>
@@ -309,14 +321,51 @@ export const SocialNotificationHubModal: React.FC<SocialNotificationHubModalProp
                   : `Chưa có thông báo mới từ ${selectedFilter.toUpperCase()}`}
               </h4>
               <p className="text-xs text-slate-400 max-w-md leading-relaxed">
-                Khi bạn đăng nhập tài khoản Facebook, Instagram, hoặc Zalo trong ứng dụng, mọi tin nhắn, bình luận và bài viết mới sẽ tự động được bắt ngầm và hiển thị tức thì tại đây!
+                Bấm trực tiếp vào các nút bên dưới để mở ngay màn hình Zalo, Facebook hoặc Instagram trong ứng dụng:
               </p>
+
+              {/* Direct Open Shortcuts */}
+              <div className="flex items-center gap-2 flex-wrap justify-center pt-1">
+                <button
+                  onClick={() => {
+                    audioService.playBeep('click');
+                    onNavigateToService('zalo');
+                    onClose();
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-cyan-950/80 border border-cyan-500/50 hover:bg-cyan-900 text-cyan-200 text-xs font-bold transition flex items-center gap-1.5 hover:scale-105"
+                >
+                  <span>💬</span> Mở Zalo Web
+                </button>
+
+                <button
+                  onClick={() => {
+                    audioService.playBeep('click');
+                    onNavigateToService('facebook');
+                    onClose();
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-950/80 border border-blue-500/50 hover:bg-blue-900 text-blue-200 text-xs font-bold transition flex items-center gap-1.5 hover:scale-105"
+                >
+                  <span>📘</span> Mở Facebook
+                </button>
+
+                <button
+                  onClick={() => {
+                    audioService.playBeep('click');
+                    onNavigateToService('instagram');
+                    onClose();
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-pink-950/80 border border-pink-500/50 hover:bg-pink-900 text-pink-200 text-xs font-bold transition flex items-center gap-1.5 hover:scale-105"
+                >
+                  <span>📸</span> Mở Instagram
+                </button>
+              </div>
+
               <button
                 onClick={handleAddTestNotification}
-                className="mt-2 px-3 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/50 text-indigo-200 hover:text-white text-xs font-bold transition flex items-center gap-1.5"
+                className="mt-3 px-3 py-1 rounded-xl bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white text-[11px] font-bold transition flex items-center gap-1.5"
               >
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>Bấm vào đây để thử nghiệm thông báo mẫu</span>
+                <Zap className="w-3 h-3 text-amber-400" />
+                <span>Bắn thử 1 thông báo mẫu</span>
               </button>
             </div>
           ) : (
@@ -373,11 +422,15 @@ export const SocialNotificationHubModal: React.FC<SocialNotificationHubModalProp
                       </button>
 
                       <button
-                        onClick={() => handleItemClick(item)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-medium flex items-center gap-1 transition"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleItemClick(item);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white text-[11px] font-bold flex items-center gap-1 transition shadow-sm cursor-pointer"
+                        title={`Mở trực tiếp màn hình ${item.platform.toUpperCase()}`}
                       >
-                        <ExternalLink className="w-3 h-3 text-indigo-400" />
-                        <span>Mở Trang</span>
+                        <ExternalLink className="w-3 h-3 text-indigo-300" />
+                        <span>Mở Trang {item.platform === 'facebook' ? 'Facebook' : item.platform === 'instagram' ? 'Instagram' : item.platform === 'zalo' ? 'Zalo' : ''}</span>
                       </button>
                     </div>
                   </div>

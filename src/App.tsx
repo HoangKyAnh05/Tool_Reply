@@ -20,11 +20,22 @@ import { AppSettings } from './types/settings';
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('miniweb');
   const [activeMiniWebServiceId, setActiveMiniWebServiceId] = useState<string>('gemini');
+  const [activeMiniWebUrl, setActiveMiniWebUrl] = useState<string | undefined>(undefined);
+  const [miniWebSwitchToken, setMiniWebSwitchToken] = useState<number>(0);
   const [settings, setSettings] = useState<AppSettings>(() => storageService.getSettings());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isNotificationHubOpen, setIsNotificationHubOpen] = useState(false);
   const [activeMemeModalIdea, setActiveMemeModalIdea] = useState<GenzVisualIdea | null>(null);
+
+  // Unified Direct Service Navigation
+  const handleNavigateToMiniWebService = (platformId: string, link?: string) => {
+    const validId = (platformId || 'gemini').toLowerCase();
+    setActiveMiniWebServiceId(validId);
+    if (link) setActiveMiniWebUrl(link);
+    setMiniWebSwitchToken(Date.now());
+    setActiveTab('miniweb');
+  };
 
   // Listen for real-time social notifications from Facebook, Instagram, and Zalo webviews
   useEffect(() => {
@@ -55,6 +66,7 @@ export const App: React.FC = () => {
       <Navbar
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab)}
+        onNavigateToMiniWeb={(serviceId) => handleNavigateToMiniWebService(serviceId)}
         settings={settings}
         onToggleSound={handleToggleSound}
         openSettingsModal={() => setIsSettingsOpen(true)}
@@ -64,9 +76,14 @@ export const App: React.FC = () => {
 
       {/* Main Workspace Container */}
       <main className="flex-1 flex overflow-hidden relative">
-        {activeTab === 'miniweb' && (
-          <MiniWebWorkspace initialServiceId={activeMiniWebServiceId} />
-        )}
+        <div className={`w-full h-full ${activeTab === 'miniweb' ? 'flex' : 'hidden'}`}>
+          <MiniWebWorkspace
+            activeServiceId={activeMiniWebServiceId}
+            onServiceChange={(id) => setActiveMiniWebServiceId(id)}
+            targetUrl={activeMiniWebUrl}
+            switchToken={miniWebSwitchToken}
+          />
+        </div>
         {activeTab === 'ielts' && <IeltsWorkspace />}
         {activeTab === 'genz' && <GenzWorkspace />}
         {activeTab === 'universe' && <UniverseWorkspace />}
@@ -81,13 +98,9 @@ export const App: React.FC = () => {
       <SocialNotificationHubModal
         isOpen={isNotificationHubOpen}
         onClose={() => setIsNotificationHubOpen(false)}
-        onNavigateToService={(platformId) => {
-          setActiveMiniWebServiceId(platformId);
-          setActiveTab('miniweb');
-        }}
-        onOpenAIReply={(initialMessage) => {
-          setActiveMiniWebServiceId('gemini');
-          setActiveTab('miniweb');
+        onNavigateToService={(platformId, link) => handleNavigateToMiniWebService(platformId, link)}
+        onOpenAIReply={(_) => {
+          handleNavigateToMiniWebService('gemini');
         }}
       />
 
