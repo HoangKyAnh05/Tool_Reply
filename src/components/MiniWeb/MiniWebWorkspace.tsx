@@ -702,7 +702,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         ) : null}
       </div>
 
-      {/* Main Webview Multi-Instance Container (Lazy Loaded on Demand) */}
+      {/* Main Webview / Web Frame Multi-Instance Container */}
       <div className="flex-1 w-full h-full relative bg-slate-950 overflow-hidden">
         {MINI_WEB_SERVICES.map((svc) => {
           const isLoaded = loadedServiceIds.includes(svc.id);
@@ -711,6 +711,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
           const isCurrent = svc.id === activeServiceId;
           const isGoogleService = svc.id === 'gemini';
           const uaToUse = isGoogleService ? FIREFOX_UA : CHROME_UA;
+          const isElectron = Boolean(window.electronAPI?.isElectron);
 
           return (
             <div
@@ -719,17 +720,48 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
                 isCurrent ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none -z-10'
               }`}
             >
-              <webview
-                ref={(el) => {
-                  if (el) webviewRefs.current[svc.id] = el;
-                }}
-                src={svc.url}
-                partition="persist:ai_miniweb_session"
-                allowpopups={true}
-                useragent={uaToUse}
-                className="w-full h-full border-0 bg-slate-950"
-                style={{ width: '100%', height: '100%', display: 'flex' }}
-              />
+              {isElectron ? (
+                <webview
+                  ref={(el) => {
+                    if (el) webviewRefs.current[svc.id] = el;
+                  }}
+                  src={svc.url}
+                  partition="persist:ai_miniweb_session"
+                  allowpopups={true}
+                  useragent={uaToUse}
+                  className="w-full h-full border-0 bg-slate-950"
+                  style={{ width: '100%', height: '100%', display: 'flex' }}
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 p-6 text-center space-y-4">
+                  <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-3xl shadow-xl shadow-indigo-600/30">
+                    {svc.icon}
+                  </div>
+                  <div className="max-w-md space-y-1.5">
+                    <h3 className="text-xl font-extrabold text-white flex items-center justify-center gap-2">
+                      <span>{svc.name}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono border border-indigo-500/30">
+                        {svc.badge}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Trên phiên bản Web (GitHub Pages/Browser), bạn có thể mở trực tiếp trang web dịch vụ hoặc sử dụng đầy đủ các module IELTS, GenZ Studio, Action Engine, và Fishbone!
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-2">
+                    <a
+                      href={svc.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold transition shadow-lg shadow-indigo-600/30 hover:scale-105"
+                    >
+                      <span>Mở {svc.name} Trên Tab Mới</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
