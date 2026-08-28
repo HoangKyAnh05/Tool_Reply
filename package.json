@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "start": "node server.mjs",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"vite\" \"cross-env WAIT_ON_DEV=true node electron/run-electron.mjs\"",
     "electron:build": "npm run build && electron-builder",
