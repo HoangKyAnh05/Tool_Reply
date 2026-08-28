@@ -391,16 +391,18 @@ ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
   }
 });
 
-// Robust Multi-Stage Image Injection
+// Automated Native Drag & Drop Simulation + Clipboard Injection
 ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePath, dataUrl, promptText, autoSend = false }) => {
   try {
     // 1. Prepare authentic native image bitmap in system clipboard
     clipboard.clear();
     let img = null;
     let base64Str = dataUrl || '';
+    let fileName = 'screenshot_' + Date.now() + '.png';
 
     if (filePath && fs.existsSync(filePath)) {
       img = nativeImage.createFromPath(filePath);
+      fileName = path.basename(filePath);
       const buf = fs.readFileSync(filePath);
       const ext = path.extname(filePath).toLowerCase().replace('.', '') || 'png';
       const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
@@ -425,11 +427,14 @@ ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePat
     if (targetWc && !targetWc.isDestroyed()) {
       targetWc.focus();
 
-      // Dispatch comprehensive guest script (DataTransfer + Click + Input + Drop)
+      // Dispatch full automated Drag & Drop event sequence directly onto Gemini/ChatGPT drop target
       const escapedBase64 = JSON.stringify(base64Str);
+      const escapedFileName = JSON.stringify(fileName);
+
       await targetWc.executeJavaScript(`
         (function() {
           const b64 = ${escapedBase64};
+          const fname = ${escapedFileName};
           
           function b64toBlob(dataURI) {
             try {
@@ -447,21 +452,41 @@ ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePat
           if (b64) {
             const blob = b64toBlob(b64);
             if (blob) {
-              const file = new File([blob], "screenshot_" + Date.now() + ".png", { type: blob.type });
+              const file = new File([blob], fname, { type: blob.type, lastModified: Date.now() });
               const dt = new DataTransfer();
               dt.items.add(file);
 
-              // 1. Dispatch custom paste event
-              const pasteEvt = new ClipboardEvent('paste', {
+              const dropTarget = document.querySelector('rich-textarea, rich-textarea p, #prompt-textarea, [contenteditable="true"], .input-area, div[role="textbox"]') || document.body;
+
+              // 1. Dispatch DragEnter
+              dropTarget.dispatchEvent(new DragEvent('dragenter', {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: dt
+              }));
+
+              // 2. Dispatch DragOver
+              dropTarget.dispatchEvent(new DragEvent('dragover', {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: dt
+              }));
+
+              // 3. Dispatch Drop
+              dropTarget.dispatchEvent(new DragEvent('drop', {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: dt
+              }));
+
+              // 4. Dispatch Paste as backup
+              dropTarget.dispatchEvent(new ClipboardEvent('paste', {
                 bubbles: true,
                 cancelable: true,
                 clipboardData: dt
-              });
-              
-              const target = document.querySelector('rich-textarea, rich-textarea p, #prompt-textarea, [contenteditable="true"], .input-area, textarea') || document.body;
-              target.dispatchEvent(pasteEvt);
+              }));
 
-              // 2. Feed file inputs
+              // 5. Feed File Inputs
               const fileInputs = document.querySelectorAll('input[type="file"]');
               fileInputs.forEach(fi => {
                 try {
@@ -479,7 +504,7 @@ ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePat
         })();
       `);
 
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Trigger OS level paste in guest webview
       targetWc.paste();
