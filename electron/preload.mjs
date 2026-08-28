@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getDefaultScreenshotFolder: () => ipcRenderer.invoke('app:get-default-screenshot-folder'),
   scanFolderImages: (folder) => ipcRenderer.invoke('app:scan-folder-images', folder),
   injectImageToWebview: (params) => ipcRenderer.invoke('app:inject-image-to-webview', params),
+  startDragImage: (filePath) => ipcRenderer.send('app:start-drag-image', filePath),
   copyImageToClipboard: (dataUrl) => ipcRenderer.invoke('app:copy-image-to-clipboard', dataUrl),
   onFolderUpdated: (callback) => {
     ipcRenderer.on('screenshot:folder-updated', (_, folder) => callback(folder));

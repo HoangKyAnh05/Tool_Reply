@@ -29,6 +29,7 @@ declare global {
         promptText?: string;
         autoSend?: boolean;
       }) => Promise<boolean>;
+      startDragImage: (filePath: string) => void;
       copyImageToClipboard: (dataUrl: string) => Promise<boolean>;
       onFolderUpdated: (callback: (folder: string) => void) => void;
       onAuthCompleted: (callback: () => void) => void;

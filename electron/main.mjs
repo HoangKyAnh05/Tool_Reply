@@ -280,6 +280,17 @@ ipcMain.handle('app:open-google-login', (_, url) => {
   return true;
 });
 
+// Start Native Drag operation
+ipcMain.on('app:start-drag-image', (event, filePath) => {
+  if (filePath && fs.existsSync(filePath)) {
+    const icon = nativeImage.createFromPath(filePath).resize({ width: 64, height: 64 });
+    event.sender.startDrag({
+      file: filePath,
+      icon: icon.isEmpty() ? path.join(__dirname, '../assets/app-icon.png') : icon
+    });
+  }
+});
+
 // Select folder for screenshot watching without blocking window
 ipcMain.handle('app:select-screenshot-folder', async () => {
   try {
@@ -380,23 +391,26 @@ ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
   }
 });
 
-// 100% Guaranteed Image Injection Pipeline via Native OS Clipboard & Target WebContents
+// Robust Multi-Stage Image Injection
 ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePath, dataUrl, promptText, autoSend = false }) => {
   try {
     // 1. Prepare authentic native image bitmap in system clipboard
     clipboard.clear();
     let img = null;
+    let base64Str = dataUrl || '';
 
     if (filePath && fs.existsSync(filePath)) {
       img = nativeImage.createFromPath(filePath);
+      const buf = fs.readFileSync(filePath);
+      const ext = path.extname(filePath).toLowerCase().replace('.', '') || 'png';
+      const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
+      base64Str = `data:${mime};base64,${buf.toString('base64')}`;
     } else if (dataUrl) {
       img = nativeImage.createFromDataURL(dataUrl);
     }
 
     if (img && !img.isEmpty()) {
       clipboard.writeImage(img);
-    } else {
-      return false;
     }
 
     // 2. Find target WebContents
@@ -411,9 +425,55 @@ ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePat
     if (targetWc && !targetWc.isDestroyed()) {
       targetWc.focus();
 
-      // Focus the chat input box
+      // Dispatch comprehensive guest script (DataTransfer + Click + Input + Drop)
+      const escapedBase64 = JSON.stringify(base64Str);
       await targetWc.executeJavaScript(`
         (function() {
+          const b64 = ${escapedBase64};
+          
+          function b64toBlob(dataURI) {
+            try {
+              var byteString = atob(dataURI.split(',')[1]);
+              var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+              var ab = new ArrayBuffer(byteString.length);
+              var ia = new Uint8Array(ab);
+              for (var i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+              }
+              return new Blob([ab], {type: mimeString});
+            } catch(e) { return null; }
+          }
+
+          if (b64) {
+            const blob = b64toBlob(b64);
+            if (blob) {
+              const file = new File([blob], "screenshot_" + Date.now() + ".png", { type: blob.type });
+              const dt = new DataTransfer();
+              dt.items.add(file);
+
+              // 1. Dispatch custom paste event
+              const pasteEvt = new ClipboardEvent('paste', {
+                bubbles: true,
+                cancelable: true,
+                clipboardData: dt
+              });
+              
+              const target = document.querySelector('rich-textarea, rich-textarea p, #prompt-textarea, [contenteditable="true"], .input-area, textarea') || document.body;
+              target.dispatchEvent(pasteEvt);
+
+              // 2. Feed file inputs
+              const fileInputs = document.querySelectorAll('input[type="file"]');
+              fileInputs.forEach(fi => {
+                try {
+                  fi.files = dt.files;
+                  fi.dispatchEvent(new Event('change', { bubbles: true }));
+                  fi.dispatchEvent(new Event('input', { bubbles: true }));
+                } catch(_) {}
+              });
+            }
+          }
+
+          // Focus the text area
           const input = document.querySelector('rich-textarea p, rich-textarea [contenteditable="true"], #prompt-textarea, [contenteditable="true"], textarea, div[role="textbox"]');
           if (input) input.focus();
         })();
@@ -484,6 +544,12 @@ ipcMain.handle('app:select-image-file', async () => {
     const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
     const base64 = `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
     const fileName = path.basename(filePath);
+
+    try {
+      clipboard.clear();
+      const img = nativeImage.createFromPath(filePath);
+      clipboard.writeImage(img);
+    } catch (_) {}
 
     return {
       filePath,

@@ -12,7 +12,8 @@ import {
   ExternalLink,
   FolderSearch,
   CheckCircle2,
-  HardDrive
+  HardDrive,
+  Move
 } from 'lucide-react';
 import { audioService } from '../../services/audioService';
 
@@ -112,6 +113,13 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
     }
   };
 
+  const handleDragStart = (e: React.DragEvent, fullPath: string) => {
+    e.preventDefault();
+    if (window.electronAPI?.startDragImage) {
+      window.electronAPI.startDragImage(fullPath);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -121,10 +129,10 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
         <form onSubmit={handleManualFolderSubmit} className="flex items-center gap-2 min-w-0 flex-1">
           <div className="flex items-center gap-1.5 font-bold text-amber-300 shrink-0">
             <Folder className="w-4 h-4 text-amber-400" />
-            <span className="hidden sm:inline">Thư Mục Ảnh:</span>
+            <span className="hidden sm:inline">Thư Mục:</span>
           </div>
 
-          <div className="flex items-center bg-slate-950 border border-slate-800 focus-within:border-cyan-500 rounded-lg px-2 py-1 flex-1 max-w-xl">
+          <div className="flex items-center bg-slate-950 border border-slate-800 focus-within:border-cyan-500 rounded-lg px-2 py-1 flex-1 max-w-lg">
             <input
               type="text"
               value={inputFolder}
@@ -152,6 +160,10 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
         </form>
 
         <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[10px] text-slate-400 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800 hidden md:inline">
+            💡 Mẹo: Có thể <b>kéo thả (Drag & Drop)</b> ảnh trực tiếp vào ô chat!
+          </span>
+
           <button
             onClick={() => loadImages(currentFolder)}
             disabled={isLoading}
@@ -190,14 +202,16 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
             return (
               <div
                 key={img.fullPath + idx}
-                className="w-44 h-full bg-slate-950 rounded-2xl border border-slate-800 hover:border-indigo-500/50 p-2 flex flex-col justify-between shrink-0 group transition-all hover:scale-[1.02] shadow-md"
+                draggable
+                onDragStart={(e) => handleDragStart(e, img.fullPath)}
+                className="w-44 h-full bg-slate-950 rounded-2xl border border-slate-800 hover:border-indigo-500/50 p-2 flex flex-col justify-between shrink-0 group transition-all hover:scale-[1.02] shadow-md cursor-grab active:cursor-grabbing"
               >
                 {/* Thumbnail */}
                 <div className="w-full h-24 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 relative">
                   <img
                     src={img.base64}
                     alt={img.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition"
+                    className="w-full h-full object-cover group-hover:scale-105 transition pointer-events-none"
                   />
                   <span className="absolute bottom-1 right-1 px-1.5 py-0.2 rounded bg-black/70 text-[9px] text-slate-300 font-mono">
                     {timeAgo}
@@ -214,7 +228,7 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
                   <button
                     onClick={() => onSelectImage(img.base64, img.name, img.fullPath)}
                     className="flex-1 py-1 rounded-lg bg-amber-600/30 hover:bg-amber-600 border border-amber-500/40 text-amber-200 hover:text-white text-[10px] font-bold flex items-center justify-center gap-1 transition"
-                    title="Chuyển thành Bitmap chụp màn hình và dán thẳng vào chat"
+                    title="Bắn ảnh vào ô chat"
                   >
                     <Zap className="w-3 h-3 text-amber-400" />
                     <span>Dán Vào Chat</span>
