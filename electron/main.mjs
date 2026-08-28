@@ -71,7 +71,6 @@ function getAllCommonImageFolders() {
 
 function getDefaultScreenshotFolder() {
   const folders = getAllCommonImageFolders();
-  // Find first folder that actually contains images
   const validExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'];
   for (const f of folders) {
     try {
@@ -259,34 +258,37 @@ ipcMain.handle('app:open-google-login', (_, url) => {
   return true;
 });
 
-// Select folder for screenshot watching
+// Select folder for screenshot watching without blocking window
 ipcMain.handle('app:select-screenshot-folder', async () => {
-  if (!mainWindow) return null;
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Chọn thư mục chứa ảnh chụp màn hình',
-    properties: ['openDirectory']
-  });
+  try {
+    const result = await dialog.showOpenDialog({
+      title: 'Chọn thư mục chứa ảnh chụp màn hình',
+      properties: ['openDirectory', 'dontAddToRecent']
+    });
 
-  if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+    if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+      return null;
+    }
+
+    const selectedPath = result.filePaths[0];
+    setupFolderWatcher(selectedPath);
+    return selectedPath;
+  } catch (e) {
+    console.error('select folder error:', e);
     return null;
   }
-
-  const selectedPath = result.filePaths[0];
-  setupFolderWatcher(selectedPath);
-  return selectedPath;
 });
 
 ipcMain.handle('app:get-default-screenshot-folder', () => {
   return currentWatchedFolder || getDefaultScreenshotFolder();
 });
 
-// Scan folder for images (or auto-aggregate across common folders if target is empty)
+// Scan folder for images
 ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
   let folder = targetFolder || currentWatchedFolder || getDefaultScreenshotFolder();
   const validExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'];
 
   let foldersToScan = [folder];
-  // If specific folder not requested and current folder has no images, search all common image folders
   if (!targetFolder) {
     foldersToScan = getAllCommonImageFolders();
   }
@@ -358,21 +360,20 @@ ipcMain.handle('app:scan-folder-images', async (_, targetFolder) => {
 
 // Select exact image file
 ipcMain.handle('app:select-image-file', async () => {
-  if (!mainWindow) return null;
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Chọn đúng ảnh chụp màn hình từ máy tính',
-    properties: ['openFile'],
-    filters: [
-      { name: 'Ảnh chụp (PNG, JPG, WebP)', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] }
-    ]
-  });
-
-  if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
-    return null;
-  }
-
-  const filePath = result.filePaths[0];
   try {
+    const result = await dialog.showOpenDialog({
+      title: 'Chọn đúng ảnh chụp màn hình từ máy tính',
+      properties: ['openFile', 'dontAddToRecent'],
+      filters: [
+        { name: 'Ảnh chụp (PNG, JPG, WebP)', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] }
+      ]
+    });
+
+    if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+      return null;
+    }
+
+    const filePath = result.filePaths[0];
     const fileBuffer = fs.readFileSync(filePath);
     const ext = path.extname(filePath).toLowerCase().replace('.', '') || 'png';
     const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;

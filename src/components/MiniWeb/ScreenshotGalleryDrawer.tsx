@@ -10,10 +10,9 @@ import {
   X, 
   Clock, 
   ExternalLink,
-  ChevronUp,
-  ChevronDown,
-  Sparkles,
-  FolderSearch
+  FolderSearch,
+  CheckCircle2,
+  HardDrive
 } from 'lucide-react';
 import { audioService } from '../../services/audioService';
 
@@ -38,7 +37,8 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
   onSelectImage,
   onAnalyzeImage
 }) => {
-  const [currentFolder, setCurrentFolder] = useState<string>('Tự động quét toàn bộ thư mục ảnh...');
+  const [currentFolder, setCurrentFolder] = useState<string>('');
+  const [inputFolder, setInputFolder] = useState<string>('');
   const [images, setImages] = useState<ScannedImage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -50,6 +50,7 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
         const res = await window.electronAPI.scanFolderImages(folder);
         if (res.folder) {
           setCurrentFolder(res.folder);
+          setInputFolder(res.folder);
         }
         setImages(res.files || []);
       } catch (e) {
@@ -65,7 +66,6 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
     }
   }, [isOpen]);
 
-  // Auto update when new screenshot is saved
   useEffect(() => {
     if (window.electronAPI?.onFolderUpdated) {
       window.electronAPI.onFolderUpdated((folder: string) => {
@@ -81,8 +81,17 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
       const folder = await window.electronAPI.selectScreenshotFolder();
       if (folder) {
         setCurrentFolder(folder);
+        setInputFolder(folder);
         loadImages(folder);
       }
+    }
+  };
+
+  const handleManualFolderSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputFolder.trim()) {
+      audioService.playBeep('click');
+      loadImages(inputFolder.trim());
     }
   };
 
@@ -99,33 +108,49 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
 
   return (
     <div className="h-64 border-t border-slate-800 bg-slate-900/95 backdrop-blur-xl flex flex-col z-30 shrink-0 shadow-2xl transition-all">
-      {/* Header */}
-      <div className="h-10 border-b border-slate-800/80 px-4 flex items-center justify-between text-xs shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="flex items-center gap-1.5 font-bold text-amber-300">
+      {/* Header with Direct Path Input & Native Picker */}
+      <div className="h-11 border-b border-slate-800/80 px-4 flex items-center justify-between text-xs shrink-0 gap-2">
+        <form onSubmit={handleManualFolderSubmit} className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 font-bold text-amber-300 shrink-0">
             <Folder className="w-4 h-4 text-amber-400" />
-            <span>Thư Mục Ảnh Trên Máy:</span>
+            <span className="hidden sm:inline">Thư Mục Ảnh:</span>
           </div>
-          <span className="text-[11px] text-slate-300 font-mono truncate max-w-sm bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800" title={currentFolder}>
-            {currentFolder}
-          </span>
+
+          <div className="flex items-center bg-slate-950 border border-slate-800 focus-within:border-cyan-500 rounded-lg px-2 py-1 flex-1 max-w-lg">
+            <input
+              type="text"
+              value={inputFolder}
+              onChange={(e) => setInputFolder(e.target.value)}
+              placeholder="Dán hoặc nhập đường dẫn thư mục ảnh (VD: C:\Users\Admin\Pictures)..."
+              className="w-full bg-transparent border-0 outline-none text-slate-200 text-xs font-mono placeholder-slate-600"
+            />
+            <button
+              type="submit"
+              className="px-2 py-0.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[10px] ml-1 shrink-0 transition"
+            >
+              Quét
+            </button>
+          </div>
+
           <button
+            type="button"
             onClick={handleChangeFolder}
-            className="flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white text-[11px] font-bold transition shrink-0"
+            className="flex items-center gap-1 px-3 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white text-[11px] font-bold transition shrink-0 shadow-sm"
+            title="Mở cửa sổ chọn thư mục của Windows"
           >
             <FolderSearch className="w-3.5 h-3.5" />
-            <span>Đổi Thư Mục</span>
+            <span>📁 Chọn Thư Mục</span>
           </button>
-        </div>
+        </form>
 
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={() => loadImages()}
+            onClick={() => loadImages(currentFolder)}
             disabled={isLoading}
             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
           >
             <RefreshCw className={`w-3 h-3 text-cyan-400 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Quét Lại</span>
+            <span>Làm Mới</span>
           </button>
 
           <button
@@ -142,7 +167,9 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
         {images.length === 0 ? (
           <div className="w-full flex flex-col items-center justify-center text-slate-400 space-y-2">
             <ImageIcon className="w-8 h-8 opacity-40 text-cyan-400" />
-            <p className="text-xs font-semibold">Chưa tìm thấy ảnh trong thư mục này. Bấm <span className="text-amber-300 font-bold">"Đổi Thư Mục"</span> ở trên để trỏ đúng vào thư mục bạn đang lưu ảnh trên máy tính!</p>
+            <p className="text-xs font-semibold">
+              Chưa tìm thấy ảnh. Bấm <span className="text-amber-300 font-bold">"📁 Chọn Thư Mục"</span> ở trên hoặc dán đường dẫn thư mục ảnh của bạn vào ô tìm kiếm!
+            </p>
           </div>
         ) : (
           images.map((img, idx) => {
