@@ -105,8 +105,8 @@ export const ScreenshotGalleryDrawer: React.FC<ScreenshotGalleryDrawerProps> = (
 
   const handleCopyImageToClipboard = async (img: ScannedImage, index: number) => {
     audioService.playBeep('click');
-    if (window.electronAPI?.writeImageBitmapToClipboard) {
-      await window.electronAPI.writeImageBitmapToClipboard(img.fullPath);
+    if (window.electronAPI?.captureAndPasteImage) {
+      await window.electronAPI.captureAndPasteImage(img.fullPath);
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
     }
