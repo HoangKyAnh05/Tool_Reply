@@ -2,11 +2,23 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DIST_DIR = path.join(__dirname, 'dist');
 const PORT = process.env.PORT || 3000;
+
+// Auto-build on startup if dist directory does not exist
+if (!fs.existsSync(path.join(DIST_DIR, 'index.html'))) {
+  console.log('dist/index.html not found. Building production bundle automatically...');
+  try {
+    execSync('npm run build', { cwd: __dirname, stdio: 'inherit' });
+    console.log('✓ Automatic build finished!');
+  } catch (err) {
+    console.error('Automatic build error:', err.message);
+  }
+}
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
