@@ -76,13 +76,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               ULTIMATE
             </span>
           </div>
-          <p className="text-[10px] text-slate-400 font-medium">Gemini • ChatGPT • IELTS • GenZify • Universes • Action</p>
+          <p className="text-[10px] text-slate-400 font-medium">Gemini • ChatGPT • FB • Insta • Zalo • IELTS</p>
         </div>
       </div>
 
       {/* Main Navigation Tabs */}
       <nav className="flex items-center bg-slate-900/80 p-1 rounded-2xl border border-slate-800/80 shadow-inner gap-1">
-        {/* 1. Gemini / ChatGPT MiniWeb */}
+        {/* 1. MiniWeb Browser */}
         <button
           onClick={() => onTabChange('miniweb')}
           className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${activeTab === 'miniweb'
@@ -90,8 +90,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               : 'text-cyan-300 hover:text-white hover:bg-slate-800/80 bg-blue-950/30 border border-blue-500/30'
             }`}
         >
-          <span className="text-sm">✨</span>
-          <span>Gemini & ChatGPT MiniWeb</span>
+          <span className="text-sm">🌐</span>
+          <span>Mini Browser (AI & Social)</span>
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
         </button>
 

@@ -42,6 +42,9 @@ import { fishboneService } from '../../services/fishboneService';
 import { ChatScreenshotAnalyzerModal } from './ChatScreenshotAnalyzerModal';
 import { ScreenshotGalleryDrawer } from './ScreenshotGalleryDrawer';
 
+const CHROME_UA = 
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+
 const FIREFOX_UA = 
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0';
 
@@ -72,6 +75,30 @@ export const MINI_WEB_SERVICES: MiniWebService[] = [
     badge: 'OpenAI'
   },
   {
+    id: 'facebook',
+    name: 'Facebook',
+    url: 'https://www.facebook.com',
+    icon: '📘',
+    themeColor: 'from-blue-600 to-sky-600',
+    badge: 'Meta'
+  },
+  {
+    id: 'instagram',
+    name: 'Instagram',
+    url: 'https://www.instagram.com',
+    icon: '📸',
+    themeColor: 'from-pink-600 via-rose-600 to-amber-600',
+    badge: 'Meta'
+  },
+  {
+    id: 'zalo',
+    name: 'Zalo Web',
+    url: 'https://chat.zalo.me',
+    icon: '💬',
+    themeColor: 'from-blue-500 to-cyan-500',
+    badge: 'Zalo'
+  },
+  {
     id: 'claude',
     name: 'Claude AI',
     url: 'https://claude.ai',
@@ -81,7 +108,7 @@ export const MINI_WEB_SERVICES: MiniWebService[] = [
   },
   {
     id: 'suno',
-    name: 'AI Music Generator',
+    name: 'Suno Music',
     url: 'https://suno.com',
     icon: '🎵',
     themeColor: 'from-purple-600 to-pink-600',
@@ -213,7 +240,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
               cancelable: true
             });
 
-            const inputContainer = document.querySelector('rich-textarea, #prompt-textarea, [contenteditable="true"], .input-area');
+            const inputContainer = document.querySelector('rich-textarea, #prompt-textarea, [contenteditable="true"], .input-area, div[role="textbox"]');
             if (inputContainer) {
               inputContainer.dispatchEvent(pasteEvent);
             }
@@ -441,7 +468,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
     if (window.electronAPI?.openSeparateWindow) {
       await window.electronAPI.openSeparateWindow({
         url: activeService.url,
-        title: `${activeService.name} - Imagine Mini Browser`,
+        title: `${activeService.name} - Mini Browser`,
         width: 1280,
         height: 850
       });
@@ -505,15 +532,15 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
             </button>
           </div>
 
-          {/* Quick AI Presets */}
-          <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-xl border border-slate-800">
+          {/* Social & AI Web Tabs (Gemini, ChatGPT, Facebook, Instagram, Zalo, Claude, Suno) */}
+          <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-xl border border-slate-800 overflow-x-auto no-scrollbar max-w-xl">
             {MINI_WEB_SERVICES.map((svc) => {
               const isSelected = svc.id === activeServiceId;
               return (
                 <button
                   key={svc.id}
                   onClick={() => handleSelectService(svc.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 ${
                     isSelected
                       ? 'bg-gradient-to-r ' + svc.themeColor + ' text-white shadow-md'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
@@ -534,30 +561,30 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
             handleInjectAndSend(quickPromptText, undefined, true);
             setQuickPromptText('');
           }}
-          className="flex-1 max-w-md mx-2"
+          className="flex-1 max-w-xs mx-1 hidden md:block"
         >
-          <div className="flex items-center bg-slate-950 border border-slate-800 hover:border-indigo-500/50 focus-within:border-indigo-500 rounded-xl px-3 py-1 text-xs text-slate-200 transition shadow-inner">
-            <Zap className="w-3.5 h-3.5 text-amber-400 mr-2 shrink-0 animate-pulse" />
+          <div className="flex items-center bg-slate-950 border border-slate-800 hover:border-indigo-500/50 focus-within:border-indigo-500 rounded-xl px-2.5 py-1 text-xs text-slate-200 transition shadow-inner">
+            <Zap className="w-3.5 h-3.5 text-amber-400 mr-1.5 shrink-0 animate-pulse" />
             <input
               type="text"
               value={quickPromptText}
               onChange={(e) => setQuickPromptText(e.target.value)}
-              placeholder="Nhập prompt muốn tự động gửi vào ô chat..."
+              placeholder="Bắn prompt vào chat..."
               className="w-full bg-transparent border-0 outline-none text-slate-100 text-xs placeholder-slate-500 font-medium"
             />
             <button
               type="submit"
               disabled={isInjecting || !quickPromptText.trim()}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] shrink-0 transition disabled:opacity-40"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] shrink-0 transition disabled:opacity-40"
             >
-              <Send className="w-3 h-3" />
-              <span>{isInjecting ? 'Đang gửi...' : 'Gửi'}</span>
+              <Send className="w-2.5 h-2.5" />
+              <span>Gửi</span>
             </button>
           </div>
         </form>
 
         {/* Right Tools: Copy Response Buttons & DevTools */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* DevTools Button */}
           <button
             onClick={handleToggleDevTools}
@@ -571,40 +598,29 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
           <button
             onClick={() => handleCopyLatestResponse(false)}
             disabled={isCopying}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600 text-emerald-300 hover:text-white text-xs font-bold transition shadow-sm active:scale-95"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600 text-emerald-300 hover:text-white text-xs font-bold transition shadow-sm active:scale-95"
             title="Quét và sao chép câu trả lời AI mới nhất vào Clipboard"
           >
             {copiedStatus?.includes('AI') ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-emerald-400" />}
-            <span className="hidden sm:inline">📋 Sao Chép Kết Quả</span>
-          </button>
-
-          {/* Copy Code / JSON Button */}
-          <button
-            onClick={() => handleCopyLatestResponse(true)}
-            disabled={isCopying}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/40 text-slate-300 hover:text-cyan-300 text-xs font-semibold transition"
-            title="Chỉ trích xuất và sao chép các khối Code/JSON trong câu trả lời"
-          >
-            <Code className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden sm:inline">Code/JSON</span>
+            <span className="hidden lg:inline">Sao Chép</span>
           </button>
 
           <button
             onClick={handleOpenGoogleLogin}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600/20 border border-amber-500/40 hover:bg-amber-600 text-amber-300 hover:text-white text-xs font-bold transition shadow-sm"
-            title="Đăng nhập Google"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-600/20 border border-amber-500/40 hover:bg-amber-600 text-amber-300 hover:text-white text-xs font-bold transition shadow-sm"
+            title="Đăng nhập tài khoản"
           >
             <Key className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">🔐 Đăng Nhập</span>
+            <span className="hidden lg:inline">Đăng Nhập</span>
           </button>
 
           <button
             onClick={handleOpenSeparateWindow}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold shadow-md shadow-indigo-600/30 hover:scale-105 active:scale-95 transition"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold shadow-md shadow-indigo-600/30 hover:scale-105 active:scale-95 transition"
             title="Mở cửa sổ riêng"
           >
             <Maximize2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">🪟 Cửa Sổ Riêng</span>
+            <span className="hidden lg:inline">Cửa Sổ Riêng</span>
           </button>
         </div>
       </div>
@@ -613,35 +629,8 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
       <div className="h-9 bg-slate-900/60 border-b border-slate-800/80 px-4 flex items-center justify-between text-xs shrink-0 overflow-x-auto gap-2">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-            ⚡ TỰ ĐỘNG BẮN PROMPT SANG CHAT:
+            ⚡ TIỆN ÍCH TIN NHẮN & PROMPT:
           </span>
-
-          <button
-            onClick={handleInjectIeltsPrompt}
-            disabled={isInjecting}
-            className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-indigo-950 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/80 hover:text-white text-[11px] font-semibold transition"
-          >
-            <BrainCircuit className="w-3 h-3 text-indigo-400" />
-            <span>🧠 Master Prompt IELTS</span>
-          </button>
-
-          <button
-            onClick={handleInjectFishbonePrompt}
-            disabled={isInjecting}
-            className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-teal-950 border border-teal-500/40 text-teal-300 hover:bg-teal-900/80 hover:text-white text-[11px] font-semibold transition"
-          >
-            <Fish className="w-3 h-3 text-teal-400" />
-            <span>🐟 Lộ Trình Nâng Cấp Fishbone</span>
-          </button>
-
-          <button
-            onClick={handleInjectUniversePrompt}
-            disabled={isInjecting}
-            className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-cyan-950 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/80 hover:text-white text-[11px] font-semibold transition"
-          >
-            <Orbit className="w-3 h-3 text-cyan-400" />
-            <span>🌌 Phân Tích 5 Vũ Trụ Quyết Định</span>
-          </button>
 
           {/* BUTTON: Screenshot Analyzer & Message Generator */}
           <button
@@ -649,7 +638,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
             className="flex items-center gap-1 px-3 py-0.5 rounded-lg bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 text-white font-bold text-[11px] shadow-sm hover:scale-105 transition"
           >
             <Camera className="w-3.5 h-3.5 text-pink-200" />
-            <span>📸 Phân Tích Ảnh Chat & Gen Lời Nhắn</span>
+            <span>📸 Phân Tích Tin Nhắn Zalo/FB & Gen Lời Đối Đáp</span>
           </button>
 
           {/* DEDICATED BUTTON: Bắn Ảnh Riêng (Chỉ Dán Ảnh Vào Chat) */}
@@ -659,10 +648,10 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
             title="Mở hộp thoại Windows để chọn đúng file ảnh từ ổ cứng"
           >
             <ImageUp className="w-3.5 h-3.5 text-amber-400" />
-            <span>📷 Bắn Ảnh Vào Chat (Chỉ Dán Ảnh)</span>
+            <span>📷 Bắn Ảnh Vào Chat</span>
           </button>
 
-          {/* NEW BUTTON: LIVE SCREENSHOT FOLDER GALLERY */}
+          {/* BUTTON: LIVE SCREENSHOT FOLDER GALLERY */}
           <button
             onClick={() => setIsGalleryDrawerOpen(!isGalleryDrawerOpen)}
             className={`flex items-center gap-1 px-3 py-0.5 rounded-lg font-bold text-[11px] shadow-sm hover:scale-105 transition ${
@@ -674,6 +663,15 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
           >
             <FolderOpen className="w-3.5 h-3.5 text-cyan-400" />
             <span>📂 Quét Thư Mục Ảnh (Live Sync)</span>
+          </button>
+
+          <button
+            onClick={handleInjectIeltsPrompt}
+            disabled={isInjecting}
+            className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-indigo-950 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/80 hover:text-white text-[11px] font-semibold transition"
+          >
+            <BrainCircuit className="w-3 h-3 text-indigo-400" />
+            <span>🧠 Master IELTS</span>
           </button>
 
           <input
@@ -694,15 +692,17 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
         ) : isInjecting ? (
           <span className="text-[11px] font-bold text-emerald-400 animate-pulse flex items-center gap-1 font-mono">
             <Zap className="w-3 h-3 text-amber-400" />
-            <span>Đang nạp file ảnh từ ổ cứng vào ô chat...</span>
+            <span>Đang nạp file ảnh vào ô chat...</span>
           </span>
         ) : null}
       </div>
 
-      {/* Main Webview Multi-Instance Container */}
+      {/* Main Webview Multi-Instance Container (Persisted Sessions for FB, Insta, Zalo, Gemini, ChatGPT) */}
       <div className="flex-1 w-full h-full relative bg-slate-950 overflow-hidden">
         {MINI_WEB_SERVICES.map((svc) => {
           const isCurrent = svc.id === activeServiceId;
+          const isGoogleService = svc.id === 'gemini';
+          const uaToUse = isGoogleService ? FIREFOX_UA : CHROME_UA;
 
           return (
             <div
@@ -718,7 +718,7 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
                 src={svc.url}
                 partition="persist:ai_miniweb_session"
                 allowpopups={true}
-                useragent={FIREFOX_UA}
+                useragent={uaToUse}
                 className="w-full h-full border-0 bg-slate-950"
                 style={{ width: '100%', height: '100%', display: 'flex' }}
               />

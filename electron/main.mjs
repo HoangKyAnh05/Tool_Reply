@@ -135,7 +135,7 @@ function createWindow() {
   }
 
   mainWindow.webContents.on('did-attach-webview', (_, webviewContents) => {
-    webviewContents.setUserAgent(FIREFOX_UA);
+    webviewContents.setUserAgent(CHROME_UA);
 
     webviewContents.setWindowOpenHandler(({ url }) => {
       openAuthWindow(url);
@@ -144,7 +144,7 @@ function createWindow() {
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.includes('accounts.google.com') || url.includes('auth0.com') || url.includes('openai.com')) {
+    if (url.includes('accounts.google.com') || url.includes('auth0.com') || url.includes('openai.com') || url.includes('facebook.com') || url.includes('instagram.com') || url.includes('zalo.me')) {
       openAuthWindow(url);
       return { action: 'deny' };
     }
@@ -167,26 +167,36 @@ function createWindow() {
 }
 
 function openAuthWindow(url = 'https://accounts.google.com') {
+  const isGoogle = url.includes('accounts.google.com') || url.includes('myaccount.google.com');
+  const winUA = isGoogle ? FIREFOX_UA : CHROME_UA;
+
   const authWin = new BrowserWindow({
-    width: 600,
+    width: 650,
     height: 750,
-    title: 'Đăng Nhập Google / OpenAI',
+    title: 'Đăng Nhập Tài Khoản',
     backgroundColor: '#1e293b',
     autoHideMenuBar: true,
     webPreferences: {
       partition: 'persist:ai_miniweb_session',
       nodeIntegration: false,
       contextIsolation: true,
-      userAgent: FIREFOX_UA,
+      userAgent: winUA,
     },
     icon: path.join(__dirname, '../assets/app-icon.png'),
   });
 
-  authWin.webContents.setUserAgent(FIREFOX_UA);
+  authWin.webContents.setUserAgent(winUA);
   authWin.loadURL(url);
 
   authWin.webContents.on('did-navigate', (_, navUrl) => {
-    if (navUrl.includes('myaccount.google.com') || navUrl.includes('gemini.google.com') || navUrl.includes('chatgpt.com')) {
+    if (
+      navUrl.includes('myaccount.google.com') || 
+      navUrl.includes('gemini.google.com') || 
+      navUrl.includes('chatgpt.com') ||
+      navUrl.includes('facebook.com/home') ||
+      navUrl.includes('instagram.com') ||
+      navUrl.includes('chat.zalo.me')
+    ) {
       setTimeout(() => {
         if (!authWin.isDestroyed()) {
           authWin.close();
@@ -194,7 +204,7 @@ function openAuthWindow(url = 'https://accounts.google.com') {
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.webContents.send('auth:completed');
         }
-      }, 1200);
+      }, 1500);
     }
   });
 
@@ -258,7 +268,7 @@ ipcMain.handle('app:open-google-login', (_, url) => {
   return true;
 });
 
-// Select folder for screenshot watching without blocking window
+// Select folder for screenshot watching
 ipcMain.handle('app:select-screenshot-folder', async () => {
   try {
     const result = await dialog.showOpenDialog({
@@ -424,6 +434,9 @@ ipcMain.handle('app:open-separate-window', (_, { url, title = 'AI Mini Web', wid
     }
   }
 
+  const isGoogle = targetUrl.includes('accounts.google.com');
+  const winUA = isGoogle ? FIREFOX_UA : CHROME_UA;
+
   const subWin = new BrowserWindow({
     width,
     height,
@@ -434,12 +447,12 @@ ipcMain.handle('app:open-separate-window', (_, { url, title = 'AI Mini Web', wid
       partition: 'persist:ai_miniweb_session',
       nodeIntegration: false,
       contextIsolation: true,
-      userAgent: FIREFOX_UA,
+      userAgent: winUA,
     },
     icon: path.join(__dirname, '../assets/app-icon.png'),
   });
 
-  subWin.webContents.setUserAgent(FIREFOX_UA);
+  subWin.webContents.setUserAgent(winUA);
   subWin.loadURL(targetUrl);
 
   separateWindows.set(targetUrl, subWin);
