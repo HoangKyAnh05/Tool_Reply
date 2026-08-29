@@ -22,8 +22,10 @@ import { IeltsVocabTable } from './IeltsVocabTable';
 import { IeltsConnectorTable } from './IeltsConnectorTable';
 import { IeltsRecallQuiz } from './IeltsRecallQuiz';
 import { IeltsPromptModal } from './IeltsPromptModal';
-import { IeltsPart1BankModal } from './IeltsPart1BankModal';
+import { IeltsPartBankModal, SelectedQuestionPayload } from './IeltsPartBankModal';
 import { ieltsPart1Bank, IeltsPart1Item } from '../../data/ieltsPart1Bank';
+import { ieltsPart2Bank, IeltsPart2Item } from '../../data/ieltsPart2Bank';
+import { ieltsPart3Bank, IeltsPart3Item } from '../../data/ieltsPart3Bank';
 import { audioService } from '../../services/audioService';
 
 export const IeltsWorkspace: React.FC = () => {
@@ -35,13 +37,21 @@ export const IeltsWorkspace: React.FC = () => {
   const [vocabInput, setVocabInput] = useState('');
   const [readingInput, setReadingInput] = useState('');
   const [questionInput, setQuestionInput] = useState('');
-  const [selectedPart1Id, setSelectedPart1Id] = useState<number | null>(null);
+  const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(null);
   const [noOldVocab, setNoOldVocab] = useState(false);
   const [partPreference, setPartPreference] = useState<'Part 1' | 'Part 2' | 'Part 3'>('Part 1');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
-  const [isPart1BankOpen, setIsPart1BankOpen] = useState(false);
+  const [isPartBankOpen, setIsPartBankOpen] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<'answer' | 'vocab' | 'connectors' | 'test'>('answer');
+
+  // Active dataset based on current Part preference
+  const currentBank: { id: number; category: string; question: string; vocab: string; answer: string; cueCardPrompt?: string; topic?: string }[] =
+    partPreference === 'Part 1'
+      ? ieltsPart1Bank
+      : partPreference === 'Part 2'
+      ? ieltsPart2Bank
+      : ieltsPart3Bank;
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -65,20 +75,24 @@ export const IeltsWorkspace: React.FC = () => {
 
   const handleLoadSample = (type: 'wage' | 'environment' | 'ai' | 'music') => {
     audioService.playBeep('click');
-    setSelectedPart1Id(null);
+    setSelectedQuestionId(null);
     if (type === 'wage') {
+      setPartPreference('Part 3');
       setQuestionInput('Do you believe increasing the minimum wage benefits or harms the national economy? Why?');
       setVocabInput(`pinch pennies - tằn tiện từng đồng\nremain stuck in - kẹt cứng trong hoàn cảnh\nripple effect - hiệu ứng lan tỏa\nspur job growth - thúc đẩy tăng trưởng việc làm\npurchasing power - sức mua tiêu dùng\nkeep pace with - bắt kịp đà tăng\nbe indexed to - được điều chỉnh theo chỉ số`);
       setReadingInput('Raising the minimum wage can stimulate broader economic circulation while protecting vulnerable workers.');
     } else if (type === 'environment') {
+      setPartPreference('Part 3');
       setQuestionInput('How do green technologies and reduction of single-use plastics protect the environment?');
       setVocabInput(`carbon footprint - dấu chân carbon\nrenewable energy - năng lượng tái tạo\nphase out - loại bỏ dần dần\nenvironmental degradation - sự suy thoái môi trường\nsustainable practice - thực hành bền vững`);
       setReadingInput('Global transition toward green technologies and reduction of single-use plastics.');
     } else if (type === 'ai') {
+      setPartPreference('Part 3');
       setQuestionInput('How is artificial intelligence transforming the workforce and everyday routine tasks?');
       setVocabInput(`breakthrough - bước đột phá\nautomate routine tasks - tự động hóa tác vụ lặp lại\njob displacement - sự mất việc làm do công nghệ\nethical dilemma - thế tiến thoái lưỡng nan về đạo đức\nadopt agile mindset - thích ứng tư duy linh hoạt`);
       setReadingInput('Artificial intelligence and future workforce transformation.');
     } else {
+      setPartPreference('Part 1');
       setQuestionInput('Do you enjoy listening to music? Why or why not?');
       setVocabInput(`huge music lover - người rất yêu âm nhạc\nbackground noise - âm thanh nền\nnecessity in daily life - nhu cầu thiết yếu hàng ngày\npowerful effect on mood - tác động mạnh mẽ tới tâm trạng\nrelax and unwind - thư giãn và xả stress\nget adrenaline going - kích thích adrenaline bùng nổ`);
       setReadingInput(`🎶 Absolutely yes → ❤️ I'm a huge music lover → 🎧 For me, it's not just background noise → 🔥 it's more like a necessity → 📅 in my daily life.
@@ -95,52 +109,53 @@ export const IeltsWorkspace: React.FC = () => {
 
   const handleLoadFullDefault = () => {
     audioService.playBeep('success');
-    setSelectedPart1Id(null);
+    setSelectedQuestionId(null);
     setCurrentLesson(defaultIeltsLesson);
     storageService.saveIeltsLesson(defaultIeltsLesson);
     setVocabInput(`pinch pennies - tằn tiện từng đồng\nremain stuck in - kẹt cứng trong hoàn cảnh\nripple effect - hiệu ứng lan tỏa\nspur job growth - thúc đẩy tăng trưởng việc làm\npurchasing power - sức mua tiêu dùng\nkeep pace with - bắt kịp đà tăng\nbe indexed to - được điều chỉnh theo chỉ số`);
     setReadingInput('Raising the minimum wage can stimulate broader economic circulation while protecting vulnerable workers.');
   };
 
-  const handleSelectPart1ById = (id: number) => {
-    const item = ieltsPart1Bank.find((q) => q.id === id);
+  const handleSelectQuestionById = (id: number) => {
+    const item = currentBank.find((q) => q.id === id);
     if (item) {
       audioService.playBeep('click');
-      setSelectedPart1Id(item.id);
-      setQuestionInput(item.question);
+      setSelectedQuestionId(item.id);
+      const fullQuestionText = item.cueCardPrompt
+        ? `${item.question}\n\n${item.cueCardPrompt}`
+        : item.question;
+      setQuestionInput(fullQuestionText);
       setVocabInput(item.vocab);
       setReadingInput(item.answer);
-      setPartPreference('Part 1');
     }
   };
 
-  const handleNextPart1 = () => {
-    const currentId = selectedPart1Id || 1;
+  const handleNextQuestion = () => {
+    const currentId = selectedQuestionId || 1;
     const nextId = currentId < 100 ? currentId + 1 : 1;
-    handleSelectPart1ById(nextId);
+    handleSelectQuestionById(nextId);
   };
 
-  const handlePrevPart1 = () => {
-    const currentId = selectedPart1Id || 1;
+  const handlePrevQuestion = () => {
+    const currentId = selectedQuestionId || 1;
     const prevId = currentId > 1 ? currentId - 1 : 100;
-    handleSelectPart1ById(prevId);
+    handleSelectQuestionById(prevId);
   };
 
-  const handleSelectPart1Question = async (item: IeltsPart1Item) => {
+  const handleSelectFromModal = async (payload: SelectedQuestionPayload) => {
     audioService.playBeep('click');
-    setSelectedPart1Id(item.id);
-    setQuestionInput(item.question);
-    setVocabInput(item.vocab);
-    setReadingInput(item.answer);
-    setPartPreference('Part 1');
+    setPartPreference(payload.part);
+    setQuestionInput(payload.question);
+    setVocabInput(payload.vocab);
+    setReadingInput(payload.answer);
 
     try {
       const newLesson = await aiService.generateIeltsLesson({
-        vocabListText: item.vocab,
-        readingText: item.answer,
-        questionText: item.question,
+        vocabListText: payload.vocab,
+        readingText: payload.answer,
+        questionText: payload.question,
         noOldVocab,
-        partPreference: 'Part 1'
+        partPreference: payload.part
       });
       setCurrentLesson(newLesson);
       storageService.saveIeltsLesson(newLesson);
@@ -174,13 +189,13 @@ export const IeltsWorkspace: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* 100 Part 1 Bank Button */}
+          {/* 300 Questions Master Bank Button */}
           <button
-            onClick={() => setIsPart1BankOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600/30 border border-purple-500/50 hover:bg-purple-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm"
+            onClick={() => setIsPartBankOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600/40 to-indigo-600/40 border border-purple-500/50 hover:from-purple-600 hover:to-indigo-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm"
           >
             <BookMarked className="w-3.5 h-3.5 text-amber-400" />
-            <span>📚 Kho 100 Câu Part 1 (Bank)</span>
+            <span>📚 Kho 300 Câu Part 1-2-3 (Bank)</span>
           </button>
 
           {/* Quick Sample Fill Button */}
@@ -267,43 +282,43 @@ export const IeltsWorkspace: React.FC = () => {
             />
           </div>
 
-          {/* Section 3: Question / Prompt with 100 Bank Integration */}
+          {/* Section 3: Question / Prompt with 100 Bank Integration for Active Part */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                 <span>3. Câu hỏi / Đề bài (Prompt):</span>
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  100 Part 1 Bank
+                  {partPreference} (100 câu)
                 </span>
               </label>
               <button
                 type="button"
-                onClick={() => setIsPart1BankOpen(true)}
+                onClick={() => setIsPartBankOpen(true)}
                 className="text-[11px] text-purple-400 hover:text-purple-300 font-bold underline flex items-center gap-1"
               >
                 <BookMarked className="w-3 h-3" />
-                <span>Xem kho 100 câu ▾</span>
+                <span>Kho 300 câu ▾</span>
               </button>
             </div>
 
-            {/* Direct 100 Question Dropdown & Prev/Next Controls */}
+            {/* Direct Question Dropdown & Prev/Next Controls for Active Part */}
             <div className="flex items-center gap-1.5">
               <select
-                value={selectedPart1Id || ''}
+                value={selectedQuestionId || ''}
                 onChange={(e) => {
                   const val = parseInt(e.target.value);
-                  if (val) handleSelectPart1ById(val);
+                  if (val) handleSelectQuestionById(val);
                 }}
                 className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-indigo-300 font-medium focus:outline-none focus:border-indigo-500 truncate"
               >
-                <option value="">-- Chọn 1 trong 100 câu Part 1 --</option>
-                {Array.from(new Set(ieltsPart1Bank.map((i: IeltsPart1Item) => i.category))).map((cat: string) => (
+                <option value="">-- Chọn 1 trong 100 câu {partPreference} --</option>
+                {Array.from(new Set(currentBank.map((i) => i.category))).map((cat: string) => (
                   <optgroup key={cat} label={`📁 ${cat}`} className="bg-slate-900 text-slate-300 font-bold">
-                    {ieltsPart1Bank
-                      .filter((i: IeltsPart1Item) => i.category === cat)
-                      .map((i: IeltsPart1Item) => (
+                    {currentBank
+                      .filter((i) => i.category === cat)
+                      .map((i) => (
                         <option key={i.id} value={i.id} className="bg-slate-950 text-slate-100 font-normal">
-                          #{i.id}. {i.question}
+                          #{i.id}. {i.topic ? `[${i.topic}]` : i.question}
                         </option>
                       ))}
                   </optgroup>
@@ -312,7 +327,7 @@ export const IeltsWorkspace: React.FC = () => {
 
               <button
                 type="button"
-                onClick={handlePrevPart1}
+                onClick={handlePrevQuestion}
                 title="Câu trước"
                 className="px-2.5 py-1.5 bg-slate-950 border border-slate-800 hover:bg-slate-800 rounded-xl text-xs text-slate-300 font-bold transition"
               >
@@ -321,7 +336,7 @@ export const IeltsWorkspace: React.FC = () => {
 
               <button
                 type="button"
-                onClick={handleNextPart1}
+                onClick={handleNextQuestion}
                 title="Câu tiếp theo"
                 className="px-2.5 py-1.5 bg-slate-950 border border-slate-800 hover:bg-slate-800 rounded-xl text-xs text-slate-300 font-bold transition"
               >
@@ -329,13 +344,13 @@ export const IeltsWorkspace: React.FC = () => {
               </button>
             </div>
 
-            {selectedPart1Id && (
+            {selectedQuestionId && (
               <div className="flex items-center justify-between text-[11px] text-slate-400 bg-indigo-950/30 px-2.5 py-1 rounded-lg border border-indigo-500/20">
                 <span className="text-indigo-300 font-medium truncate">
-                  📌 #{selectedPart1Id}: {ieltsPart1Bank.find((q) => q.id === selectedPart1Id)?.category}
+                  📌 #{selectedQuestionId}: {currentBank.find((q) => q.id === selectedQuestionId)?.category}
                 </span>
                 <span className="text-slate-500 font-mono text-[10px] shrink-0">
-                  {selectedPart1Id}/100 câu
+                  {selectedQuestionId}/100 câu ({partPreference})
                 </span>
               </div>
             )}
@@ -343,9 +358,9 @@ export const IeltsWorkspace: React.FC = () => {
             <textarea
               value={questionInput}
               onChange={(e) => setQuestionInput(e.target.value)}
-              placeholder="Nhập hoặc chọn câu hỏi từ danh sách 100 câu ở trên..."
-              rows={2}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-medium"
+              placeholder={`Nhập hoặc chọn câu hỏi ${partPreference} từ danh sách 100 câu ở trên...`}
+              rows={partPreference === 'Part 2' ? 4 : 2}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-medium font-sans leading-relaxed"
             />
           </div>
 
@@ -356,7 +371,10 @@ export const IeltsWorkspace: React.FC = () => {
               <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setPartPreference('Part 1')}
+                  onClick={() => {
+                    setPartPreference('Part 1');
+                    setSelectedQuestionId(null);
+                  }}
                   className={`px-2.5 py-1 rounded text-xs font-semibold transition ${
                     partPreference === 'Part 1'
                       ? 'bg-indigo-600 text-white'
@@ -367,7 +385,10 @@ export const IeltsWorkspace: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPartPreference('Part 2')}
+                  onClick={() => {
+                    setPartPreference('Part 2');
+                    setSelectedQuestionId(null);
+                  }}
                   className={`px-2.5 py-1 rounded text-xs font-semibold transition ${
                     partPreference === 'Part 2'
                       ? 'bg-indigo-600 text-white'
@@ -378,7 +399,10 @@ export const IeltsWorkspace: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPartPreference('Part 3')}
+                  onClick={() => {
+                    setPartPreference('Part 3');
+                    setSelectedQuestionId(null);
+                  }}
                   className={`px-2.5 py-1 rounded text-xs font-semibold transition ${
                     partPreference === 'Part 3'
                       ? 'bg-indigo-600 text-white'
@@ -519,11 +543,12 @@ export const IeltsWorkspace: React.FC = () => {
         }}
       />
 
-      {/* 100 Part 1 Bank Modal */}
-      <IeltsPart1BankModal
-        isOpen={isPart1BankOpen}
-        onClose={() => setIsPart1BankOpen(false)}
-        onSelectQuestion={handleSelectPart1Question}
+      {/* 300 Questions Master Bank Modal (Part 1, 2, 3) */}
+      <IeltsPartBankModal
+        isOpen={isPartBankOpen}
+        onClose={() => setIsPartBankOpen(false)}
+        defaultPart={partPreference}
+        onSelectQuestion={handleSelectFromModal}
       />
     </div>
   );
