@@ -22,6 +22,8 @@ import { IeltsVocabTable } from './IeltsVocabTable';
 import { IeltsConnectorTable } from './IeltsConnectorTable';
 import { IeltsRecallQuiz } from './IeltsRecallQuiz';
 import { IeltsPromptModal } from './IeltsPromptModal';
+import { IeltsPart1BankModal } from './IeltsPart1BankModal';
+import { IeltsPart1Item } from '../../data/ieltsPart1Bank';
 import { audioService } from '../../services/audioService';
 
 export const IeltsWorkspace: React.FC = () => {
@@ -34,9 +36,10 @@ export const IeltsWorkspace: React.FC = () => {
   const [readingInput, setReadingInput] = useState('');
   const [questionInput, setQuestionInput] = useState('');
   const [noOldVocab, setNoOldVocab] = useState(false);
-  const [partPreference, setPartPreference] = useState<'Part 2' | 'Part 3'>('Part 3');
+  const [partPreference, setPartPreference] = useState<'Part 1' | 'Part 2' | 'Part 3'>('Part 1');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+  const [isPart1BankOpen, setIsPart1BankOpen] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<'answer' | 'vocab' | 'connectors' | 'test'>('answer');
 
   const handleGenerate = async () => {
@@ -96,6 +99,29 @@ export const IeltsWorkspace: React.FC = () => {
     setReadingInput('Raising the minimum wage can stimulate broader economic circulation while protecting vulnerable workers.');
   };
 
+  const handleSelectPart1Question = async (item: IeltsPart1Item) => {
+    audioService.playBeep('click');
+    setQuestionInput(item.question);
+    setVocabInput(item.vocab);
+    setReadingInput(item.answer);
+    setPartPreference('Part 1');
+
+    try {
+      const newLesson = await aiService.generateIeltsLesson({
+        vocabListText: item.vocab,
+        readingText: item.answer,
+        questionText: item.question,
+        noOldVocab,
+        partPreference: 'Part 1'
+      });
+      setCurrentLesson(newLesson);
+      storageService.saveIeltsLesson(newLesson);
+      setActiveSubTab('answer');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const masterPrompt = aiService.generateIeltsMasterPrompt({
     vocabListText: vocabInput || 'pinch pennies - tằn tiện từng đồng\nripple effect - hiệu ứng lan tỏa',
     readingText: readingInput || 'Economic impact of minimum wage increase',
@@ -120,6 +146,15 @@ export const IeltsWorkspace: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* 100 Part 1 Bank Button */}
+          <button
+            onClick={() => setIsPart1BankOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600/30 border border-purple-500/50 hover:bg-purple-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm"
+          >
+            <BookMarked className="w-3.5 h-3.5 text-amber-400" />
+            <span>📚 Kho 100 Câu Part 1 (Bank)</span>
+          </button>
+
           {/* Quick Sample Fill Button */}
           <button
             onClick={handleLoadFullDefault}
@@ -223,6 +258,17 @@ export const IeltsWorkspace: React.FC = () => {
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-slate-300">Dạng câu hỏi:</span>
               <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setPartPreference('Part 1')}
+                  className={`px-2.5 py-1 rounded text-xs font-semibold transition ${
+                    partPreference === 'Part 1'
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Part 1
+                </button>
                 <button
                   type="button"
                   onClick={() => setPartPreference('Part 2')}
@@ -375,6 +421,13 @@ export const IeltsWorkspace: React.FC = () => {
           storageService.saveIeltsLesson(importedLesson);
           setActiveSubTab('answer');
         }}
+      />
+
+      {/* 100 Part 1 Bank Modal */}
+      <IeltsPart1BankModal
+        isOpen={isPart1BankOpen}
+        onClose={() => setIsPart1BankOpen(false)}
+        onSelectQuestion={handleSelectPart1Question}
       />
     </div>
   );

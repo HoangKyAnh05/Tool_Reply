@@ -14,7 +14,7 @@ import { audioService } from '../../services/audioService';
 interface IeltsSpeakingAnswerProps {
   topic: string;
   question: string;
-  part: 'Part 2' | 'Part 3';
+  part: 'Part 1' | 'Part 2' | 'Part 3';
   fullAnswer: string;
   bilingualSummary: {
     english: string;

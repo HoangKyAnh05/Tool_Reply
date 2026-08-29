@@ -355,7 +355,7 @@ export const aiService = {
     vocabListText: string;
     readingText?: string;
     noOldVocab: boolean;
-    partPreference?: 'Part 2' | 'Part 3';
+    partPreference?: 'Part 1' | 'Part 2' | 'Part 3';
   }): string {
     return `Create an IELTS Speaking learning feature called "Visual Vocabulary Speaking System".
 
@@ -433,7 +433,7 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
     readingText: string;
     questionText?: string;
     noOldVocab: boolean;
-    partPreference?: 'Part 2' | 'Part 3';
+    partPreference?: 'Part 1' | 'Part 2' | 'Part 3';
   }): Promise<IeltsSpeakingLesson> {
     const settings = storageService.getSettings();
 
@@ -490,20 +490,20 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
     readingText: string;
     questionText?: string;
     noOldVocab: boolean;
-    partPreference?: 'Part 2' | 'Part 3';
+    partPreference?: 'Part 1' | 'Part 2' | 'Part 3';
   }): IeltsSpeakingLesson {
     const qPrefix = params.questionText ? `❓ ${params.questionText}\n` : '';
     const combinedInput = `${qPrefix}${params.readingText}\n${params.vocabListText}`.trim();
     
     if (combinedInput.length > 0) {
       const chainData = convertTextToVisualIconChain(combinedInput);
-      const isPart2 = params.partPreference === 'Part 2';
+      const chosenPart = params.partPreference || 'Part 1';
 
       return {
         id: `ielts_${Date.now()}`,
         topic: chainData.topic,
         question: chainData.question,
-        part: isPart2 ? 'Part 2' : 'Part 3',
+        part: chosenPart,
         visualMasterMap: chainData.allIcons.concat(['🎯', '✨']),
         fullSpeakingAnswer: chainData.fullAnswer,
         vocabList: chainData.vocabItems.slice(0, 10),

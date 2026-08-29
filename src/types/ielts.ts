@@ -18,7 +18,7 @@ export interface IeltsSpeakingLesson {
   id: string;
   topic: string;
   question: string;
-  part: 'Part 2' | 'Part 3';
+  part: 'Part 1' | 'Part 2' | 'Part 3';
   visualMasterMap: string[]; // ['💵⬆️', '👷', '🪙', '🔒💼', '🆘', '🌊', '🛒', '🚀', '📈', '💪', '🎯']
   fullSpeakingAnswer: string; // formatted with icons inline
   vocabList: IeltsVocabItem[];
