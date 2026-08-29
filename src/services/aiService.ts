@@ -13,6 +13,336 @@ import {
 import { storageService } from './storageService';
 import { imageService } from './imageService';
 
+/**
+ * Dynamic Semantic Icon Mapper
+ * Analyzes vocabulary or paragraph concept text and returns a matching emoji icon.
+ */
+/**
+ * Dynamic Semantic Icon Mapper
+ * Analyzes vocabulary or paragraph concept text and returns a matching emoji icon.
+ */
+export function getSemanticIconForConcept(text: string): string {
+  const t = text.toLowerCase();
+
+  // Music & Songs & Specific Genres & Moods & Phrases
+  if (/soft pop|soft/i.test(t)) return '🌸';
+  if (/acoustic|guitar/i.test(t)) return '🎸';
+  if (/rock|upbeat|drum/i.test(t)) return '🥁';
+  if (/edm|dance|party/i.test(t)) return '💃';
+  if (/music lover|lover|huge fan|thích|yêu/i.test(t)) return '❤️';
+  if (/background noise|noise|earphone/i.test(t)) return '🎧';
+  if (/music|song|listen|sound|audio|track|nhạc/i.test(t)) return '🎵';
+  if (/necessity|essential|cần thiết/i.test(t)) return '🔥';
+  if (/daily life|daily|life|hàng ngày|cuộc sống/i.test(t)) return '📅';
+  if (/main reason|think|perspective|lí do|suy nghĩ/i.test(t)) return '💡';
+  if (/mood|feeling|tâm trạng|cảm xúc|happy/i.test(t)) return '😊';
+  if (/instance|for example|ví dụ/i.test(t)) return '📌';
+  if (/down|sad|buồn|tồi tệ/i.test(t)) return '😔';
+  if (/stress|tired|áp lực|mệt mỏi/i.test(t)) return '😫';
+  if (/at work|workplace|office|công ty/i.test(t)) return '🏢';
+  if (/after a long day|long day|tan làm/i.test(t)) return '🌙';
+  if (/work|job|công việc|làm việc/i.test(t)) return '💼';
+  if (/unwind|rest|nghỉ ngơi/i.test(t)) return '🛋️';
+  if (/relax|thư giãn/i.test(t)) return '😌';
+  if (/flip side|on the other hand|mặt khác|ngược lại/i.test(t)) return '🔄';
+  if (/gym|workout|tập thể dục|thể thao/i.test(t)) return '🏋️';
+  if (/pumped|excited|hào hứng|boost/i.test(t)) return '🚀';
+  if (/project|task|dự án|bài tập/i.test(t)) return '📋';
+  if (/adrenaline|energy|năng lượng/i.test(t)) return '⚡';
+  if (/so yeah|so, yeah|yeah|nói chung|tóm lại/i.test(t)) return '🎯';
+  if (/imagine|believe|tưởng tượng|tin rằng/i.test(t)) return '🙏';
+  if (/day without|day|ngày|sunset/i.test(t)) return '🌅';
+
+  // Money / Income / Wages / Costs / Economy
+  if (/wage|salary|pay|lương|remuneration|income/i.test(t)) return '💵';
+  if (/penny|pennies|pinch|tằn tiện|thắt lưng|frugal|save|chi tiêu|tiết kiệm/i.test(t)) return '🪙';
+  if (/purchasing|power|sức mua|consumer|spending|buy|shop|tiêu dùng/i.test(t)) return '🛒';
+  if (/money|capital|finance|vốn|tài chính|budget|cash|funds/i.test(t)) return '💰';
+  if (/economy|economic|market|kinh tế|thị trường|gdp/i.test(t)) return '📊';
+
+  // Work / Job / Labor / Career / Employees
+  if (/stuck|dead-end|kẹt|bế tắc|trap|confined|obstacle|bất lợi/i.test(t)) return '🔒💼';
+  if (/worker|employee|công nhân|lao động|staff|workforce|vulnerable/i.test(t)) return '👷';
+  if (/hire|employ|recruit|phỏng vấn|tuyển dụng/i.test(t)) return '🤝';
+
+  // Environment / Nature / Climate / Energy / Sustainability
+  if (/carbon|footprint|emission|khí thải|ô nhiễm|pollution|greenhouse/i.test(t)) return '💨';
+  if (/renewable|solar|wind|tái tạo|sạch|clean energy|eco|green/i.test(t)) return '☀️';
+  if (/environment|nature|môi trường|degradation|suy thoái|ecosystem/i.test(t)) return '🌿';
+  if (/plastic|single-use|waste|rác|recycle|rác thải/i.test(t)) return '♻️';
+  if (/planet|earth|global|thế giới|toàn cầu|trái đất/i.test(t)) return '🌍';
+
+  // Tech / AI / Future / Automation / Innovation
+  if (/ai\b|artificial|intelligence|trí tuệ nhân tạo|robot|bot/i.test(t)) return '🤖';
+  if (/automate|automation|tự động|routine|quy trình/i.test(t)) return '⚙️';
+  if (/breakthrough|innovation|đột phá|sáng tạo|invention|idea/i.test(t)) return '💡';
+  if (/displace|displacement|mất việc|replace|thay thế|threat/i.test(t)) return '⚠️';
+  if (/tech|technology|digital|công nghệ|software|app/i.test(t)) return '💻';
+
+  // Motion / Effect / Growth / Scale / Change
+  if (/ripple|lan tỏa|domino|wave|spread/i.test(t)) return '🌊';
+  if (/growth|spur|boost|tăng trưởng|thúc đẩy|promote|surge/i.test(t)) return '🚀';
+  if (/increase|rise|up|tăng|escalate|elevate/i.test(t)) return '📈';
+  if (/decrease|decline|drop|giảm|fall|reduce|diminish/i.test(t)) return '📉';
+  if (/pace|speed|fast|bắt kịp|kịp đà|rhythm/i.test(t)) return '🏃';
+  if (/index|adjust|calibrate|điều chỉnh|cân bằng|balance/i.test(t)) return '🔄';
+
+  // Policy / Law / Ethics / Shield / Security
+  if (/policy|law|chính sách|quy định|legal|regulation|framework/i.test(t)) return '📜';
+  if (/protect|shield|bảo vệ|vulnerable|safe|yếu thế|an toàn/i.test(t)) return '🛡️';
+  if (/dilemma|ethic|đạo đức|moral|fair|công bằng|equit/i.test(t)) return '⚖️';
+
+  // Society / Education / Health / People
+  if (/school|education|student|sinh viên|học|university|academic/i.test(t)) return '🎓';
+  if (/health|medical|hospital|y tế|sức khỏe|welfare/i.test(t)) return '🏥';
+  if (/community|society|xã hội|people|dân cư|demographic/i.test(t)) return '👥';
+  if (/strength|strong|mạnh|củng cố|force|power/i.test(t)) return '💪';
+  if (/goal|target|mục tiêu|ultimate|bền vững|sustain|vision/i.test(t)) return '🎯';
+
+  // Family & Children & Parents & Respect & Past
+  if (/children|child|kids|youngsters|trẻ em|con cái/i.test(t)) return '👨‍👩‍👧‍👦';
+  if (/parents|parent|father|mother|cha mẹ|bố mẹ/i.test(t)) return '❤️';
+  if (/respect|admire|tôn trọng|kính trọng|nếp nhà/i.test(t)) return '🤝';
+  if (/past|in the past|quá khứ|ngày xưa|hồi trước/i.test(t)) return '⏳';
+  if (/today|nowadays|ngày nay|hiện nay|thời nay/i.test(t)) return '☀️';
+  if (/opinion|perspective|quan điểm|theo bạn/i.test(t)) return '💡';
+  if (/more or less|compare|so sánh|nhiều hơn/i.test(t)) return '⚖️';
+
+  // Deterministic colorful fallbacks
+  const fallbacks = ['✨', '📌', '🔑', '🎯', '🔥', '💎', '🔍', '⚡', '🗺️', '🌟'];
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) hash += text.charCodeAt(i);
+  return fallbacks[hash % fallbacks.length];
+}
+
+/**
+ * Strips meta labels like "Câu hỏi 1:", "(So sánh thế hệ)", "Question:", "Đề bài:" and quotes from raw question text
+ */
+export function cleanQuestionText(rawText: string): string {
+  let cleaned = rawText.trim();
+  // Remove meta labels like "Câu hỏi 1:", "(So sánh thế hệ)", "Question:", "Part 3 Question:", "Đề bài:", "Prompt:"
+  cleaned = cleaned.replace(/^(?:câu\s*hỏi|\bquestion\b|\bđề\s*bài\b|\bprompt\b)\s*\d*[\s:\-–—]*/gi, '');
+  cleaned = cleaned.replace(/\([^)]*\)/g, '');
+  cleaned = cleaned.replace(/^(?:câu\s*hỏi|\bquestion\b|\bđề\s*bài\b|\bprompt\b)\s*\d*[\s:\-–—]*/gi, '');
+  cleaned = cleaned.replace(/^["'“`]+|["'”`]+$/g, '');
+  cleaned = cleaned.replace(/^[❓\s:–—]+/, '').trim();
+  return cleaned.trim();
+}
+
+/**
+ * Micro-chunks a question prompt into an icon-anchored arrow chain
+ * (e.g. ❓ 💡 In your opinion → 👨‍👩‍👧‍👦 do children today respect → ❤️ their parents → ⚖️ more or less → ⏳ than in the past?)
+ */
+export function formatQuestionWithVisualChain(questionText: string): string {
+  const cleaned = cleanQuestionText(questionText);
+  if (!cleaned) return '❓ 💡 How do you feel about this topic and why?';
+
+  if (cleaned.includes('→')) {
+    return cleaned.startsWith('❓') ? cleaned : `❓ ${cleaned}`;
+  }
+
+  const clauses = cleaned
+    .split(/(?<=,)|(?=;\s*)|(?=\b(?:do|does|did|how|why|what|when|where|who|in your opinion|more or less|than in the past|than before|in the future|today|nowadays)\b)/i)
+    .map((c) => c.replace(/^,\s*/, '').trim())
+    .filter((c) => c.length > 1);
+
+  const microClauses: string[] = [];
+  clauses.forEach((c) => {
+    const words = c.split(' ');
+    if (words.length > 6) {
+      const mid = Math.ceil(words.length / 2);
+      microClauses.push(words.slice(0, mid).join(' '));
+      microClauses.push(words.slice(mid).join(' '));
+    } else {
+      microClauses.push(c);
+    }
+  });
+
+  const chunks: string[] = [];
+  microClauses.forEach((clause) => {
+    const icon = getSemanticIconForConcept(clause);
+    chunks.push(`${icon} ${clause}`);
+  });
+
+  return `❓ ${chunks.join(' → ')}`;
+}
+
+/**
+ * Transforms any input text or paragraph into an icon-anchored arrow chain format
+ * Micro-chunks long sentences into 3-5 word units with matching semantic icons.
+ */
+export function convertTextToVisualIconChain(paragraphText: string): {
+  topic: string;
+  question: string;
+  fullAnswer: string;
+  allIcons: string[];
+  explanations: { icon: string; textEn: string; textVi: string }[];
+  vocabItems: any[];
+} {
+  const lines = paragraphText
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  let topic = 'General Topic';
+  let extractedQuestion = '';
+  const contentLines: string[] = [];
+
+  lines.forEach((line) => {
+    const cleanLine = cleanQuestionText(line);
+    // Detect Topic Header line
+    if (line.startsWith('🎵') || line.startsWith('🏷️') || line.startsWith('📌') || /^[A-Z\s]{3,20}$/.test(line)) {
+      topic = line.replace(/^[🎵🏷️📌\s]+/, '').trim();
+    } 
+    // Detect Question line (starts with ❓, contains ?, or contains Question/Câu hỏi prefix)
+    else if (line.startsWith('❓') || line.includes('?') || /^(?:câu\s*hỏi|\bquestion\b)/i.test(line)) {
+      extractedQuestion = extractedQuestion ? `${extractedQuestion} ${cleanLine}` : cleanLine;
+    } 
+    else {
+      contentLines.push(line);
+    }
+  });
+
+  // If no explicit question line was found in separate lines, check if first sentence of raw paragraph is a question!
+  if (!extractedQuestion && contentLines.length > 0) {
+    const fullText = contentLines.join(' ');
+    const sentences = fullText.split(/(?<=[.!?])\s+/);
+    const questionSentences: string[] = [];
+    const remainingSentences: string[] = [];
+
+    let isCollectingQuestions = true;
+    sentences.forEach((sent) => {
+      if (isCollectingQuestions && sent.trim().endsWith('?')) {
+        questionSentences.push(sent.trim());
+      } else {
+        isCollectingQuestions = false;
+        remainingSentences.push(sent.trim());
+      }
+    });
+
+    if (questionSentences.length > 0) {
+      extractedQuestion = questionSentences.join(' ');
+      contentLines.length = 0;
+      if (remainingSentences.join(' ').trim()) {
+        contentLines.push(remainingSentences.join(' '));
+      }
+    }
+  }
+
+  // Format question with semantic icon arrow chains
+  const formattedQuestion = formatQuestionWithVisualChain(extractedQuestion || topic || paragraphText);
+
+  const fullRawText = contentLines.join('\n');
+  const allIcons: string[] = [];
+  const explanations: { icon: string; textEn: string; textVi: string }[] = [];
+  const vocabItems: any[] = [];
+
+  // Check if text already contains arrow chains ' → '
+  if (fullRawText.includes('→')) {
+    const formattedLines = contentLines.map((line) => {
+      if (line.includes('→')) {
+        const parts = line.split('→').map((p) => p.trim());
+        parts.forEach((part) => {
+          const match = part.match(/^([\p{Emoji_Presentation}\p{Extended_Pictographic}]+)\s*(.*)$/u);
+          if (match) {
+            const icon = match[1];
+            const text = match[2];
+            if (!allIcons.includes(icon)) allIcons.push(icon);
+            explanations.push({ icon, textEn: text, textVi: text });
+            vocabItems.push({
+              id: `v_${vocabItems.length + 1}`,
+              icon,
+              word: text.slice(0, 35),
+              meaning: text,
+              visualSentence: `${icon} ${text}`,
+              category: 'Visual Anchor'
+            });
+          } else {
+            const icon = getSemanticIconForConcept(part);
+            if (!allIcons.includes(icon)) allIcons.push(icon);
+            explanations.push({ icon, textEn: part, textVi: part });
+            vocabItems.push({
+              id: `v_${vocabItems.length + 1}`,
+              icon,
+              word: part.slice(0, 35),
+              meaning: part,
+              visualSentence: `${icon} ${part}`,
+              category: 'Visual Anchor'
+            });
+          }
+        });
+      }
+      return line;
+    });
+
+    return {
+      topic: topic || 'Topic Anchor',
+      question: formattedQuestion,
+      fullAnswer: formattedLines.join('\n\n'),
+      allIcons,
+      explanations,
+      vocabItems
+    };
+  }
+
+  // Otherwise, split raw paragraph into sentences and micro-clauses automatically
+  const sentences = fullRawText
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const formattedParagraphs: string[] = [];
+
+  sentences.forEach((sent) => {
+    // Advanced micro-chunking regex: splits on punctuation, clause starters, conjunctions, and prepositions
+    const rawClauses = sent
+      .split(/(?<=,)|(?=;\s*)|(?=\b(?:when|if|after|before|during|because|since|for instance|for example|on the flip side|however|in addition|as a result|so,|so yeah|to relax|to get|to|for|at|in|with|without|and|or|but|as well as|such as|rather than)\b)/i)
+      .map((c) => c.replace(/^,\s*/, '').trim())
+      .filter((c) => c.length > 1);
+
+    // Further split any remaining long clauses (> 7 words) into smaller micro-units
+    const microClauses: string[] = [];
+    rawClauses.forEach((c) => {
+      const words = c.split(' ');
+      if (words.length > 7) {
+        const mid = Math.ceil(words.length / 2);
+        microClauses.push(words.slice(0, mid).join(' '));
+        microClauses.push(words.slice(mid).join(' '));
+      } else {
+        microClauses.push(c);
+      }
+    });
+
+    const chunkItems: string[] = [];
+
+    microClauses.forEach((clause) => {
+      const icon = getSemanticIconForConcept(clause);
+      if (!allIcons.includes(icon)) allIcons.push(icon);
+      chunkItems.push(`${icon} ${clause}`);
+      explanations.push({ icon, textEn: clause, textVi: clause });
+      vocabItems.push({
+        id: `v_${vocabItems.length + 1}`,
+        icon,
+        word: clause.slice(0, 35),
+        meaning: clause,
+        visualSentence: `${icon} ${clause}`,
+        category: 'Visual Anchor'
+      });
+    });
+
+    formattedParagraphs.push(chunkItems.join(' → '));
+  });
+
+  return {
+    topic: topic || 'Topic Anchor',
+    question: formattedQuestion,
+    fullAnswer: formattedParagraphs.join('\n\n'),
+    allIcons,
+    explanations,
+    vocabItems
+  };
+}
+
 export const aiService = {
   // ==========================================
   // 1. IELTS VISUAL VOCABULARY ENGINE
@@ -32,9 +362,16 @@ export const aiService = {
 CORE PURPOSE:
 Turn a vocabulary list + reading text/key takeaways into a complete IELTS Speaking answer. The learner should memorize ideas through visual icons instead of memorizing entire sentences.
 
+CRITICAL FORMAT & ICON GENERATION RULE:
+Format the full speaking answer as an ICON-ANCHORED ARROW CHAIN where sentences are split into sense clauses linked by ' → ', and EVERY clause chunk starts with a contextually precise emoji icon.
+Example Output Format:
+🎶 Absolutely yes → ❤️ I'm a huge music lover → 🎧 For me, it's not just background noise → 🔥 it's more like a necessity → 📅 in my daily life.
+💡 I think the main reason is → 🎵 music has a powerful effect → 😊 on my mood.
+📌 For instance → 😔 when I'm feeling a bit down → 😫 or stressed → 💼 after a long day at work → 🎶 I tend to listen to soft pop → 🎸 or acoustic songs → 😌 to relax and unwind.
+
 INPUT:
 1. Vocabulary list:
-${params.vocabListText || '(No explicit list provided, derive high-impact Band 7-8 vocabulary from context)'}
+${params.vocabListText || '(No explicit list provided, derive high-impact Band 7-8 vocabulary directly from reading text)'}
 
 2. Reading passage / Topic / Key Takeaways:
 ${params.readingText || 'Economic and Social impacts'}
@@ -47,43 +384,43 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
   "topic": "Topic Name",
   "question": "Part 2 or Part 3 Question",
   "part": "${params.partPreference || 'Part 3'}",
-  "visualMasterMap": ["💵⬆️", "👷", "🪙", "🔒💼", "🆘", "🌊", "🛒", "🚀", "📈", "💪", "🎯"],
-  "fullSpeakingAnswer": "Answer with inline emoji icons at exact point of meaning change...",
+  "visualMasterMap": ["🎶", "❤️", "🎧", "🔥", "📅", "💡", "🎵", "😊", "📌", "😔", "😫", "💼", "🎸", "😌"],
+  "fullSpeakingAnswer": "🎶 Absolutely yes → ❤️ I'm a huge music lover → 🎧 For me, it's not just background noise...",
   "vocabList": [
     {
       "id": "v1",
-      "icon": "🪙",
-      "word": "pinch pennies",
-      "meaning": "tằn tiện từng đồng",
-      "visualSentence": "🪙 When wages are too low, workers pinch pennies to survive.",
-      "category": "Economy"
+      "icon": "❤️",
+      "word": "music lover",
+      "meaning": "người đam mê âm nhạc",
+      "visualSentence": "❤️ I'm a huge music lover.",
+      "category": "Interest"
     }
   ],
   "connectorTable": [
     { "icon": "🤔", "connector": "In my opinion,", "function": "Opinion", "vietnamese": "Theo tôi" },
     { "icon": "🥇", "connector": "First of all,", "function": "First point", "vietnamese": "Trước hết" },
-    { "icon": "➕", "connector": "In addition,", "function": "Add idea", "vietnamese": "Ngoài ra" },
-    { "icon": "🛑", "connector": "However,", "function": "Contrast", "vietnamese": "Tuy nhiên" },
-    { "icon": "🔗", "connector": "As a result,", "function": "Result", "vietnamese": "Kết quả là" },
-    { "icon": "🎯", "connector": "Ultimately,", "function": "Final conclusion", "vietnamese": "Cuối cùng" }
+    { "icon": "📌", "connector": "For instance,", "function": "Example", "vietnamese": "Ví dụ" },
+    { "icon": "🔄", "connector": "On the flip side,", "function": "Contrast", "vietnamese": "Mặt khác" },
+    { "icon": "🎯", "connector": "So, yeah,", "function": "Conclusion", "vietnamese": "Nói chung" }
   ],
   "bilingualSummary": {
     "english": "Summary in English with icons...",
     "vietnamese": "Tóm tắt tiếng Việt với icons..."
   },
   "thirtySecondMemory": {
-    "iconChain": "💵⬆️ → 👷 → 🪙 → 🌊 → 🚀 → 🎯",
+    "iconChain": "🎶 → ❤️ → 🎧 → 🔥 → 📅 → 💡 → 🎵 → 😊",
     "explanations": [
-      { "icon": "💵⬆️", "textEn": "Raise wage", "textVi": "Tăng lương" }
+      { "icon": "🎶", "textEn": "Absolutely yes", "textVi": "Hoàn toàn có" },
+      { "icon": "❤️", "textEn": "Huge music lover", "textVi": "Rất yêu âm nhạc" }
     ]
   },
   "vocabMemoryMap": [
-    { "icon": "🪙", "vocabulary": "pinch pennies", "coreIdea": "save every little bit of money" }
+    { "icon": "❤️", "vocabulary": "music lover", "coreIdea": "deeply passionate about music" }
   ],
   "recallTest": {
-    "iconSequence": ["🪙", "🔒💼", "🌊"],
-    "targetConcepts": ["pinch pennies", "remain stuck in", "ripple effect"],
-    "hintWords": ["pinch", "stuck", "ripple"]
+    "iconSequence": ["🎶", "❤️", "🎧", "🔥"],
+    "targetConcepts": ["absolutely yes", "huge music lover", "background noise", "necessity"],
+    "hintWords": ["absolutely", "lover", "noise", "necessity"]
   }
 }`;
   },
@@ -94,6 +431,7 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
   async generateIeltsLesson(params: {
     vocabListText: string;
     readingText: string;
+    questionText?: string;
     noOldVocab: boolean;
     partPreference?: 'Part 2' | 'Part 3';
   }): Promise<IeltsSpeakingLesson> {
@@ -102,7 +440,12 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
     // If Gemini or OpenAI API configured, attempt live call
     if (settings.aiProvider === 'gemini' && settings.geminiApiKey) {
       try {
-        const prompt = this.generateIeltsMasterPrompt(params) + '\n\nRespond with ONLY valid JSON.';
+        const prompt = this.generateIeltsMasterPrompt({
+          vocabListText: params.vocabListText,
+          readingText: `${params.questionText ? `Question: ${params.questionText}\n` : ''}${params.readingText}`,
+          noOldVocab: params.noOldVocab,
+          partPreference: params.partPreference
+        }) + '\n\nRespond with ONLY valid JSON.';
         const res = await this.callGeminiApi(prompt, settings.geminiApiKey, settings.geminiModel);
         const parsed = JSON.parse(res);
         return {
@@ -117,7 +460,12 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
 
     if (settings.aiProvider === 'openai' && settings.openaiApiKey) {
       try {
-        const prompt = this.generateIeltsMasterPrompt(params);
+        const prompt = this.generateIeltsMasterPrompt({
+          vocabListText: params.vocabListText,
+          readingText: `${params.questionText ? `Question: ${params.questionText}\n` : ''}${params.readingText}`,
+          noOldVocab: params.noOldVocab,
+          partPreference: params.partPreference
+        });
         const res = await this.callOpenAiApi(prompt, settings.openaiApiKey, settings.openaiModel);
         const parsed = JSON.parse(res);
         return {
@@ -140,99 +488,96 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
   generateAutonomousIeltsLesson(params: {
     vocabListText: string;
     readingText: string;
+    questionText?: string;
     noOldVocab: boolean;
     partPreference?: 'Part 2' | 'Part 3';
   }): IeltsSpeakingLesson {
-    const lines = params.vocabListText
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean);
-
-    // Extract user words or supply curated Band 8 defaults
-    const vocabItems: any[] = [];
-    const iconPool = ['🪙', '🔒💼', '🌊', '🚀', '💪', '🏃', '🔄', '⚖️', '💡', '🛡️', '📈', '🌱'];
+    const qPrefix = params.questionText ? `❓ ${params.questionText}\n` : '';
+    const combinedInput = `${qPrefix}${params.readingText}\n${params.vocabListText}`.trim();
     
-    if (lines.length > 0) {
-      lines.forEach((line, idx) => {
-        const parts = line.split(/[-–:]/);
-        const word = parts[0]?.trim() || `Key term ${idx + 1}`;
-        const meaning = parts[1]?.trim() || 'Ý nghĩa quan trọng trong ngữ cảnh';
-        const icon = iconPool[idx % iconPool.length];
-        vocabItems.push({
-          id: `v_${idx + 1}`,
-          icon,
-          word,
-          meaning,
-          visualSentence: `${icon} In many cases, individuals must ${word} to overcome complex challenges.`,
-          category: 'Vocabulary'
-        });
-      });
-    } else {
-      vocabItems.push(
-        { id: 'v1', icon: '🪙', word: 'pinch pennies', meaning: 'tằn tiện từng đồng, thắt chặt chi tiêu', visualSentence: '🪙 Families often have to pinch pennies during economic downturns.' },
-        { id: 'v2', icon: '🔒💼', word: 'remain stuck in', meaning: 'kẹt cứng trong tình trạng bế tắc', visualSentence: '🔒💼 Without new skills, employees remain stuck in dead-end jobs.' },
-        { id: 'v3', icon: '🌊', word: 'ripple effect', meaning: 'hiệu ứng lan tỏa sâu rộng', visualSentence: '🌊 A single breakthrough innovation creates an enormous ripple effect.' },
-        { id: 'v4', icon: '🚀', word: 'spur job growth', meaning: 'thúc đẩy tăng trưởng việc làm', visualSentence: '🚀 Targeted investments spur job growth across green technologies.' },
-        { id: 'v5', icon: '💪', word: 'purchasing power', meaning: 'sức mua tiêu dùng', visualSentence: '💪 Elevated wages bolster consumer purchasing power.' }
-      );
+    if (combinedInput.length > 0) {
+      const chainData = convertTextToVisualIconChain(combinedInput);
+      const isPart2 = params.partPreference === 'Part 2';
+
+      return {
+        id: `ielts_${Date.now()}`,
+        topic: chainData.topic,
+        question: chainData.question,
+        part: isPart2 ? 'Part 2' : 'Part 3',
+        visualMasterMap: chainData.allIcons.concat(['🎯', '✨']),
+        fullSpeakingAnswer: chainData.fullAnswer,
+        vocabList: chainData.vocabItems.slice(0, 10),
+        connectorTable: [
+          { icon: '🤔', connector: 'In my opinion,', function: 'Opinion', vietnamese: 'Theo góc nhìn của tôi' },
+          { icon: '🥇', connector: 'First of all,', function: 'First point', vietnamese: 'Trước hết' },
+          { icon: '📌', connector: 'For instance,', function: 'Example', vietnamese: 'Ví dụ' },
+          { icon: '🛑', connector: 'However,', function: 'Contrast', vietnamese: 'Tuy nhiên' },
+          { icon: '🔄', connector: 'On the flip side,', function: 'Contrast', vietnamese: 'Mặt khác' },
+          { icon: '🎯', connector: 'So, yeah,', function: 'Final conclusion', vietnamese: 'Nói chung là' }
+        ],
+        bilingualSummary: {
+          english: `Visual Icon Chain (${chainData.allIcons.slice(0, 6).join(' ')}): ${chainData.explanations.slice(0, 4).map((e) => `${e.icon} ${e.textEn}`).join(' → ')}.`,
+          vietnamese: `Chuỗi Neo Ý Tưởng Trực Quan: ${chainData.explanations.slice(0, 4).map((e) => `${e.icon} ${e.textVi}`).join(' → ')}.`
+        },
+        thirtySecondMemory: {
+          iconChain: chainData.allIcons.join(' → '),
+          explanations: chainData.explanations
+        },
+        vocabMemoryMap: chainData.vocabItems.map((v) => ({
+          icon: v.icon,
+          vocabulary: v.word,
+          coreIdea: v.meaning
+        })),
+        recallTest: {
+          iconSequence: chainData.allIcons.slice(0, 5),
+          targetConcepts: chainData.explanations.slice(0, 5).map((e) => e.textEn),
+          hintWords: chainData.explanations.slice(0, 5).map((e) => e.textEn.split(' ')[0])
+        },
+        createdAt: Date.now()
+      };
     }
 
-    const topic = params.readingText ? params.readingText.slice(0, 45) + '...' : 'Socio-Economic Development & Adaptation';
-    const isPart2 = params.partPreference === 'Part 2';
+    // Default fallback if both inputs were completely empty
+    const defaultText = `Do you enjoy listening to music? Why or why not?
+Absolutely yes, I'm a huge music lover. For me, it's not just background noise, it's more like a necessity in my daily life.
+I think the main reason is music has a powerful effect on my mood.
+For instance, when I'm feeling a bit down or stressed after a long day at work, I tend to listen to soft pop or acoustic songs to relax and unwind.
+On the flip side, if I'm heading to the gym or need to get pumped up for a project, I'll put on some upbeat rock or EDM to get my adrenaline going.
+So, yeah, I honestly can't imagine a day without it.`;
 
-    const question = isPart2
-      ? `Part 2: Describe an important decision or economic change in your country that impacted society.`
-      : `Part 3: How do modern economic policies influence everyday living standards and career mobility?`;
-
-    const masterMap = vocabItems.map((v) => v.icon).concat(['🎯', '✨']);
-
-    const fullAnswer = `🤔 In my perspective, 💵 modern socio-economic changes require strategic adaptation rather than passive endurance.
-
-🥇 First of all, when living expenses soar, ordinary citizens are often compelled to ${vocabItems[0]?.icon || '🪙'} ${vocabItems[0]?.word || 'pinch pennies'}, which risks causing vulnerable demographics to ${vocabItems[1]?.icon || '🔒💼'} ${vocabItems[1]?.word || 'remain stuck in'} unfavorable circumstances.
-
-➕ In addition, proactive policy intervention sparks a remarkable ${vocabItems[2]?.icon || '🌊'} ${vocabItems[2]?.word || 'ripple effect'}. By fostering localized industries, governments can ${vocabItems[3]?.icon || '🚀'} ${vocabItems[3]?.word || 'spur job growth'} and substantially reinforce household ${vocabItems[4]?.icon || '💪'} ${vocabItems[4]?.word || 'purchasing power'}.
-
-🛑 However, balancing budget deficits remains critical. 🔗 As a result, fiscal frameworks must 🔄 be continuously calibrated to 🏃 keep pace with evolving market realities.
-
-🎯 Ultimately, implementing equitable measures provides a resilient foundation that uplifts community prosperity for generations to come.`;
+    const chainData = convertTextToVisualIconChain(defaultText);
 
     const lesson: IeltsSpeakingLesson = {
       id: `ielts_${Date.now()}`,
-      topic,
-      question,
-      part: isPart2 ? 'Part 2' : 'Part 3',
-      visualMasterMap: masterMap,
-      fullSpeakingAnswer: fullAnswer,
-      vocabList: vocabItems,
+      topic: '🎵 MUSIC',
+      question: '❓ Do you enjoy listening to music? Why or why not?',
+      part: 'Part 3',
+      visualMasterMap: chainData.allIcons,
+      fullSpeakingAnswer: chainData.fullAnswer,
+      vocabList: chainData.vocabItems,
       connectorTable: [
-        { icon: '🤔', connector: 'In my perspective,', function: 'Opinion', vietnamese: 'Theo góc nhìn của tôi' },
-        { icon: '🥇', connector: 'First of all,', function: 'First point', vietnamese: 'Trước hết' },
-        { icon: '➕', connector: 'In addition,', function: 'Add idea', vietnamese: 'Ngoài ra / Hơn nữa' },
-        { icon: '🛑', connector: 'However,', function: 'Contrast', vietnamese: 'Tuy nhiên' },
-        { icon: '🔗', connector: 'As a result,', function: 'Result', vietnamese: 'Kết quả là' },
-        { icon: '🎯', connector: 'Ultimately,', function: 'Final conclusion', vietnamese: 'Tựu trung lại / Cuối cùng' }
+        { icon: '🤔', connector: 'In my opinion,', function: 'Opinion', vietnamese: 'Theo góc nhìn của tôi' },
+        { icon: '📌', connector: 'For instance,', function: 'Example', vietnamese: 'Ví dụ' },
+        { icon: '🔄', connector: 'On the flip side,', function: 'Contrast', vietnamese: 'Mặt khác' },
+        { icon: '🎯', connector: 'So, yeah,', function: 'Final conclusion', vietnamese: 'Nói chung là' }
       ],
       bilingualSummary: {
-        english: `Proactive solutions ensure citizens avoid needing to ${vocabItems[0]?.icon || '🪙'} ${vocabItems[0]?.word || 'pinch pennies'}, unleashing a ${vocabItems[2]?.icon || '🌊'} ${vocabItems[2]?.word || 'ripple effect'} that boosts ${vocabItems[4]?.icon || '💪'} ${vocabItems[4]?.word || 'purchasing power'}.`,
-        vietnamese: `Các giải pháp chủ động giúp người dân không phải ${vocabItems[0]?.icon || '🪙'} tằn tiện từng đồng, tạo nên ${vocabItems[2]?.icon || '🌊'} hiệu ứng lan tỏa nâng cao ${vocabItems[4]?.icon || '💪'} sức mua toàn diện.`
+        english: "🎶 Absolutely yes → ❤️ music lover → 🎧 necessity → 🎵 mood effect → 😌 relax → 🏋️ gym → ⚡ adrenaline → 🎯 can't imagine day without it.",
+        vietnamese: '🎶 Hoàn toàn có → ❤️ đam mê âm nhạc → 🎧 nhu cầu thiết yếu → 🎵 ảnh hưởng tâm trạng → 😌 thư giãn → 🏋️ tập gym → ⚡ tăng nồng độ adrenaline → 🎯 không thể sống thiếu nó.'
       },
       thirtySecondMemory: {
-        iconChain: masterMap.join(' → '),
-        explanations: vocabItems.map((v) => ({
-          icon: v.icon,
-          textEn: `Utilize ${v.word}`,
-          textVi: `Sử dụng ${v.meaning}`
-        }))
+        iconChain: chainData.allIcons.join(' → '),
+        explanations: chainData.explanations
       },
-      vocabMemoryMap: vocabItems.map((v) => ({
+      vocabMemoryMap: chainData.vocabItems.map((v) => ({
         icon: v.icon,
         vocabulary: v.word,
         coreIdea: v.meaning
       })),
       recallTest: {
-        iconSequence: vocabItems.slice(0, 4).map((v) => v.icon),
-        targetConcepts: vocabItems.slice(0, 4).map((v) => v.word),
-        hintWords: vocabItems.slice(0, 4).map((v) => v.word.split(' ')[0])
+        iconSequence: chainData.allIcons.slice(0, 5),
+        targetConcepts: chainData.explanations.slice(0, 5).map((e) => e.textEn),
+        hintWords: chainData.explanations.slice(0, 5).map((e) => e.textEn.split(' ')[0])
       },
       createdAt: Date.now()
     };

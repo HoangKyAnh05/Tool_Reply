@@ -32,6 +32,7 @@ export const IeltsWorkspace: React.FC = () => {
   // Input states
   const [vocabInput, setVocabInput] = useState('');
   const [readingInput, setReadingInput] = useState('');
+  const [questionInput, setQuestionInput] = useState('');
   const [noOldVocab, setNoOldVocab] = useState(false);
   const [partPreference, setPartPreference] = useState<'Part 2' | 'Part 3'>('Part 3');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -44,6 +45,7 @@ export const IeltsWorkspace: React.FC = () => {
       const newLesson = await aiService.generateIeltsLesson({
         vocabListText: vocabInput,
         readingText: readingInput,
+        questionText: questionInput,
         noOldVocab,
         partPreference
       });
@@ -57,17 +59,32 @@ export const IeltsWorkspace: React.FC = () => {
     }
   };
 
-  const handleLoadSample = (type: 'wage' | 'environment' | 'ai') => {
+  const handleLoadSample = (type: 'wage' | 'environment' | 'ai' | 'music') => {
     audioService.playBeep('click');
     if (type === 'wage') {
+      setQuestionInput('Do you believe increasing the minimum wage benefits or harms the national economy? Why?');
       setVocabInput(`pinch pennies - tằn tiện từng đồng\nremain stuck in - kẹt cứng trong hoàn cảnh\nripple effect - hiệu ứng lan tỏa\nspur job growth - thúc đẩy tăng trưởng việc làm\npurchasing power - sức mua tiêu dùng\nkeep pace with - bắt kịp đà tăng\nbe indexed to - được điều chỉnh theo chỉ số`);
       setReadingInput('Raising the minimum wage can stimulate broader economic circulation while protecting vulnerable workers.');
     } else if (type === 'environment') {
+      setQuestionInput('How do green technologies and reduction of single-use plastics protect the environment?');
       setVocabInput(`carbon footprint - dấu chân carbon\nrenewable energy - năng lượng tái tạo\nphase out - loại bỏ dần dần\nenvironmental degradation - sự suy thoái môi trường\nsustainable practice - thực hành bền vững`);
       setReadingInput('Global transition toward green technologies and reduction of single-use plastics.');
-    } else {
+    } else if (type === 'ai') {
+      setQuestionInput('How is artificial intelligence transforming the workforce and everyday routine tasks?');
       setVocabInput(`breakthrough - bước đột phá\nautomate routine tasks - tự động hóa tác vụ lặp lại\njob displacement - sự mất việc làm do công nghệ\nethical dilemma - thế tiến thoái lưỡng nan về đạo đức\nadopt agile mindset - thích ứng tư duy linh hoạt`);
       setReadingInput('Artificial intelligence and future workforce transformation.');
+    } else {
+      setQuestionInput('Do you enjoy listening to music? Why or why not?');
+      setVocabInput(`huge music lover - người rất yêu âm nhạc\nbackground noise - âm thanh nền\nnecessity in daily life - nhu cầu thiết yếu hàng ngày\npowerful effect on mood - tác động mạnh mẽ tới tâm trạng\nrelax and unwind - thư giãn và xả stress\nget adrenaline going - kích thích adrenaline bùng nổ`);
+      setReadingInput(`🎶 Absolutely yes → ❤️ I'm a huge music lover → 🎧 For me, it's not just background noise → 🔥 it's more like a necessity → 📅 in my daily life.
+
+💡 I think the main reason is → 🎵 music has a powerful effect → 😊 on my mood.
+
+📌 For instance → 😔 when I'm feeling a bit down → 😫 or stressed → 💼 after a long day at work → 🎶 I tend to listen to soft pop → 🎸 or acoustic songs → 😌 to relax and unwind.
+
+🔄 On the flip side → 🏋️ if I'm heading to the gym → 🚀 or need to get pumped up → 📋 for a project → 🥁 I'll put on some upbeat rock → 💃 or EDM → ⚡ to get my adrenaline going.
+
+🎯 So, yeah → 🙏 I honestly can't imagine → 🌅 a day without it.`);
     }
   };
 
@@ -155,6 +172,14 @@ export const IeltsWorkspace: React.FC = () => {
                 >
                   Mẫu 3
                 </button>
+                <span className="text-slate-600">•</span>
+                <button
+                  type="button"
+                  onClick={() => handleLoadSample('music')}
+                  className="text-[10px] text-amber-400 hover:text-amber-300 underline font-semibold"
+                >
+                  Mẫu 4 (Music 🎵)
+                </button>
               </div>
             </div>
             <textarea
@@ -176,6 +201,20 @@ export const IeltsWorkspace: React.FC = () => {
               placeholder="Nhập thông tin bối cảnh hoặc bài đọc liên quan..."
               rows={3}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+              <span>3. Câu hỏi / Đề bài (Prompt):</span>
+              <span className="text-[10px] text-indigo-400 font-normal">Tự động tạo Icon ❓</span>
+            </label>
+            <textarea
+              value={questionInput}
+              onChange={(e) => setQuestionInput(e.target.value)}
+              placeholder="Do you enjoy listening to music? Why or why not?"
+              rows={2}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-medium"
             />
           </div>
 

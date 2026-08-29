@@ -86,9 +86,11 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
           </div>
         </div>
 
-        <h2 className="text-lg font-bold text-slate-100 leading-snug">
-          {question}
-        </h2>
+        <div className="mt-3 p-3.5 rounded-xl bg-gradient-to-r from-indigo-950/60 to-purple-950/40 border border-indigo-500/30 text-indigo-100 shadow-md">
+          <h2 className="text-base font-bold leading-snug flex items-center gap-2">
+            <span>{question}</span>
+          </h2>
+        </div>
       </div>
 
       {/* Answer Paragraphs with Highlighted Inline Anchor Icons */}

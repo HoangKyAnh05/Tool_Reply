@@ -711,7 +711,11 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
           const isCurrent = svc.id === activeServiceId;
           const isGoogleService = svc.id === 'gemini';
           const uaToUse = isGoogleService ? FIREFOX_UA : CHROME_UA;
-          const isElectron = Boolean(window.electronAPI?.isElectron);
+          const isElectron = Boolean(
+            window.electronAPI?.isElectron ||
+            (typeof window !== 'undefined' && (window as any).process?.versions?.electron) ||
+            (typeof navigator !== 'undefined' && /electron/i.test(navigator.userAgent))
+          );
 
           return (
             <div
