@@ -477,53 +477,62 @@ export function convertTextToVisualIconChain(paragraphText: string, customVocabT
     };
   }
 
-  // Otherwise, split raw paragraph into sentences and micro-clauses automatically
-  const sentences = fullRawText
-    .split(/(?<=[.!?])\s+/)
-    .map((s) => s.trim())
+  // Otherwise, split raw text into paragraphs, then sentences and micro-clauses
+  const rawParagraphs = fullRawText
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
     .filter(Boolean);
 
   const formattedParagraphs: string[] = [];
 
-  sentences.forEach((sent) => {
-    // Advanced micro-chunking regex: splits on punctuation, clause starters, conjunctions, and prepositions
-    const rawClauses = sent
-      .split(/(?<=,)|(?=;\s*)|(?=\b(?:when|if|after|before|during|because|since|for instance|for example|on the flip side|however|in addition|as a result|so,|so yeah|to relax|to get|to|for|at|in|with|without|and|or|but|as well as|such as|rather than)\b)/i)
-      .map((c) => c.replace(/^,\s*/, '').trim())
-      .filter((c) => c.length > 1);
+  rawParagraphs.forEach((para) => {
+    const sentences = para
+      .split(/(?<=[.!?])\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
 
-    // Further split any remaining long clauses (> 7 words) into smaller micro-units
-    const microClauses: string[] = [];
-    rawClauses.forEach((c) => {
-      const words = c.split(' ');
-      if (words.length > 7) {
-        const mid = Math.ceil(words.length / 2);
-        microClauses.push(words.slice(0, mid).join(' '));
-        microClauses.push(words.slice(mid).join(' '));
-      } else {
-        microClauses.push(c);
-      }
-    });
+    const paraChunks: string[] = [];
 
-    const chunkItems: string[] = [];
+    sentences.forEach((sent) => {
+      // Advanced micro-chunking regex: splits on punctuation, clause starters, conjunctions, and prepositions
+      const rawClauses = sent
+        .split(/(?<=,)|(?=;\s*)|(?=\b(?:when|if|after|before|during|because|since|for instance|for example|on the flip side|however|in addition|as a result|so,|so yeah|to relax|to get|to|for|at|in|with|without|and|or|but|as well as|such as|rather than)\b)/i)
+        .map((c) => c.replace(/^,\s*/, '').trim())
+        .filter((c) => c.length > 1);
 
-    microClauses.forEach((clause) => {
-      const icon = getSemanticIconForConcept(clause);
-      if (!allIcons.includes(icon)) allIcons.push(icon);
-      chunkItems.push(`${icon} ${clause}`);
-      const textVi = translateEnglishToVietnamese(clause, customVocabText);
-      explanations.push({ icon, textEn: clause, textVi });
-      vocabItems.push({
-        id: `v_${vocabItems.length + 1}`,
-        icon,
-        word: clause.slice(0, 35),
-        meaning: textVi,
-        visualSentence: `${icon} ${clause}`,
-        category: 'Visual Anchor'
+      // Further split any remaining long clauses (> 7 words) into smaller micro-units
+      const microClauses: string[] = [];
+      rawClauses.forEach((c) => {
+        const words = c.split(' ');
+        if (words.length > 7) {
+          const mid = Math.ceil(words.length / 2);
+          microClauses.push(words.slice(0, mid).join(' '));
+          microClauses.push(words.slice(mid).join(' '));
+        } else {
+          microClauses.push(c);
+        }
+      });
+
+      microClauses.forEach((clause) => {
+        const icon = getSemanticIconForConcept(clause);
+        if (!allIcons.includes(icon)) allIcons.push(icon);
+        paraChunks.push(`${icon} ${clause}`);
+        const textVi = translateEnglishToVietnamese(clause, customVocabText);
+        explanations.push({ icon, textEn: clause, textVi });
+        vocabItems.push({
+          id: `v_${vocabItems.length + 1}`,
+          icon,
+          word: clause.slice(0, 35),
+          meaning: textVi,
+          visualSentence: `${icon} ${clause}`,
+          category: 'Visual Anchor'
+        });
       });
     });
 
-    formattedParagraphs.push(chunkItems.join(' → '));
+    if (paraChunks.length > 0) {
+      formattedParagraphs.push(paraChunks.join(' → '));
+    }
   });
 
   return {

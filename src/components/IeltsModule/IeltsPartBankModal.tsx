@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { X, Search, BookOpen, Sparkles, Check, Layers, Folder, ChevronRight, Hash } from 'lucide-react';
+import { X, Search, BookOpen, Sparkles, Check, Layers, Folder, Plus, Trash2, Star } from 'lucide-react';
 import { ieltsPart1Bank, IeltsPart1Item } from '../../data/ieltsPart1Bank';
 import { ieltsPart2Bank, IeltsPart2Item } from '../../data/ieltsPart2Bank';
 import { ieltsPart3Bank, IeltsPart3Item } from '../../data/ieltsPart3Bank';
+import { storageService } from '../../services/storageService';
+import { IeltsCustomQuestion } from '../../types/ielts';
+import { IeltsCustomQuestionModal } from './IeltsCustomQuestionModal';
+import { audioService } from '../../services/audioService';
 
 export interface SelectedQuestionPayload {
   part: 'Part 1' | 'Part 2' | 'Part 3';
@@ -30,6 +34,8 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [customVersion, setCustomVersion] = useState(0);
 
   // Sync activePart with defaultPart when opened
   React.useEffect(() => {
@@ -42,18 +48,38 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Retrieve current active dataset
-  const currentDataset: { id: number; category: string; question: string; vocab: string; answer: string; cueCardPrompt?: string; topic?: string }[] =
+  // Retrieve current active default dataset + custom questions
+  const defaultDataset: { id: number | string; category: string; question: string; vocab: string; answer: string; cueCardPrompt?: string; topic?: string; isCustom?: boolean }[] =
     activePart === 'Part 1'
       ? ieltsPart1Bank
       : activePart === 'Part 2'
       ? ieltsPart2Bank
       : ieltsPart3Bank;
 
-  const categories = ['All', ...Array.from(new Set(currentDataset.map((item) => item.category)))];
+  const customQuestions: { id: string; category: string; question: string; vocab: string; answer: string; cueCardPrompt?: string; topic?: string; isCustom: boolean }[] =
+    storageService.getCustomIeltsQuestions(activePart).map((q) => ({
+      ...q,
+      isCustom: true
+    }));
+
+  const currentDataset = [...customQuestions, ...defaultDataset];
+
+  const categories = [
+    'All',
+    ...(customQuestions.length > 0 ? ['⭐ Câu hỏi tự tạo (Custom)'] : []),
+    ...Array.from(new Set(defaultDataset.map((item) => item.category)))
+  ];
 
   const filteredItems = currentDataset.filter((item) => {
-    const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
+    let matchesCategory = false;
+    if (selectedCategory === 'All') {
+      matchesCategory = true;
+    } else if (selectedCategory === '⭐ Câu hỏi tự tạo (Custom)') {
+      matchesCategory = !!item.isCustom;
+    } else {
+      matchesCategory = item.category === selectedCategory;
+    }
+
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
       item.question.toLowerCase().includes(searchLower) ||
@@ -83,6 +109,15 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
     onClose();
   };
 
+  const handleDeleteCustom = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (confirm('Bạn có chắc chắn muốn xóa câu hỏi tự tạo này?')) {
+      storageService.deleteCustomIeltsQuestion(id);
+      audioService.playBeep('click');
+      setCustomVersion((v) => v + 1);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
       <div className="bg-slate-900 border border-slate-800 w-full max-w-6xl h-[92vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
@@ -94,23 +129,34 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <span>📚 Thư Viện 300 Câu IELTS Speaking (Full Icons & Answers)</span>
+                <span>📚 Thư Viện IELTS Speaking (Full Icons & Model Answers)</span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   Part 1 • Part 2 • Part 3
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                100 câu Part 1, 100 đề Cue Card Part 2 và 100 câu thảo luận Part 3 chia theo thư mục chủ đề trực quan
+                Tra cứu 300 câu mẫu kèm bài trả lời chi tiết và quản lý các câu hỏi tự tạo của bạn
               </p>
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Create Custom Question Button */}
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-md"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>➕ Tạo câu hỏi mới</span>
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Top Part Segmented Control & Search */}
@@ -128,7 +174,7 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>Part 1 (100 câu)</span>
+              <span>Part 1 (Ngắn gọn)</span>
             </button>
 
             <button
@@ -156,7 +202,7 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>Part 3 (100 Thảo Luận)</span>
+              <span>Part 3 (Thảo luận sâu)</span>
             </button>
           </div>
 
@@ -167,13 +213,13 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={`Tìm trong 100 câu ${activePart} theo câu hỏi, từ vựng...`}
+              placeholder={`Tìm trong ${activePart} theo câu hỏi, từ vựng...`}
               className="w-full pl-10 pr-4 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
             />
           </div>
 
           <div className="text-xs font-semibold text-slate-400">
-            Hiển thị: <span className="text-indigo-400 font-bold">{filteredItems.length}</span> / 100 câu
+            Hiển thị: <span className="text-indigo-400 font-bold">{filteredItems.length}</span> câu
           </div>
         </div>
 
@@ -183,14 +229,15 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
           <aside className="w-64 border-r border-slate-800 bg-slate-950/60 flex flex-col overflow-y-auto p-3 space-y-1">
             <div className="text-[11px] font-bold text-slate-400 px-2 py-1 flex items-center gap-1.5 uppercase tracking-wider">
               <Folder className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Thư mục 20 Chủ đề:</span>
+              <span>Thư mục Chủ đề:</span>
             </div>
 
             {categories.map((cat) => {
-              const count =
-                cat === 'All'
-                  ? currentDataset.length
-                  : currentDataset.filter((i) => i.category === cat).length;
+              let count = 0;
+              if (cat === 'All') count = currentDataset.length;
+              else if (cat === '⭐ Câu hỏi tự tạo (Custom)') count = customQuestions.length;
+              else count = currentDataset.filter((i) => i.category === cat).length;
+
               const isSelected = selectedCategory === cat;
 
               return (
@@ -204,7 +251,11 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate pr-1">
-                    <Folder className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-indigo-400' : 'text-slate-600 group-hover:text-slate-400'}`} />
+                    {cat.includes('⭐') ? (
+                      <Star className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    ) : (
+                      <Folder className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-indigo-400' : 'text-slate-600 group-hover:text-slate-400'}`} />
+                    )}
                     <span className="truncate">{cat === 'All' ? '🌐 Tất cả chủ đề' : cat}</span>
                   </div>
                   <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md shrink-0 ${
@@ -220,8 +271,15 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
           {/* Right Scrollable Question Cards */}
           <main className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-950/30">
             {filteredItems.length === 0 ? (
-              <div className="text-center py-16 text-slate-500 text-sm">
-                Không tìm thấy câu hỏi phù hợp với từ khóa "{searchTerm}".
+              <div className="text-center py-16 text-slate-500 text-sm space-y-3">
+                <p>Không tìm thấy câu hỏi phù hợp.</p>
+                <button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Tạo câu hỏi mới cho phần này</span>
+                </button>
               </div>
             ) : (
               filteredItems.map((item) => {
@@ -230,14 +288,25 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                 return (
                   <div
                     key={uniqueKey}
-                    className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 hover:border-slate-700 transition shadow-lg space-y-3 relative group"
+                    className={`border rounded-2xl p-4 transition shadow-lg space-y-3 relative group ${
+                      item.isCustom
+                        ? 'bg-slate-900/95 border-amber-500/30 hover:border-amber-500/60'
+                        : 'bg-slate-900/90 border-slate-800/90 hover:border-slate-700'
+                    }`}
                   >
                     {/* Header with Badges & Action Buttons */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                          #{item.id}
-                        </span>
+                        {item.isCustom ? (
+                          <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                            <Star className="w-3 h-3 text-amber-400" />
+                            <span>TỰ TẠO</span>
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            #{item.id}
+                          </span>
+                        )}
                         <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
                           {item.category}
                         </span>
@@ -247,6 +316,16 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {item.isCustom && (
+                          <button
+                            onClick={(e) => handleDeleteCustom(e, String(item.id))}
+                            title="Xóa câu tự tạo này"
+                            className="p-1.5 rounded-lg bg-red-950/30 border border-red-500/30 text-red-400 hover:bg-red-900/50 transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
                         <button
                           onClick={() => handleCopy(item)}
                           className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition"
@@ -283,23 +362,27 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                     </div>
 
                     {/* Vocabulary List */}
-                    <div className="p-3 rounded-xl bg-indigo-950/20 border border-indigo-500/20">
-                      <span className="text-[11px] font-bold text-indigo-300 block mb-1">
-                        🔑 Từ vựng mấu chốt (Band 7.5 - 8.5 Vocab):
-                      </span>
-                      <div className="text-xs text-indigo-200 font-mono whitespace-pre-line leading-relaxed">
-                        {item.vocab}
+                    {item.vocab && (
+                      <div className="p-3 rounded-xl bg-indigo-950/20 border border-indigo-500/20">
+                        <span className="text-[11px] font-bold text-indigo-300 block mb-1">
+                          🔑 Từ vựng mấu chốt (Band 7.5 - 8.5 Vocab):
+                        </span>
+                        <div className="text-xs text-indigo-200 font-mono whitespace-pre-line leading-relaxed">
+                          {item.vocab}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Answer Icon Chain */}
                     <div className="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800">
                       <span className="text-[11px] font-bold text-emerald-400 block mb-1">
                         💬 Chuỗi Icon Bài Nói Mẫu (Icon-Anchored Model Answer):
                       </span>
-                      <p className="text-xs font-medium text-slate-200 leading-relaxed select-text">
-                        {item.answer}
-                      </p>
+                      <div className="text-xs font-medium text-slate-200 leading-relaxed select-text space-y-2">
+                        {item.answer.split('\n\n').map((para: string, idx: number) => (
+                          <p key={idx}>{para}</p>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 );
@@ -321,6 +404,17 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Custom Question Creator Modal */}
+      <IeltsCustomQuestionModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        defaultPart={activePart}
+        onSaved={(newQ) => {
+          setCustomVersion((v) => v + 1);
+          setSelectedCategory('⭐ Câu hỏi tự tạo (Custom)');
+        }}
+      />
     </div>
   );
 };

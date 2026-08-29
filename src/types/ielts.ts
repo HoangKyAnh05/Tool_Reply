@@ -57,3 +57,15 @@ export interface IeltsRecallTestResult {
   suggestedImprovement: string;
   completedAt: number;
 }
+
+export interface IeltsCustomQuestion {
+  id: string;
+  part: 'Part 1' | 'Part 2' | 'Part 3';
+  category: string;
+  topic?: string;
+  question: string;
+  cueCardPrompt?: string;
+  vocab: string;
+  answer: string;
+  createdAt: number;
+}

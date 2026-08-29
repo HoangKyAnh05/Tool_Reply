@@ -1,4 +1,4 @@
-import { IeltsSpeakingLesson, IeltsRecallTestResult } from '../types/ielts';
+import { IeltsSpeakingLesson, IeltsRecallTestResult, IeltsCustomQuestion } from '../types/ielts';
 import { GenzSavedPhrase, GenzGenerationResult } from '../types/genz';
 import { ParallelUniverseSimulation } from '../types/universe';
 import { AppSettings } from '../types/settings';
@@ -436,6 +436,44 @@ export const storageService = {
     } catch {
       return [];
     }
+  },
+
+  // Custom User-Created Questions Bank
+  getCustomIeltsQuestions(part?: 'Part 1' | 'Part 2' | 'Part 3'): IeltsCustomQuestion[] {
+    const raw = localStorage.getItem('ielts_custom_questions_v1');
+    if (!raw) return [];
+    try {
+      const list: IeltsCustomQuestion[] = JSON.parse(raw);
+      if (part) return list.filter((q) => q.part === part);
+      return list;
+    } catch {
+      return [];
+    }
+  },
+
+  saveCustomIeltsQuestion(item: Omit<IeltsCustomQuestion, 'id' | 'createdAt'> & { id?: string }): IeltsCustomQuestion {
+    const list = this.getCustomIeltsQuestions();
+    const newItem: IeltsCustomQuestion = {
+      id: item.id || `custom_${Date.now()}`,
+      part: item.part,
+      category: item.category || 'Tự tạo',
+      topic: item.topic || item.category || 'Tự tạo',
+      question: item.question,
+      cueCardPrompt: item.cueCardPrompt,
+      vocab: item.vocab,
+      answer: item.answer,
+      createdAt: Date.now()
+    };
+    const filtered = list.filter((q) => q.id !== newItem.id);
+    const updated = [newItem, ...filtered];
+    localStorage.setItem('ielts_custom_questions_v1', JSON.stringify(updated));
+    return newItem;
+  },
+
+  deleteCustomIeltsQuestion(id: string): void {
+    const list = this.getCustomIeltsQuestions();
+    const updated = list.filter((q) => q.id !== id);
+    localStorage.setItem('ielts_custom_questions_v1', JSON.stringify(updated));
   },
 
   // GenZify

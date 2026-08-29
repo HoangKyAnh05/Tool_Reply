@@ -23,10 +23,12 @@ import { IeltsConnectorTable } from './IeltsConnectorTable';
 import { IeltsRecallQuiz } from './IeltsRecallQuiz';
 import { IeltsPromptModal } from './IeltsPromptModal';
 import { IeltsPartBankModal, SelectedQuestionPayload } from './IeltsPartBankModal';
+import { IeltsCustomQuestionModal } from './IeltsCustomQuestionModal';
 import { ieltsPart1Bank, IeltsPart1Item } from '../../data/ieltsPart1Bank';
 import { ieltsPart2Bank, IeltsPart2Item } from '../../data/ieltsPart2Bank';
 import { ieltsPart3Bank, IeltsPart3Item } from '../../data/ieltsPart3Bank';
 import { audioService } from '../../services/audioService';
+import { Plus, Save, Star } from 'lucide-react';
 
 export const IeltsWorkspace: React.FC = () => {
   const [currentLesson, setCurrentLesson] = useState<IeltsSpeakingLesson>(() =>
@@ -37,21 +39,31 @@ export const IeltsWorkspace: React.FC = () => {
   const [vocabInput, setVocabInput] = useState('');
   const [readingInput, setReadingInput] = useState('');
   const [questionInput, setQuestionInput] = useState('');
-  const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(null);
+  const [selectedQuestionId, setSelectedQuestionId] = useState<number | string | null>(null);
   const [noOldVocab, setNoOldVocab] = useState(false);
   const [partPreference, setPartPreference] = useState<'Part 1' | 'Part 2' | 'Part 3'>('Part 1');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [isPartBankOpen, setIsPartBankOpen] = useState(false);
+  const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [customVersion, setCustomVersion] = useState(0);
   const [activeSubTab, setActiveSubTab] = useState<'answer' | 'vocab' | 'connectors' | 'test'>('answer');
 
+  // Custom user-created questions for current part
+  const customQuestions = storageService.getCustomIeltsQuestions(partPreference).map((q) => ({
+    ...q,
+    isCustom: true
+  }));
+
   // Active dataset based on current Part preference
-  const currentBank: { id: number; category: string; question: string; vocab: string; answer: string; cueCardPrompt?: string; topic?: string }[] =
+  const defaultBank: { id: number | string; category: string; question: string; vocab: string; answer: string; cueCardPrompt?: string; topic?: string; isCustom?: boolean }[] =
     partPreference === 'Part 1'
       ? ieltsPart1Bank
       : partPreference === 'Part 2'
       ? ieltsPart2Bank
       : ieltsPart3Bank;
+
+  const currentBank = [...customQuestions, ...defaultBank];
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -116,8 +128,8 @@ export const IeltsWorkspace: React.FC = () => {
     setReadingInput('Raising the minimum wage can stimulate broader economic circulation while protecting vulnerable workers.');
   };
 
-  const handleSelectQuestionById = (id: number) => {
-    const item = currentBank.find((q) => q.id === id);
+  const handleSelectQuestionById = (id: number | string) => {
+    const item = currentBank.find((q) => String(q.id) === String(id));
     if (item) {
       audioService.playBeep('click');
       setSelectedQuestionId(item.id);
@@ -131,15 +143,36 @@ export const IeltsWorkspace: React.FC = () => {
   };
 
   const handleNextQuestion = () => {
-    const currentId = selectedQuestionId || 1;
-    const nextId = currentId < 100 ? currentId + 1 : 1;
-    handleSelectQuestionById(nextId);
+    if (currentBank.length === 0) return;
+    const currentIndex = currentBank.findIndex((q) => String(q.id) === String(selectedQuestionId));
+    const nextIndex = currentIndex >= 0 && currentIndex < currentBank.length - 1 ? currentIndex + 1 : 0;
+    handleSelectQuestionById(currentBank[nextIndex].id);
   };
 
   const handlePrevQuestion = () => {
-    const currentId = selectedQuestionId || 1;
-    const prevId = currentId > 1 ? currentId - 1 : 100;
-    handleSelectQuestionById(prevId);
+    if (currentBank.length === 0) return;
+    const currentIndex = currentBank.findIndex((q) => String(q.id) === String(selectedQuestionId));
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : currentBank.length - 1;
+    handleSelectQuestionById(currentBank[prevIndex].id);
+  };
+
+  const handleSaveCurrentToBank = () => {
+    if (!questionInput.trim()) {
+      alert('Vui lòng nhập câu hỏi / đề bài trước khi lưu vào kho!');
+      return;
+    }
+    const saved = storageService.saveCustomIeltsQuestion({
+      part: partPreference,
+      category: 'Chủ đề tự tạo',
+      topic: 'Chủ đề tự tạo',
+      question: questionInput.trim(),
+      vocab: vocabInput.trim(),
+      answer: readingInput.trim() || '✨ Chưa có bài nói mẫu'
+    });
+    audioService.playBeep('success');
+    setSelectedQuestionId(saved.id);
+    setCustomVersion((v) => v + 1);
+    alert(`✓ Đã lưu thành công câu hỏi vào Kho tự tạo (${partPreference})!`);
   };
 
   const handleSelectFromModal = async (payload: SelectedQuestionPayload) => {
@@ -288,7 +321,7 @@ export const IeltsWorkspace: React.FC = () => {
               <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                 <span>3. Câu hỏi / Đề bài (Prompt):</span>
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  {partPreference} (100 câu)
+                  {partPreference} ({currentBank.length} câu)
                 </span>
               </label>
               <button
@@ -297,7 +330,7 @@ export const IeltsWorkspace: React.FC = () => {
                 className="text-[11px] text-purple-400 hover:text-purple-300 font-bold underline flex items-center gap-1"
               >
                 <BookMarked className="w-3 h-3" />
-                <span>Kho 300 câu ▾</span>
+                <span>Kho {currentBank.length} câu ▾</span>
               </button>
             </div>
 
@@ -306,15 +339,28 @@ export const IeltsWorkspace: React.FC = () => {
               <select
                 value={selectedQuestionId || ''}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value);
+                  const val = e.target.value;
                   if (val) handleSelectQuestionById(val);
                 }}
                 className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-indigo-300 font-medium focus:outline-none focus:border-indigo-500 truncate"
               >
-                <option value="">-- Chọn 1 trong 100 câu {partPreference} --</option>
-                {Array.from(new Set(currentBank.map((i) => i.category))).map((cat: string) => (
+                <option value="">-- Chọn 1 trong {currentBank.length} câu {partPreference} --</option>
+                
+                {/* Custom User Questions First */}
+                {customQuestions.length > 0 && (
+                  <optgroup label="⭐ Câu hỏi tự tạo (Custom)" className="bg-slate-900 text-amber-300 font-bold">
+                    {customQuestions.map((i) => (
+                      <option key={i.id} value={i.id} className="bg-slate-950 text-amber-200 font-normal">
+                        ⭐ [{i.category}] {i.question}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+
+                {/* Default 20 Categories */}
+                {Array.from(new Set(defaultBank.map((i) => i.category))).map((cat: string) => (
                   <optgroup key={cat} label={`📁 ${cat}`} className="bg-slate-900 text-slate-300 font-bold">
-                    {currentBank
+                    {defaultBank
                       .filter((i) => i.category === cat)
                       .map((i) => (
                         <option key={i.id} value={i.id} className="bg-slate-950 text-slate-100 font-normal">
@@ -347,10 +393,10 @@ export const IeltsWorkspace: React.FC = () => {
             {selectedQuestionId && (
               <div className="flex items-center justify-between text-[11px] text-slate-400 bg-indigo-950/30 px-2.5 py-1 rounded-lg border border-indigo-500/20">
                 <span className="text-indigo-300 font-medium truncate">
-                  📌 #{selectedQuestionId}: {currentBank.find((q) => q.id === selectedQuestionId)?.category}
+                  📌 {currentBank.find((q) => String(q.id) === String(selectedQuestionId))?.isCustom ? '⭐ [Tự tạo]' : `#${selectedQuestionId}`}: {currentBank.find((q) => String(q.id) === String(selectedQuestionId))?.category}
                 </span>
                 <span className="text-slate-500 font-mono text-[10px] shrink-0">
-                  {selectedQuestionId}/100 câu ({partPreference})
+                  {selectedQuestionId} ({partPreference})
                 </span>
               </div>
             )}
@@ -358,10 +404,32 @@ export const IeltsWorkspace: React.FC = () => {
             <textarea
               value={questionInput}
               onChange={(e) => setQuestionInput(e.target.value)}
-              placeholder={`Nhập hoặc chọn câu hỏi ${partPreference} từ danh sách 100 câu ở trên...`}
+              placeholder={`Nhập hoặc chọn câu hỏi ${partPreference} từ danh sách ở trên...`}
               rows={partPreference === 'Part 2' ? 4 : 2}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-medium font-sans leading-relaxed"
             />
+
+            {/* Custom Question Action Buttons */}
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setIsCustomModalOpen(true)}
+                className="flex-1 py-1.5 px-2.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition"
+              >
+                <Plus className="w-3.5 h-3.5 text-indigo-400" />
+                <span>➕ Tạo câu mới vào Kho</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveCurrentToBank}
+                title="Lưu câu hỏi và câu trả lời hiện tại vào Kho tự tạo"
+                className="py-1.5 px-3 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold flex items-center gap-1.5 transition"
+              >
+                <Save className="w-3.5 h-3.5 text-emerald-400" />
+                <span>💾 Lưu câu này</span>
+              </button>
+            </div>
           </div>
 
           {/* Options */}
@@ -549,6 +617,24 @@ export const IeltsWorkspace: React.FC = () => {
         onClose={() => setIsPartBankOpen(false)}
         defaultPart={partPreference}
         onSelectQuestion={handleSelectFromModal}
+      />
+
+      {/* Custom Question Creator Modal */}
+      <IeltsCustomQuestionModal
+        isOpen={isCustomModalOpen}
+        onClose={() => setIsCustomModalOpen(false)}
+        defaultPart={partPreference}
+        initialValues={{
+          question: questionInput,
+          vocab: vocabInput,
+          answer: readingInput,
+          part: partPreference
+        }}
+        onSaved={(saved) => {
+          setCustomVersion((v) => v + 1);
+          setSelectedQuestionId(saved.id);
+          handleSelectQuestionById(saved.id);
+        }}
       />
     </div>
   );
