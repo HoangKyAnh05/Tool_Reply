@@ -171,7 +171,197 @@ export function formatQuestionWithVisualChain(questionText: string): string {
  * Transforms any input text or paragraph into an icon-anchored arrow chain format
  * Micro-chunks long sentences into 3-5 word units with matching semantic icons.
  */
-export function convertTextToVisualIconChain(paragraphText: string): {
+/**
+ * Intelligent English-to-Vietnamese phrase & clause translator for IELTS Speaking
+ */
+export function translateEnglishToVietnamese(text: string, customVocabText?: string): string {
+  if (!text) return '';
+  let cleaned = text.trim();
+
+  // Strip leading emoji or punctuation if present
+  cleaned = cleaned.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s—–-]+/u, '').trim();
+  cleaned = cleaned.replace(/[.!?]+$/, '').trim();
+
+  if (!cleaned) return '';
+
+  // 1. Check custom user-provided vocabulary map first
+  if (customVocabText) {
+    const lines = customVocabText.split('\n');
+    for (const line of lines) {
+      const parts = line.split(/[-–—:]+/);
+      if (parts.length >= 2) {
+        const en = parts[0].trim().toLowerCase();
+        const vi = parts[1].trim();
+        if (en && vi) {
+          if (cleaned.toLowerCase() === en) return vi;
+          if (cleaned.toLowerCase().includes(en)) {
+            const reg = new RegExp(`\\b${en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+            cleaned = cleaned.replace(reg, vi);
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Exact / Standard phrase map for IELTS Speaking answers
+  const phraseMap: [RegExp, string][] = [
+    // Openers & General Opinions
+    [/^absolutely yes\b/i, 'Hoàn toàn đồng ý / Chắc chắn có'],
+    [/^i'm a huge music lover\b/i, 'Tôi là người rất yêu âm nhạc'],
+    [/^i am a huge music lover\b/i, 'Tôi là người rất yêu âm nhạc'],
+    [/^for me, it's not just background noise\b/i, 'Với tôi, nó không chỉ là âm thanh nền'],
+    [/^for me, it's not just\b/i, 'Đối với tôi, nó không chỉ là'],
+    [/^it's more like a necessity\b/i, 'mà giống như một nhu cầu thiết yếu'],
+    [/^in my daily life\b/i, 'trong cuộc sống hàng ngày'],
+    [/^i think the main reason is\b/i, 'Tôi nghĩ lý do chính là'],
+    [/^music has a powerful effect\b/i, 'âm nhạc có tác động mạnh mẽ'],
+    [/^on my mood\b/i, 'tới tâm trạng của tôi'],
+    [/^for instance\b/i, 'Ví dụ như'],
+    [/^for example\b/i, 'Chẳng hạn như'],
+    [/^when i'm feeling a bit down\b/i, 'khi tôi cảm thấy hơi buồn chán'],
+    [/^or stressed\b/i, 'hoặc căng thẳng'],
+    [/^after a long day at work\b/i, 'sau một ngày dài làm việc'],
+    [/^i tend to listen to soft pop\b/i, 'tôi thường nghe nhạc pop nhẹ nhàng'],
+    [/^or acoustic songs\b/i, 'hoặc những bài hát acoustic mộc mạc'],
+    [/^to relax and unwind\b/i, 'để thư giãn và xả stress'],
+    [/^on the flip side\b/i, 'Ở chiều ngược lại'],
+    [/^on the other hand\b/i, 'Mặt khác'],
+    [/^if i'm heading to the gym\b/i, 'nếu tôi chuẩn bị đến phòng tập gym'],
+    [/^or need to get pumped up\b/i, 'hoặc cần kích hoạt năng lượng'],
+    [/^for a project\b/i, 'cho một dự án'],
+    [/^i'll put on some upbeat rock\b/i, 'tôi sẽ mở nhạc rock sôi động'],
+    [/^or edm\b/i, 'hoặc nhạc EDM'],
+    [/^to get my adrenaline going\b/i, 'để kích thích adrenaline bùng nổ'],
+    [/^so, yeah\b/i, 'Tóm lại là'],
+    [/^so yeah\b/i, 'Tóm lại là'],
+    [/^i honestly can't imagine\b/i, 'tôi thực sự không thể tưởng tượng nổi'],
+    [/^a day without it\b/i, 'một ngày mà thiếu vắng nó'],
+
+    // Work & Study
+    [/^currently,?\s*i work as a software engineer\b/i, 'Hiện tại tôi đang làm kỹ sư phần mềm'],
+    [/^currently,?\s*i work as\b/i, 'Hiện tại tôi làm việc với vai trò'],
+    [/^at a tech firm\b/i, 'tại một công ty công nghệ'],
+    [/^where i build web applications\b/i, 'nơi tôi phát triển các ứng dụng web'],
+    [/^every single day\b/i, 'mỗi ngày'],
+    [/^the best part is solving complex problems\b/i, 'Điều tuyệt nhất là giải quyết các bài toán phức tạp'],
+    [/^the best part\b/i, 'Phần tuyệt vời nhất'],
+    [/^is solving complex problems\b/i, 'là giải quyết các vấn đề phức tạp'],
+    [/^alongside creative colleagues\b/i, 'cùng những đồng nghiệp sáng tạo'],
+    [/^which keeps me highly motivated\b/i, 'giúp tôi luôn tràn đầy động lực'],
+    [/^occasionally\b/i, 'Thỉnh thoảng'],
+    [/^tight project deadlines\b/i, 'hạn chót dự án dồn dập'],
+    [/^can be quite stressful\b/i, 'có thể gây khá nhiều áp lực'],
+    [/^after long working hours\b/i, 'sau những giờ làm việc kéo dài'],
+    [/^i was deeply passionate\b/i, 'Tôi từng vô cùng đam mê'],
+    [/^about computer science\b/i, 'ngành khoa học máy tính'],
+    [/^because it stimulated logic\b/i, 'vì nó kích thích tư duy logic'],
+    [/^and creative thinking\b/i, 'và năng lực tư duy sáng tạo'],
+    [/^not in the near future\b/i, 'Không phải trong tương lai gần'],
+    [/^as i truly enjoy tech\b/i, 'vì tôi thực sự yêu thích công nghệ'],
+    [/^but i might mentor startups\b/i, 'nhưng tôi có thể làm cố vấn khởi nghiệp'],
+    [/^down the road\b/i, 'trong tương lai xa'],
+
+    // People & Admired Person
+    [/^today i would like to talk about\b/i, 'Hôm nay tôi muốn chia sẻ về'],
+    [/^my beloved grandmother\b/i, 'người bà kính yêu của tôi'],
+    [/^who has always been my greatest role model\b/i, 'người luôn là tấm gương sáng nhất của tôi'],
+    [/^she grew up in a rural village\b/i, 'bà lớn lên ở một làng quê nghèo'],
+    [/^overcoming tremendous hardships\b/i, 'vượt qua vô vàn gian khó'],
+    [/^with unwavering resilience\b/i, 'với sự kiên cường bền bỉ'],
+    [/^what i admire most about her\b/i, 'điều tôi khâm phục nhất ở bà'],
+    [/^is her boundless generosity\b/i, 'là tấm lòng nhân ái bao la'],
+    [/^and selfless dedication to our entire family\b/i, 'và sự hy sinh quên mình cho cả gia đình'],
+
+    // Technology & AI
+    [/^ai will inevitably automate routine tasks\b/i, 'AI chắc chắn sẽ tự động hóa các tác vụ lặp lại'],
+    [/^displacing repetitive jobs\b/i, 'thay thế các công việc đơn điệu'],
+    [/^while creating high-demand positions\b/i, 'đồng thời tạo ra các vị trí có nhu cầu cao'],
+    [/^in prompt engineering and data ethics\b/i, 'trong kỹ nghệ câu lệnh và đạo đức dữ liệu'],
+    [/^workers must continuously upskill\b/i, 'người lao động cần liên tục nâng cao tay nghề'],
+    [/^to focus on uniquely human creative problem-solving\b/i, 'để tập trung vào giải quyết vấn đề sáng tạo của con người'],
+    [/^and emotional leadership\b/i, 'và khả năng lãnh đạo bằng cảm xúc'],
+
+    // Minimum wage & Economy
+    [/^raising the minimum wage\b/i, 'Tăng mức lương tối thiểu'],
+    [/^can stimulate broader economic circulation\b/i, 'có thể kích thích lưu thông kinh tế sâu rộng'],
+    [/^while protecting vulnerable workers\b/i, 'đồng thời bảo vệ người lao động yếu thế'],
+    [/^higher wages prevent\b/i, 'Mức lương cao hơn giúp ngăn chặn'],
+    [/^workers from needing to pinch pennies\b/i, 'người lao động không phải tằn tiện từng đồng'],
+    [/^or remain stuck in poverty\b/i, 'hay kẹt mãi trong nghèo khó'],
+    [/^this unleashes a ripple effect\b/i, 'Điều này tạo nên hiệu ứng lan tỏa'],
+    [/^that boosts purchasing power\b/i, 'giúp nâng cao sức mua'],
+    [/^and spurs economic growth\b/i, 'và thúc đẩy tăng trưởng kinh tế']
+  ];
+
+  for (const [pattern, translation] of phraseMap) {
+    if (pattern.test(cleaned)) {
+      return translation;
+    }
+  }
+
+  // 3. Fallback: Intelligent word & phrase replacement for dynamic inputs
+  let result = cleaned;
+
+  const wordReplacements: [RegExp, string][] = [
+    [/\bi was deeply passionate\b/gi, 'tôi từng vô cùng đam mê'],
+    [/\bi am deeply passionate\b/gi, 'tôi vô cùng đam mê'],
+    [/\bdeeply passionate\b/gi, 'vô cùng đam mê'],
+    [/\bcomputer science\b/gi, 'khoa học máy tính'],
+    [/\bstimulated logic\b|\bstimulate logic\b/gi, 'kích thích tư duy logic'],
+    [/\bcreative thinking\b/gi, 'tư duy sáng tạo'],
+    [/\bsoftware engineer\b/gi, 'kỹ sư phần mềm'],
+    [/\btech firm\b/gi, 'công ty công nghệ'],
+    [/\bweb applications\b/gi, 'ứng dụng web'],
+    [/\bcomplex problems\b/gi, 'vấn đề phức tạp'],
+    [/\bcreative colleagues\b/gi, 'đồng nghiệp sáng tạo'],
+    [/\bhighly motivated\b/gi, 'tràn đầy động lực'],
+    [/\btight deadlines\b|\bproject deadlines\b/gi, 'hạn chót dự án'],
+    [/\bworking hours\b/gi, 'giờ làm việc'],
+    [/\brole model\b/gi, 'tấm gương noi theo'],
+    [/\bunwavering resilience\b/gi, 'sự kiên cường bền bỉ'],
+    [/\bboundless generosity\b/gi, 'lòng hảo tâm bao la'],
+    [/\bselfless dedication\b/gi, 'sự cống hiến quên mình'],
+    [/\bbackground noise\b/gi, 'âm thanh nền'],
+    [/\bmusic lover\b/gi, 'người yêu âm nhạc'],
+    [/\bnecessity\b/gi, 'nhu cầu thiết yếu'],
+    [/\bmain reason\b/gi, 'lý do chính'],
+    [/\bpowerful effect\b/gi, 'tác động mạnh mẽ'],
+    [/\bmy mood\b/gi, 'tâm trạng của tôi'],
+    [/\brelax and unwind\b/gi, 'thư giãn và xả stress'],
+    [/\badrenaline going\b/gi, 'bùng nổ năng lượng'],
+    [/\bcannot imagine\b|\bcan't imagine\b/gi, 'không thể tưởng tượng'],
+    [/\bi am\b|\bi'm\b|\bi was\b|\bi\b/gi, 'tôi'],
+    [/\bbecause\b/gi, 'bởi vì'],
+    [/\balthough\b|\beven though\b/gi, 'mặc dù'],
+    [/\btherefore\b|\bas a result\b/gi, 'kết quả là'],
+    [/\bhowever\b/gi, 'tuy nhiên'],
+    [/\bmoreover\b|\bfurthermore\b/gi, 'hơn nữa'],
+    [/\bespecially\b/gi, 'đặc biệt là'],
+    [/\band\b/gi, 'và'],
+    [/\bor\b/gi, 'hoặc'],
+    [/\bbut\b/gi, 'nhưng'],
+    [/\bwith\b/gi, 'với'],
+    [/\bwithout\b/gi, 'nếu không có'],
+    [/\babout\b/gi, 'về'],
+    [/\bfor\b/gi, 'cho'],
+    [/\bat\b/gi, 'tại'],
+    [/\bin\b/gi, 'trong'],
+    [/\bon\b/gi, 'trên'],
+    [/\bto\b/gi, 'để']
+  ];
+
+  wordReplacements.forEach(([rgx, rep]) => {
+    result = result.replace(rgx, rep);
+  });
+
+  return result.trim();
+}
+
+/**
+ * Transforms any input text or paragraph into an icon-anchored arrow chain format
+ * Micro-chunks long sentences into 3-5 word units with matching semantic icons.
+ */
+export function convertTextToVisualIconChain(paragraphText: string, customVocabText?: string): {
   topic: string;
   question: string;
   fullAnswer: string;
@@ -248,24 +438,26 @@ export function convertTextToVisualIconChain(paragraphText: string): {
             const icon = match[1];
             const text = match[2];
             if (!allIcons.includes(icon)) allIcons.push(icon);
-            explanations.push({ icon, textEn: text, textVi: text });
+            const textVi = translateEnglishToVietnamese(text, customVocabText);
+            explanations.push({ icon, textEn: text, textVi });
             vocabItems.push({
               id: `v_${vocabItems.length + 1}`,
               icon,
               word: text.slice(0, 35),
-              meaning: text,
+              meaning: textVi,
               visualSentence: `${icon} ${text}`,
               category: 'Visual Anchor'
             });
           } else {
             const icon = getSemanticIconForConcept(part);
             if (!allIcons.includes(icon)) allIcons.push(icon);
-            explanations.push({ icon, textEn: part, textVi: part });
+            const textVi = translateEnglishToVietnamese(part, customVocabText);
+            explanations.push({ icon, textEn: part, textVi });
             vocabItems.push({
               id: `v_${vocabItems.length + 1}`,
               icon,
               word: part.slice(0, 35),
-              meaning: part,
+              meaning: textVi,
               visualSentence: `${icon} ${part}`,
               category: 'Visual Anchor'
             });
@@ -319,12 +511,13 @@ export function convertTextToVisualIconChain(paragraphText: string): {
       const icon = getSemanticIconForConcept(clause);
       if (!allIcons.includes(icon)) allIcons.push(icon);
       chunkItems.push(`${icon} ${clause}`);
-      explanations.push({ icon, textEn: clause, textVi: clause });
+      const textVi = translateEnglishToVietnamese(clause, customVocabText);
+      explanations.push({ icon, textEn: clause, textVi });
       vocabItems.push({
         id: `v_${vocabItems.length + 1}`,
         icon,
         word: clause.slice(0, 35),
-        meaning: clause,
+        meaning: textVi,
         visualSentence: `${icon} ${clause}`,
         category: 'Visual Anchor'
       });
@@ -496,7 +689,7 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
     const combinedInput = `${qPrefix}${params.readingText}\n${params.vocabListText}`.trim();
     
     if (combinedInput.length > 0) {
-      const chainData = convertTextToVisualIconChain(combinedInput);
+      const chainData = convertTextToVisualIconChain(combinedInput, params.vocabListText);
       const chosenPart = params.partPreference || 'Part 1';
 
       return {
@@ -516,8 +709,8 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
           { icon: '🎯', connector: 'So, yeah,', function: 'Final conclusion', vietnamese: 'Nói chung là' }
         ],
         bilingualSummary: {
-          english: `Visual Icon Chain (${chainData.allIcons.slice(0, 6).join(' ')}): ${chainData.explanations.slice(0, 4).map((e) => `${e.icon} ${e.textEn}`).join(' → ')}.`,
-          vietnamese: `Chuỗi Neo Ý Tưởng Trực Quan: ${chainData.explanations.slice(0, 4).map((e) => `${e.icon} ${e.textVi}`).join(' → ')}.`
+          english: chainData.explanations.map((e) => `${e.icon} ${e.textEn}`).join(' → '),
+          vietnamese: chainData.explanations.map((e) => `${e.icon} ${e.textVi}`).join(' → ')
         },
         thirtySecondMemory: {
           iconChain: chainData.allIcons.join(' → '),
