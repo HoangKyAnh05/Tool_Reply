@@ -23,7 +23,7 @@ import { IeltsConnectorTable } from './IeltsConnectorTable';
 import { IeltsRecallQuiz } from './IeltsRecallQuiz';
 import { IeltsPromptModal } from './IeltsPromptModal';
 import { IeltsPart1BankModal } from './IeltsPart1BankModal';
-import { IeltsPart1Item } from '../../data/ieltsPart1Bank';
+import { ieltsPart1Bank, IeltsPart1Item } from '../../data/ieltsPart1Bank';
 import { audioService } from '../../services/audioService';
 
 export const IeltsWorkspace: React.FC = () => {
@@ -35,6 +35,7 @@ export const IeltsWorkspace: React.FC = () => {
   const [vocabInput, setVocabInput] = useState('');
   const [readingInput, setReadingInput] = useState('');
   const [questionInput, setQuestionInput] = useState('');
+  const [selectedPart1Id, setSelectedPart1Id] = useState<number | null>(null);
   const [noOldVocab, setNoOldVocab] = useState(false);
   const [partPreference, setPartPreference] = useState<'Part 1' | 'Part 2' | 'Part 3'>('Part 1');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -64,6 +65,7 @@ export const IeltsWorkspace: React.FC = () => {
 
   const handleLoadSample = (type: 'wage' | 'environment' | 'ai' | 'music') => {
     audioService.playBeep('click');
+    setSelectedPart1Id(null);
     if (type === 'wage') {
       setQuestionInput('Do you believe increasing the minimum wage benefits or harms the national economy? Why?');
       setVocabInput(`pinch pennies - tằn tiện từng đồng\nremain stuck in - kẹt cứng trong hoàn cảnh\nripple effect - hiệu ứng lan tỏa\nspur job growth - thúc đẩy tăng trưởng việc làm\npurchasing power - sức mua tiêu dùng\nkeep pace with - bắt kịp đà tăng\nbe indexed to - được điều chỉnh theo chỉ số`);
@@ -93,14 +95,40 @@ export const IeltsWorkspace: React.FC = () => {
 
   const handleLoadFullDefault = () => {
     audioService.playBeep('success');
+    setSelectedPart1Id(null);
     setCurrentLesson(defaultIeltsLesson);
     storageService.saveIeltsLesson(defaultIeltsLesson);
     setVocabInput(`pinch pennies - tằn tiện từng đồng\nremain stuck in - kẹt cứng trong hoàn cảnh\nripple effect - hiệu ứng lan tỏa\nspur job growth - thúc đẩy tăng trưởng việc làm\npurchasing power - sức mua tiêu dùng\nkeep pace with - bắt kịp đà tăng\nbe indexed to - được điều chỉnh theo chỉ số`);
     setReadingInput('Raising the minimum wage can stimulate broader economic circulation while protecting vulnerable workers.');
   };
 
+  const handleSelectPart1ById = (id: number) => {
+    const item = ieltsPart1Bank.find((q) => q.id === id);
+    if (item) {
+      audioService.playBeep('click');
+      setSelectedPart1Id(item.id);
+      setQuestionInput(item.question);
+      setVocabInput(item.vocab);
+      setReadingInput(item.answer);
+      setPartPreference('Part 1');
+    }
+  };
+
+  const handleNextPart1 = () => {
+    const currentId = selectedPart1Id || 1;
+    const nextId = currentId < 100 ? currentId + 1 : 1;
+    handleSelectPart1ById(nextId);
+  };
+
+  const handlePrevPart1 = () => {
+    const currentId = selectedPart1Id || 1;
+    const prevId = currentId > 1 ? currentId - 1 : 100;
+    handleSelectPart1ById(prevId);
+  };
+
   const handleSelectPart1Question = async (item: IeltsPart1Item) => {
     audioService.playBeep('click');
+    setSelectedPart1Id(item.id);
     setQuestionInput(item.question);
     setVocabInput(item.vocab);
     setReadingInput(item.answer);
@@ -239,15 +267,83 @@ export const IeltsWorkspace: React.FC = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
-              <span>3. Câu hỏi / Đề bài (Prompt):</span>
-              <span className="text-[10px] text-indigo-400 font-normal">Tự động tạo Icon ❓</span>
-            </label>
+          {/* Section 3: Question / Prompt with 100 Bank Integration */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <span>3. Câu hỏi / Đề bài (Prompt):</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  100 Part 1 Bank
+                </span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsPart1BankOpen(true)}
+                className="text-[11px] text-purple-400 hover:text-purple-300 font-bold underline flex items-center gap-1"
+              >
+                <BookMarked className="w-3 h-3" />
+                <span>Xem kho 100 câu ▾</span>
+              </button>
+            </div>
+
+            {/* Direct 100 Question Dropdown & Prev/Next Controls */}
+            <div className="flex items-center gap-1.5">
+              <select
+                value={selectedPart1Id || ''}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (val) handleSelectPart1ById(val);
+                }}
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-indigo-300 font-medium focus:outline-none focus:border-indigo-500 truncate"
+              >
+                <option value="">-- Chọn 1 trong 100 câu Part 1 --</option>
+                {Array.from(new Set(ieltsPart1Bank.map((i: IeltsPart1Item) => i.category))).map((cat: string) => (
+                  <optgroup key={cat} label={`📁 ${cat}`} className="bg-slate-900 text-slate-300 font-bold">
+                    {ieltsPart1Bank
+                      .filter((i: IeltsPart1Item) => i.category === cat)
+                      .map((i: IeltsPart1Item) => (
+                        <option key={i.id} value={i.id} className="bg-slate-950 text-slate-100 font-normal">
+                          #{i.id}. {i.question}
+                        </option>
+                      ))}
+                  </optgroup>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={handlePrevPart1}
+                title="Câu trước"
+                className="px-2.5 py-1.5 bg-slate-950 border border-slate-800 hover:bg-slate-800 rounded-xl text-xs text-slate-300 font-bold transition"
+              >
+                ◀
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNextPart1}
+                title="Câu tiếp theo"
+                className="px-2.5 py-1.5 bg-slate-950 border border-slate-800 hover:bg-slate-800 rounded-xl text-xs text-slate-300 font-bold transition"
+              >
+                ▶
+              </button>
+            </div>
+
+            {selectedPart1Id && (
+              <div className="flex items-center justify-between text-[11px] text-slate-400 bg-indigo-950/30 px-2.5 py-1 rounded-lg border border-indigo-500/20">
+                <span className="text-indigo-300 font-medium truncate">
+                  📌 #{selectedPart1Id}: {ieltsPart1Bank.find((q) => q.id === selectedPart1Id)?.category}
+                </span>
+                <span className="text-slate-500 font-mono text-[10px] shrink-0">
+                  {selectedPart1Id}/100 câu
+                </span>
+              </div>
+            )}
+
             <textarea
               value={questionInput}
               onChange={(e) => setQuestionInput(e.target.value)}
-              placeholder="Do you enjoy listening to music? Why or why not?"
+              placeholder="Nhập hoặc chọn câu hỏi từ danh sách 100 câu ở trên..."
               rows={2}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-medium"
             />
