@@ -144,12 +144,12 @@ export const IeltsWritingWorkspace: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm sm:text-base font-extrabold text-white">IELTS Writing Master Bank</h2>
-              <span className="text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                600 ĐỀ THẬT (300 T1 + 300 T2)
+              <span className="text-[10px] font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                🏛️ BỘ ĐỀ CAMBRIDGE 10 – 19 ({ieltsWritingTask1Bank.length + ieltsWritingTask2Bank.length} ĐỀ THẬT)
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              Đề thi thật kèm biểu đồ trực quan & bài mẫu chuẩn Band 7.5 – 8.5+
+              100% Đề thi thật Cambridge IELTS (Cam 10 - 19) • Số liệu chuẩn xác • Biểu đồ trực quan • Bài mẫu Band 8.5+
             </p>
           </div>
         </div>
@@ -169,7 +169,7 @@ export const IeltsWritingWorkspace: React.FC = () => {
             }`}
           >
             <TrendingUp className="w-4 h-4 text-purple-300" />
-            <span>Task 1: Biểu Đồ ({filteredTask1.length}/300)</span>
+            <span>Task 1: Biểu Đồ ({filteredTask1.length} Đề Cam)</span>
           </button>
 
           <button
@@ -185,7 +185,7 @@ export const IeltsWritingWorkspace: React.FC = () => {
             }`}
           >
             <FileText className="w-4 h-4 text-amber-300" />
-            <span>Task 2: Nghị Luận ({filteredTask2.length}/300)</span>
+            <span>Task 2: Nghị Luận ({filteredTask2.length} Đề Cam)</span>
           </button>
         </div>
 
@@ -249,7 +249,7 @@ export const IeltsWritingWorkspace: React.FC = () => {
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
           {activeTask === 'task1' ? (
             [
-              { id: 'all', label: 'Tất Cả Dạng (300)' },
+              { id: 'all', label: `Tất Cả Dạng (${ieltsWritingTask1Bank.length})` },
               { id: 'line', label: '📈 Line Graph' },
               { id: 'bar', label: '📊 Bar Chart' },
               { id: 'pie', label: '🥧 Pie Chart' },
@@ -274,7 +274,7 @@ export const IeltsWritingWorkspace: React.FC = () => {
             ))
           ) : (
             [
-              { id: 'all', label: 'Tất Cả Dạng (300)' },
+              { id: 'all', label: `Tất Cả Dạng (${ieltsWritingTask2Bank.length})` },
               { id: 'opinion', label: 'Agree / Disagree' },
               { id: 'discussion', label: 'Discuss Both Views' },
               { id: 'advantages_disadvantages', label: 'Adv / Disadv' },

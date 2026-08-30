@@ -102,9 +102,9 @@ export const IeltsWritingBankModal: React.FC<IeltsWritingBankModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                <span>📚 Thư Viện 600 Đề Thi IELTS Writing (Bank)</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
-                  Task 1 (300) • Task 2 (300)
+                <span>📚 Thư Viện Đề Thi IELTS Writing Cambridge (Bank)</span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+                  Cam 10-19 ({ieltsWritingTask1Bank.length + ieltsWritingTask2Bank.length} Đề Thật)
                 </span>
                 {isFullscreen && (
                   <span className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">
@@ -113,7 +113,7 @@ export const IeltsWritingBankModal: React.FC<IeltsWritingBankModalProps> = ({
                 )}
               </h2>
               <p className="text-[11px] text-slate-400 hidden sm:block">
-                Tra cứu đề thi thật kèm biểu đồ trực quan & bài mẫu chuẩn Band 7.5 – 8.5+
+                Tra cứu 100% đề thi thật Cambridge IELTS (Cam 10-19) kèm biểu đồ trực quan & bài mẫu chuẩn Band 8.5+
               </p>
             </div>
           </div>
@@ -154,7 +154,7 @@ export const IeltsWritingBankModal: React.FC<IeltsWritingBankModalProps> = ({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Task 1 Biểu Đồ (300)
+              Task 1 Biểu Đồ ({ieltsWritingTask1Bank.length} Đề Cam)
             </button>
 
             <button
@@ -169,7 +169,7 @@ export const IeltsWritingBankModal: React.FC<IeltsWritingBankModalProps> = ({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Task 2 Nghị Luận (300)
+              Task 2 Nghị Luận ({ieltsWritingTask2Bank.length} Đề Cam)
             </button>
           </div>
 
