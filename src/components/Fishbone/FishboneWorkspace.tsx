@@ -11,7 +11,8 @@ import {
   BarChart3,
   Zap,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Smartphone
 } from 'lucide-react';
 import { FishboneProject, EvolutionLevel } from '../../types/fishbone';
 import { storageService, defaultFishboneProject } from '../../services/storageService';
@@ -23,6 +24,7 @@ import { LevelComparisonView } from './LevelComparisonView';
 import { EvolutionTimelineView } from './EvolutionTimelineView';
 import { QualityGateModal } from './QualityGateModal';
 import { FishbonePromptModal } from './FishbonePromptModal';
+import { MobileProjectSimulatorModal } from '../common/MobileProjectSimulatorModal';
 import { audioService } from '../../services/audioService';
 
 const SAAS_FISHBONE_PROJECT: FishboneProject = {
@@ -143,6 +145,7 @@ export const FishboneWorkspace: React.FC = () => {
   const [isQualityGateOpen, setIsQualityGateOpen] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -306,6 +309,20 @@ export const FishboneWorkspace: React.FC = () => {
             <span>AI Prompt / JSON Loop</span>
           </button>
 
+          {/* Mobile Phone Mode Button */}
+          <button
+            onClick={() => {
+              audioService.playBeep('click');
+              setIsMobileModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600/30 to-purple-600/30 border border-cyan-500/50 hover:bg-cyan-600 hover:text-white text-cyan-200 text-xs font-bold transition shadow-sm"
+            title="Xem dự án theo giao diện điện thoại thoại (Mobile Phone View)"
+          >
+            <Smartphone className="w-3.5 h-3.5 text-cyan-300" />
+            <span className="hidden sm:inline">📱 Chế độ Điện Thoại</span>
+            <span className="sm:hidden">📱 Mobile</span>
+          </button>
+
           {/* Fullscreen Toggle Button */}
           <button
             onClick={handleToggleFullscreen}
@@ -372,6 +389,13 @@ export const FishboneWorkspace: React.FC = () => {
           storageService.saveFishboneProject(imported);
           setActiveLevelId(imported.levels[0]?.id || 'lvl_1');
         }}
+      />
+
+      {/* Mobile Project Simulator Modal */}
+      <MobileProjectSimulatorModal
+        isOpen={isMobileModalOpen}
+        onClose={() => setIsMobileModalOpen(false)}
+        initialTab="fishbone"
       />
     </div>
   );

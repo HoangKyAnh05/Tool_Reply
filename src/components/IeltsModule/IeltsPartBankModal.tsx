@@ -15,7 +15,8 @@ import {
   Eye,
   Volume2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Smartphone
 } from 'lucide-react';
 import { ieltsPart1Bank, IeltsPart1Item } from '../../data/ieltsPart1Bank';
 import { ieltsPart2Bank, IeltsPart2Item } from '../../data/ieltsPart2Bank';
@@ -23,6 +24,7 @@ import { ieltsPart3Bank, IeltsPart3Item } from '../../data/ieltsPart3Bank';
 import { storageService } from '../../services/storageService';
 import { IeltsCustomQuestion } from '../../types/ielts';
 import { IeltsCustomQuestionModal } from './IeltsCustomQuestionModal';
+import { MobileProjectSimulatorModal } from '../common/MobileProjectSimulatorModal';
 import { audioService } from '../../services/audioService';
 import { toggleNativeFullscreen } from '../../utils/fullscreen';
 
@@ -55,6 +57,7 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
   const [customVersion, setCustomVersion] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(defaultFullscreen);
   const [focusItem, setFocusItem] = useState<any | null>(null);
@@ -263,6 +266,20 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
             >
               <Plus className="w-3.5 h-3.5" />
               <span>➕ Tạo câu hỏi mới</span>
+            </button>
+
+            {/* Mobile Mode Button */}
+            <button
+              onClick={() => {
+                audioService.playBeep('click');
+                setIsMobileModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600/40 to-pink-600/40 border border-purple-500/50 hover:from-purple-600 hover:to-pink-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm"
+              title="Xem 300 câu hỏi trên giao diện điện thoại (Mobile Phone View)"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-pink-300" />
+              <span className="hidden sm:inline">📱 Chế độ Điện Thoại</span>
+              <span className="sm:hidden">📱 Mobile</span>
             </button>
 
             {/* Maximize / Minimize Fullscreen Button */}
@@ -742,6 +759,17 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
         onSaved={(newQ) => {
           setCustomVersion((v) => v + 1);
           setSelectedCategory('⭐ Câu hỏi tự tạo (Custom)');
+        }}
+      />
+
+      {/* Mobile Project Simulator Modal */}
+      <MobileProjectSimulatorModal
+        isOpen={isMobileModalOpen}
+        onClose={() => setIsMobileModalOpen(false)}
+        initialTab="ielts300"
+        onSelectIeltsQuestion={(item) => {
+          handleSelect(item);
+          setIsMobileModalOpen(false);
         }}
       />
     </div>

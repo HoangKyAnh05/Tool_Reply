@@ -17,7 +17,8 @@ import {
   Bot,
   Globe,
   Bell,
-  ExternalLink
+  ExternalLink,
+  Smartphone
 } from 'lucide-react';
 import { AppSettings } from '../../types/settings';
 import { audioService } from '../../services/audioService';
@@ -30,6 +31,7 @@ interface NavbarProps {
   onTabChange: (tab: ActiveTab) => void;
   onNavigateToMiniWeb?: (serviceId: string) => void;
   onOpen300Questions?: () => void;
+  onOpenMobileSimulator?: () => void;
   settings: AppSettings;
   onToggleSound: () => void;
   openSettingsModal: () => void;
@@ -42,6 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onTabChange,
   onNavigateToMiniWeb,
   onOpen300Questions,
+  onOpenMobileSimulator,
   settings,
   onToggleSound,
   openSettingsModal,
@@ -254,6 +257,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             <BookMarked className="w-3.5 h-3.5 text-amber-400" />
             <span className="hidden xl:inline">📚 300 Câu Hỏi (Full)</span>
             <span className="xl:hidden">300 Câu</span>
+          </button>
+        )}
+
+        {/* Quick Open Mobile Simulator for Projects Button */}
+        {onOpenMobileSimulator && (
+          <button
+            onClick={() => {
+              audioService.playBeep('click');
+              onOpenMobileSimulator();
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-pink-600/30 via-purple-600/30 to-indigo-600/30 border border-pink-500/40 hover:bg-gradient-to-r hover:from-pink-600 hover:to-purple-600 hover:text-white text-pink-200 text-xs font-bold transition shadow-sm hover:scale-105 active:scale-95"
+            title="Mở Chế Độ Xem Điện Thoại Cho Các Dự Án (300 Từ, Sơ Đồ Xương Cá, Gen Z)"
+          >
+            <Smartphone className="w-3.5 h-3.5 text-pink-300" />
+            <span className="hidden xl:inline">📱 Chế Độ Mobile</span>
+            <span className="xl:hidden">📱 Mobile</span>
           </button>
         )}
 

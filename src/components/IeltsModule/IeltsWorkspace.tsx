@@ -13,7 +13,8 @@ import {
   ToggleRight,
   Zap,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Smartphone
 } from 'lucide-react';
 import { IeltsSpeakingLesson } from '../../types/ielts';
 import { aiService } from '../../services/aiService';
@@ -26,6 +27,7 @@ import { IeltsRecallQuiz } from './IeltsRecallQuiz';
 import { IeltsPromptModal } from './IeltsPromptModal';
 import { IeltsPartBankModal, SelectedQuestionPayload } from './IeltsPartBankModal';
 import { IeltsCustomQuestionModal } from './IeltsCustomQuestionModal';
+import { MobileProjectSimulatorModal, MobileProjectTab } from '../common/MobileProjectSimulatorModal';
 import { ieltsPart1Bank, IeltsPart1Item } from '../../data/ieltsPart1Bank';
 import { ieltsPart2Bank, IeltsPart2Item } from '../../data/ieltsPart2Bank';
 import { ieltsPart3Bank, IeltsPart3Item } from '../../data/ieltsPart3Bank';
@@ -55,6 +57,8 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
   const [isPartBankFullscreen, setIsPartBankFullscreen] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [isMobileSimulatorOpen, setIsMobileSimulatorOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState<MobileProjectTab>('ielts300');
   const [customVersion, setCustomVersion] = useState(0);
   const [activeSubTab, setActiveSubTab] = useState<'answer' | 'vocab' | 'connectors' | 'test'>('answer');
 
@@ -280,6 +284,21 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
           >
             <Maximize2 className="w-3.5 h-3.5 text-cyan-300" />
             <span>⛶ Mở To 300 Câu</span>
+          </button>
+
+          {/* Mobile Phone Mode for 300 Questions */}
+          <button
+            onClick={() => {
+              audioService.playBeep('click');
+              setMobileTab('ielts300');
+              setIsMobileSimulatorOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/50 hover:bg-purple-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm"
+            title="Xem kho 300 câu hỏi trên giao diện điện thoại thoại"
+          >
+            <Smartphone className="w-3.5 h-3.5 text-pink-300" />
+            <span className="hidden xl:inline">📱 Xem Mobile 300 Câu</span>
+            <span className="xl:hidden">📱 Mobile</span>
           </button>
 
           {/* Quick Sample Fill Button */}
@@ -646,8 +665,21 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
               </button>
             </div>
 
-            {/* Right Action: Focus / Fullscreen Mode Toggle */}
+            {/* Right Action: Mobile Simulator & Focus / Fullscreen Mode Toggle */}
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  audioService.playBeep('click');
+                  setMobileTab('current_lesson');
+                  setIsMobileSimulatorOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/40 bg-indigo-950/40 hover:bg-indigo-600 hover:text-white text-indigo-200 text-xs font-bold transition shadow-sm"
+                title="Xem bài học hiện tại trên giao diện điện thoại"
+              >
+                <Smartphone className="w-3.5 h-3.5 text-indigo-300" />
+                <span className="hidden sm:inline">📱 Xem Mobile</span>
+              </button>
+
               <button
                 onClick={handleToggleFocusMode}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm ${
@@ -736,6 +768,14 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
           setSelectedQuestionId(saved.id);
           handleSelectQuestionById(saved.id);
         }}
+      />
+
+      {/* Mobile Project Simulator Modal */}
+      <MobileProjectSimulatorModal
+        isOpen={isMobileSimulatorOpen}
+        onClose={() => setIsMobileSimulatorOpen(false)}
+        initialTab={mobileTab}
+        onSelectIeltsQuestion={handleSelectFromModal}
       />
     </div>
   );

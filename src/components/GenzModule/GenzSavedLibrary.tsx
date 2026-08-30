@@ -13,11 +13,13 @@ import {
   Maximize2,
   Minimize2,
   Eye,
-  X
+  X,
+  Smartphone
 } from 'lucide-react';
 import { GenzSavedPhrase, GenzTone } from '../../types/genz';
 import { storageService } from '../../services/storageService';
 import { toggleNativeFullscreen } from '../../utils/fullscreen';
+import { MobileProjectSimulatorModal } from '../common/MobileProjectSimulatorModal';
 import { audioService } from '../../services/audioService';
 
 interface GenzSavedLibraryProps {
@@ -30,6 +32,7 @@ export const GenzSavedLibrary: React.FC<GenzSavedLibraryProps> = ({ onOpenImageM
   const [selectedTone, setSelectedTone] = useState<string>('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
   const [focusPhrase, setFocusPhrase] = useState<GenzSavedPhrase | null>(null);
 
   useEffect(() => {
@@ -115,6 +118,20 @@ export const GenzSavedLibrary: React.FC<GenzSavedLibraryProps> = ({ onOpenImageM
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Mobile Phone Mode Button */}
+          <button
+            onClick={() => {
+              audioService.playBeep('click');
+              setIsMobileModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-pink-600/30 to-purple-600/30 border border-pink-500/50 hover:bg-pink-600 hover:text-white text-pink-200 text-xs font-bold transition shadow-sm"
+            title="Xem thư viện Gen Z trên giao diện điện thoại (Mobile Phone View)"
+          >
+            <Smartphone className="w-3.5 h-3.5 text-pink-300" />
+            <span className="hidden sm:inline">📱 Chế độ Điện Thoại</span>
+            <span className="sm:hidden">📱 Mobile</span>
+          </button>
+
           {/* Fullscreen Toggle */}
           <button
             onClick={handleToggleFullscreen}
@@ -338,6 +355,13 @@ export const GenzSavedLibrary: React.FC<GenzSavedLibraryProps> = ({ onOpenImageM
           </div>
         </div>
       )}
+
+      {/* Mobile Project Simulator Modal */}
+      <MobileProjectSimulatorModal
+        isOpen={isMobileModalOpen}
+        onClose={() => setIsMobileModalOpen(false)}
+        initialTab="genz"
+      />
     </div>
   );
 };

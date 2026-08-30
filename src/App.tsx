@@ -18,6 +18,7 @@ import { audioService } from './services/audioService';
 import { aiService } from './services/aiService';
 import { GenzVisualIdea } from './types/genz';
 import { AppSettings } from './types/settings';
+import { MobileProjectSimulatorModal, MobileProjectTab } from './components/common/MobileProjectSimulatorModal';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('miniweb');
@@ -29,6 +30,8 @@ export const App: React.FC = () => {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isNotificationHubOpen, setIsNotificationHubOpen] = useState(false);
   const [isGlobalPartBankOpen, setIsGlobalPartBankOpen] = useState(false);
+  const [isGlobalMobileSimulatorOpen, setIsGlobalMobileSimulatorOpen] = useState(false);
+  const [mobileSimulatorTab, setMobileSimulatorTab] = useState<MobileProjectTab>('ielts300');
   const [activeMemeModalIdea, setActiveMemeModalIdea] = useState<GenzVisualIdea | null>(null);
 
   // Unified Direct Service Navigation
@@ -71,6 +74,16 @@ export const App: React.FC = () => {
         onTabChange={(tab) => setActiveTab(tab)}
         onNavigateToMiniWeb={(serviceId) => handleNavigateToMiniWebService(serviceId)}
         onOpen300Questions={() => setIsGlobalPartBankOpen(true)}
+        onOpenMobileSimulator={() => {
+          const tab: MobileProjectTab =
+            activeTab === 'fishbone'
+              ? 'fishbone'
+              : activeTab === 'genz' || activeTab === 'library'
+              ? 'genz'
+              : 'ielts300';
+          setMobileSimulatorTab(tab);
+          setIsGlobalMobileSimulatorOpen(true);
+        }}
         settings={settings}
         onToggleSound={handleToggleSound}
         openSettingsModal={() => setIsSettingsOpen(true)}
@@ -155,6 +168,31 @@ export const App: React.FC = () => {
             console.error('Generate lesson error:', err);
           } finally {
             setIsGlobalPartBankOpen(false);
+            setActiveTab('ielts');
+          }
+        }}
+      />
+
+      {/* Global Mobile Project Simulator Modal */}
+      <MobileProjectSimulatorModal
+        isOpen={isGlobalMobileSimulatorOpen}
+        onClose={() => setIsGlobalMobileSimulatorOpen(false)}
+        initialTab={mobileSimulatorTab}
+        onSelectIeltsQuestion={async (payload) => {
+          try {
+            audioService.playBeep('success');
+            const newLesson = await aiService.generateIeltsLesson({
+              vocabListText: payload.vocab,
+              readingText: payload.answer,
+              questionText: payload.question,
+              noOldVocab: false,
+              partPreference: payload.part
+            });
+            storageService.saveIeltsLesson(newLesson);
+          } catch (err) {
+            console.error('Generate lesson error:', err);
+          } finally {
+            setIsGlobalMobileSimulatorOpen(false);
             setActiveTab('ielts');
           }
         }}
