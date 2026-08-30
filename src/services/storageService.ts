@@ -4,6 +4,7 @@ import { ParallelUniverseSimulation } from '../types/universe';
 import { AppSettings } from '../types/settings';
 import { ActionTask, CompletedAction, ActionUserProfile, ActionBadge } from '../types/actionEngine';
 import { FishboneProject } from '../types/fishbone';
+import { FishboneVocabItem } from '../types/fishboneVocab';
 
 const STORAGE_KEYS = {
   SETTINGS: 'app_settings_v1',
@@ -17,7 +18,8 @@ const STORAGE_KEYS = {
   ACTION_TASKS: 'action_engine_tasks_v1',
   ACTION_HISTORY: 'action_engine_history_v1',
   ACTION_PROFILE: 'action_engine_profile_v1',
-  FISHBONE_PROJECT: 'fishbone_project_v1'
+  FISHBONE_PROJECT: 'fishbone_project_v1',
+  FISHBONE_CUSTOM_VOCAB: 'fishbone_custom_vocab_v1'
 };
 
 export const defaultSettings: AppSettings = {
@@ -599,5 +601,33 @@ export const storageService = {
   saveFishboneProject(project: FishboneProject): void {
     project.updatedAt = new Date().toISOString();
     localStorage.setItem(STORAGE_KEYS.FISHBONE_PROJECT, JSON.stringify(project));
+  },
+
+  getCustomFishboneItems(): FishboneVocabItem[] {
+    const raw = localStorage.getItem(STORAGE_KEYS.FISHBONE_CUSTOM_VOCAB);
+    if (!raw) return [];
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  },
+
+  saveCustomFishboneItem(item: FishboneVocabItem): void {
+    const current = this.getCustomFishboneItems();
+    const existingIdx = current.findIndex((i) => i.id === item.id);
+    let updated: FishboneVocabItem[];
+    if (existingIdx >= 0) {
+      updated = current.map((i) => (i.id === item.id ? item : i));
+    } else {
+      updated = [item, ...current];
+    }
+    localStorage.setItem(STORAGE_KEYS.FISHBONE_CUSTOM_VOCAB, JSON.stringify(updated));
+  },
+
+  deleteCustomFishboneItem(id: number | string): void {
+    const current = this.getCustomFishboneItems();
+    const updated = current.filter((i) => i.id !== id);
+    localStorage.setItem(STORAGE_KEYS.FISHBONE_CUSTOM_VOCAB, JSON.stringify(updated));
   }
 };

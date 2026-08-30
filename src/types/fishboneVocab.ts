@@ -1,4 +1,4 @@
-export type VocabPartOfSpeech = 'noun' | 'verb' | 'adj' | 'adv';
+export type VocabPartOfSpeech = 'noun' | 'verb' | 'adj' | 'adv' | 'phrase' | 'structure' | 'grammar';
 
 export interface FishboneBoneTheme {
   id: string;
@@ -7,12 +7,14 @@ export interface FishboneBoneTheme {
   icon: string;
   color: string;
   description: string;
+  categoryType?: 'vocabulary' | 'grammar' | 'speaking' | 'writing';
+  itemCount?: number;
 }
 
 export interface FishboneVocabItem {
-  id: number;
+  id: number | string;
   word: string;
-  phonetic: string;
+  phonetic?: string;
   pos: VocabPartOfSpeech;
   meaning: string;
   icon: string;
@@ -22,4 +24,7 @@ export interface FishboneVocabItem {
   collocation: string;
   example: string;
   band: '7.5' | '8.0' | '8.5' | '9.0';
+  formula?: string;
+  usageNotes?: string;
+  isCustom?: boolean;
 }

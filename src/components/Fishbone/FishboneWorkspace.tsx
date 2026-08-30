@@ -19,6 +19,7 @@ import { storageService, defaultFishboneProject } from '../../services/storageSe
 import { fishboneService } from '../../services/fishboneService';
 import { toggleNativeFullscreen } from '../../utils/fullscreen';
 import { FishboneCanvas } from './FishboneCanvas';
+import { FishboneProjectCanvas } from './FishboneProjectCanvas';
 import { LevelDetailView } from './LevelDetailView';
 import { LevelComparisonView } from './LevelComparisonView';
 import { EvolutionTimelineView } from './EvolutionTimelineView';
@@ -142,7 +143,7 @@ export const FishboneWorkspace: React.FC = () => {
     return cur.id;
   });
 
-  const [activeTab, setActiveTab] = useState<'levels' | 'vocab3000' | 'compare' | 'timeline'>('levels');
+  const [activeTab, setActiveTab] = useState<'levels' | 'vocab3000' | 'compare' | 'timeline'>('vocab3000');
   const [isQualityGateOpen, setIsQualityGateOpen] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -266,18 +267,6 @@ export const FishboneWorkspace: React.FC = () => {
 
           <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-bold">
             <button
-              onClick={() => setActiveTab('levels')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition ${
-                activeTab === 'levels'
-                  ? 'bg-cyan-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Xương Cá & Chi Tiết</span>
-            </button>
-
-            <button
               onClick={() => setActiveTab('vocab3000')}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition ${
                 activeTab === 'vocab3000'
@@ -286,7 +275,19 @@ export const FishboneWorkspace: React.FC = () => {
               }`}
             >
               <span>🦴</span>
-              <span>3000 Từ 7.5+ (Xương Cá)</span>
+              <span>Bản Đồ Xương Cá IELTS (20 Bộ)</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('levels')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition ${
+                activeTab === 'levels'
+                  ? 'bg-cyan-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Tiến Hóa Cấp Độ (SOP)</span>
             </button>
 
             <button
@@ -357,7 +358,7 @@ export const FishboneWorkspace: React.FC = () => {
         {activeTab === 'levels' && (
           <div className="flex-1 flex flex-col overflow-hidden p-6 space-y-6">
             {/* 1. Horizontal Fishbone visualization */}
-            <FishboneCanvas
+            <FishboneProjectCanvas
               project={project}
               activeLevelId={activeLevelId}
               onSelectLevel={(id) => setActiveLevelId(id)}
