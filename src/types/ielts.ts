@@ -1,3 +1,5 @@
+export type IeltsQuestionPartType = 'Part 1' | 'Part 2' | 'Part 3' | 'Writing Task 1' | 'Writing Task 2';
+
 export interface IeltsVocabItem {
   id: string;
   icon: string;
@@ -18,7 +20,8 @@ export interface IeltsSpeakingLesson {
   id: string;
   topic: string;
   question: string;
-  part: 'Part 1' | 'Part 2' | 'Part 3';
+  part: IeltsQuestionPartType | string;
+  imageUrl?: string;
   visualMasterMap: string[]; // ['💵⬆️', '👷', '🪙', '🔒💼', '🆘', '🌊', '🛒', '🚀', '📈', '💪', '🎯']
   fullSpeakingAnswer: string; // formatted with icons inline
   vocabList: IeltsVocabItem[];
@@ -60,12 +63,14 @@ export interface IeltsRecallTestResult {
 
 export interface IeltsCustomQuestion {
   id: string;
-  part: 'Part 1' | 'Part 2' | 'Part 3';
+  part: IeltsQuestionPartType | string;
   category: string;
   topic?: string;
   question: string;
   cueCardPrompt?: string;
   vocab: string;
   answer: string;
+  imageUrl?: string;
   createdAt: number;
 }
+

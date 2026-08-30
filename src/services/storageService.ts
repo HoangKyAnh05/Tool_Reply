@@ -441,7 +441,7 @@ export const storageService = {
   },
 
   // Custom User-Created Questions Bank
-  getCustomIeltsQuestions(part?: 'Part 1' | 'Part 2' | 'Part 3'): IeltsCustomQuestion[] {
+  getCustomIeltsQuestions(part?: string): IeltsCustomQuestion[] {
     const raw = localStorage.getItem('ielts_custom_questions_v1');
     if (!raw) return [];
     try {
@@ -464,6 +464,7 @@ export const storageService = {
       cueCardPrompt: item.cueCardPrompt,
       vocab: item.vocab,
       answer: item.answer,
+      imageUrl: item.imageUrl,
       createdAt: Date.now()
     };
     const filtered = list.filter((q) => q.id !== newItem.id);

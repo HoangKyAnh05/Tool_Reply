@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Sparkles, 
   BrainCircuit, 
@@ -7,16 +7,24 @@ import {
   Award, 
   Copy, 
   RefreshCw, 
-  SlidersHorizontal,
-  Code,
-  ToggleLeft,
-  ToggleRight,
-  Zap,
-  Maximize2,
-  Minimize2,
-  Smartphone
+  SlidersHorizontal, 
+  Code, 
+  ToggleLeft, 
+  ToggleRight, 
+  Zap, 
+  Maximize2, 
+  Minimize2, 
+  Smartphone,
+  Plus,
+  Save,
+  Star,
+  Image as ImageIcon,
+  Upload,
+  Trash2,
+  X,
+  Check
 } from 'lucide-react';
-import { IeltsSpeakingLesson } from '../../types/ielts';
+import { IeltsSpeakingLesson, IeltsQuestionPartType } from '../../types/ielts';
 import { aiService } from '../../services/aiService';
 import { storageService, defaultIeltsLesson } from '../../services/storageService';
 import { IeltsVisualMasterMap } from './IeltsVisualMasterMap';
@@ -31,9 +39,10 @@ import { MobileProjectSimulatorModal, MobileProjectTab } from '../common/MobileP
 import { ieltsPart1Bank, IeltsPart1Item } from '../../data/ieltsPart1Bank';
 import { ieltsPart2Bank, IeltsPart2Item } from '../../data/ieltsPart2Bank';
 import { ieltsPart3Bank, IeltsPart3Item } from '../../data/ieltsPart3Bank';
+import { ieltsWritingTask1Bank } from '../../data/ieltsWritingTask1Bank';
+import { ieltsWritingTask2Bank } from '../../data/ieltsWritingTask2Bank';
 import { audioService } from '../../services/audioService';
 import { toggleNativeFullscreen } from '../../utils/fullscreen';
-import { Plus, Save, Star } from 'lucide-react';
 
 interface IeltsWorkspaceProps {
   openPartBankSignal?: number;
@@ -48,9 +57,14 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
   const [vocabInput, setVocabInput] = useState('');
   const [readingInput, setReadingInput] = useState('');
   const [questionInput, setQuestionInput] = useState('');
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [selectedQuestionId, setSelectedQuestionId] = useState<number | string | null>(null);
   const [noOldVocab, setNoOldVocab] = useState(false);
-  const [partPreference, setPartPreference] = useState<'Part 1' | 'Part 2' | 'Part 3'>('Part 1');
+  const [partPreference, setPartPreference] = useState<IeltsQuestionPartType | string>('Part 1');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [isPartBankOpen, setIsPartBankOpen] = useState(false);
@@ -62,6 +76,32 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
   const [customVersion, setCustomVersion] = useState(0);
   const [activeSubTab, setActiveSubTab] = useState<'answer' | 'vocab' | 'connectors' | 'test'>('answer');
 
+  // Handle Ctrl+V paste image from clipboard into the workspace
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              if (event.target?.result) {
+                setUploadedImage(event.target.result as string);
+                audioService.playBeep('success');
+              }
+            };
+            reader.readAsDataURL(file);
+          }
+          break;
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, []);
+
   // Listen to openPartBankSignal from navbar to open directly in fullscreen
   useEffect(() => {
     if (openPartBankSignal && openPartBankSignal > 0) {
@@ -70,22 +110,53 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
     }
   }, [openPartBankSignal]);
 
-  // Handle ESC key to exit focus mode
+  // Handle ESC key to exit focus mode or zoom
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isFocusMode) {
-        setIsFocusMode(false);
+      if (e.key === 'Escape') {
+        if (isZoomOpen) setIsZoomOpen(false);
+        else if (isFocusMode) setIsFocusMode(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFocusMode]);
+  }, [isFocusMode, isZoomOpen]);
 
   const handleToggleFocusMode = async () => {
     audioService.playBeep('click');
     const nextState = !isFocusMode;
     setIsFocusMode(nextState);
     await toggleNativeFullscreen();
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setUploadedImage(event.target.result as string);
+          audioService.playBeep('success');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setUploadedImage(event.target.result as string);
+          audioService.playBeep('success');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Custom user-created questions for current part
@@ -95,12 +166,32 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
   }));
 
   // Active dataset based on current Part preference
-  const defaultBank: { id: number | string; category: string; question: string; vocab: string; answer: string; cueCardPrompt?: string; topic?: string; isCustom?: boolean }[] =
-    partPreference === 'Part 1'
-      ? ieltsPart1Bank
-      : partPreference === 'Part 2'
-      ? ieltsPart2Bank
-      : ieltsPart3Bank;
+  const defaultBank: { id: number | string; category: string; question: string; vocab: string; answer: string; cueCardPrompt?: string; topic?: string; isCustom?: boolean; imageUrl?: string }[] =
+    useMemo(() => {
+      if (partPreference === 'Part 1') return ieltsPart1Bank;
+      if (partPreference === 'Part 2') return ieltsPart2Bank;
+      if (partPreference === 'Part 3') return ieltsPart3Bank;
+      if (partPreference === 'Writing Task 1') {
+        return ieltsWritingTask1Bank.map((item) => ({
+          id: item.id,
+          category: item.category || 'Writing Task 1',
+          question: `${item.title}\n\n${item.prompt}`,
+          vocab: item.keyVocabulary?.map((v) => `${v.word} - ${v.meaning}`).join('\n') || '',
+          answer: item.sampleAnswerBand8,
+          imageUrl: item.imageUrl
+        }));
+      }
+      if (partPreference === 'Writing Task 2') {
+        return ieltsWritingTask2Bank.map((item) => ({
+          id: item.id,
+          category: item.category || 'Writing Task 2',
+          question: item.prompt,
+          vocab: item.lexicalResource?.map((v) => `${v.term} - ${v.explanation}`).join('\n') || '',
+          answer: item.sampleAnswerBand8
+        }));
+      }
+      return ieltsPart1Bank;
+    }, [partPreference]);
 
   const currentBank = [...customQuestions, ...defaultBank];
 
@@ -112,8 +203,11 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
         readingText: readingInput,
         questionText: questionInput,
         noOldVocab,
-        partPreference
+        partPreference: partPreference as any
       });
+      if (uploadedImage) {
+        newLesson.imageUrl = uploadedImage;
+      }
       setCurrentLesson(newLesson);
       storageService.saveIeltsLesson(newLesson);
       setActiveSubTab('answer');
@@ -124,24 +218,34 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
     }
   };
 
-  const handleLoadSample = (type: 'wage' | 'environment' | 'ai' | 'music') => {
+  const handleLoadSample = (type: 'wage' | 'environment' | 'ai' | 'music' | 'task1') => {
     audioService.playBeep('click');
     setSelectedQuestionId(null);
-    if (type === 'wage') {
+    if (type === 'task1') {
+      setPartPreference('Writing Task 1');
+      const cam19 = ieltsWritingTask1Bank[0];
+      setQuestionInput(`${cam19.title}\n\n${cam19.prompt}`);
+      setVocabInput(cam19.keyVocabulary?.map((v) => `${v.word} - ${v.meaning}`).join('\n') || '');
+      setReadingInput(cam19.sampleAnswerBand8);
+      setUploadedImage(cam19.imageUrl || null);
+    } else if (type === 'wage') {
       setPartPreference('Part 3');
       setQuestionInput('Do you believe increasing the minimum wage benefits or harms the national economy? Why?');
       setVocabInput(`pinch pennies - tằn tiện từng đồng\nremain stuck in - kẹt cứng trong hoàn cảnh\nripple effect - hiệu ứng lan tỏa\nspur job growth - thúc đẩy tăng trưởng việc làm\npurchasing power - sức mua tiêu dùng\nkeep pace with - bắt kịp đà tăng\nbe indexed to - được điều chỉnh theo chỉ số`);
       setReadingInput('Raising the minimum wage can stimulate broader economic circulation while protecting vulnerable workers.');
+      setUploadedImage(null);
     } else if (type === 'environment') {
       setPartPreference('Part 3');
       setQuestionInput('How do green technologies and reduction of single-use plastics protect the environment?');
       setVocabInput(`carbon footprint - dấu chân carbon\nrenewable energy - năng lượng tái tạo\nphase out - loại bỏ dần dần\nenvironmental degradation - sự suy thoái môi trường\nsustainable practice - thực hành bền vững`);
       setReadingInput('Global transition toward green technologies and reduction of single-use plastics.');
+      setUploadedImage(null);
     } else if (type === 'ai') {
       setPartPreference('Part 3');
       setQuestionInput('How is artificial intelligence transforming the workforce and everyday routine tasks?');
       setVocabInput(`breakthrough - bước đột phá\nautomate routine tasks - tự động hóa tác vụ lặp lại\njob displacement - sự mất việc làm do công nghệ\nethical dilemma - thế tiến thoái lưỡng nan về đạo đức\nadopt agile mindset - thích ứng tư duy linh hoạt`);
       setReadingInput('Artificial intelligence and future workforce transformation.');
+      setUploadedImage(null);
     } else {
       setPartPreference('Part 1');
       setQuestionInput('Do you enjoy listening to music? Why or why not?');
@@ -155,6 +259,7 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
 🔄 On the flip side → 🏋️ if I'm heading to the gym → 🚀 or need to get pumped up → 📋 for a project → 🥁 I'll put on some upbeat rock → 💃 or EDM → ⚡ to get my adrenaline going.
 
 🎯 So, yeah → 🙏 I honestly can't imagine → 🌅 a day without it.`);
+      setUploadedImage(null);
     }
   };
 
@@ -165,6 +270,7 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
     storageService.saveIeltsLesson(defaultIeltsLesson);
     setVocabInput(`pinch pennies - tằn tiện từng đồng\nremain stuck in - kẹt cứng trong hoàn cảnh\nripple effect - hiệu ứng lan tỏa\nspur job growth - thúc đẩy tăng trưởng việc làm\npurchasing power - sức mua tiêu dùng\nkeep pace with - bắt kịp đà tăng\nbe indexed to - được điều chỉnh theo chỉ số`);
     setReadingInput('Raising the minimum wage can stimulate broader economic circulation while protecting vulnerable workers.');
+    setUploadedImage(null);
   };
 
   const handleSelectQuestionById = (id: number | string) => {
@@ -176,8 +282,9 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
         ? `${item.question}\n\n${item.cueCardPrompt}`
         : item.question;
       setQuestionInput(fullQuestionText);
-      setVocabInput(item.vocab);
-      setReadingInput(item.answer);
+      setVocabInput(item.vocab || '');
+      setReadingInput(item.answer || '');
+      setUploadedImage(item.imageUrl || null);
     }
   };
 
@@ -202,16 +309,17 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
     }
     const saved = storageService.saveCustomIeltsQuestion({
       part: partPreference,
-      category: 'Chủ đề tự tạo',
-      topic: 'Chủ đề tự tạo',
+      category: partPreference === 'Writing Task 1' ? 'Writing Task 1' : 'Chủ đề tự tạo',
+      topic: partPreference === 'Writing Task 1' ? 'Writing Task 1' : 'Chủ đề tự tạo',
       question: questionInput.trim(),
       vocab: vocabInput.trim(),
-      answer: readingInput.trim() || '✨ Chưa có bài nói mẫu'
+      answer: readingInput.trim() || '✨ Chưa có bài nói/viết mẫu',
+      imageUrl: uploadedImage || undefined
     });
     audioService.playBeep('success');
     setSelectedQuestionId(saved.id);
     setCustomVersion((v) => v + 1);
-    alert(`✓ Đã lưu thành công câu hỏi vào Kho tự tạo (${partPreference})!`);
+    alert(`✓ Đã lưu thành công bài vào Kho tự tạo (${partPreference}) kèm ảnh đính kèm!`);
   };
 
   const handleSelectFromModal = async (payload: SelectedQuestionPayload) => {
@@ -220,6 +328,7 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
     setQuestionInput(payload.question);
     setVocabInput(payload.vocab);
     setReadingInput(payload.answer);
+    setUploadedImage(payload.imageUrl || null);
 
     try {
       const newLesson = await aiService.generateIeltsLesson({
@@ -227,8 +336,11 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
         readingText: payload.answer,
         questionText: payload.question,
         noOldVocab,
-        partPreference: payload.part
+        partPreference: payload.part as any
       });
+      if (payload.imageUrl) {
+        newLesson.imageUrl = payload.imageUrl;
+      }
       setCurrentLesson(newLesson);
       storageService.saveIeltsLesson(newLesson);
       setActiveSubTab('answer');
@@ -474,10 +586,115 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
             <textarea
               value={questionInput}
               onChange={(e) => setQuestionInput(e.target.value)}
-              placeholder={`Nhập hoặc chọn câu hỏi ${partPreference} từ danh sách ở trên...`}
-              rows={partPreference === 'Part 2' ? 4 : 2}
+              placeholder={
+                partPreference === 'Writing Task 1'
+                  ? 'Nhập đề Writing Task 1 (The chart below shows...) - Có thể đẩy ảnh biểu đồ ở bên dưới...'
+                  : `Nhập hoặc chọn câu hỏi ${partPreference} từ danh sách ở trên...`
+              }
+              rows={partPreference === 'Part 2' || partPreference === 'Writing Task 1' ? 4 : 2}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-medium font-sans leading-relaxed"
             />
+
+            {/* Optional Image Upload for Task 1 & other prompts */}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
+                  <ImageIcon className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Ảnh biểu đồ đề bài (Tùy chọn):</span>
+                </span>
+                {uploadedImage && (
+                  <button
+                    type="button"
+                    onClick={() => setUploadedImage(null)}
+                    className="text-[10px] text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Xóa ảnh</span>
+                  </button>
+                )}
+              </div>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept="image/*"
+                className="hidden"
+              />
+
+              {!uploadedImage ? (
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border border-dashed rounded-xl p-2.5 text-center cursor-pointer transition flex items-center justify-center gap-2.5 ${
+                    isDragging
+                      ? 'border-purple-400 bg-purple-950/40'
+                      : partPreference === 'Writing Task 1'
+                      ? 'border-purple-500/50 bg-purple-950/20 hover:border-purple-400 hover:bg-purple-950/30'
+                      : 'border-slate-800 bg-slate-950/60 hover:border-slate-700 hover:bg-slate-900/60'
+                  }`}
+                >
+                  <div className="w-7 h-7 rounded-lg bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-purple-300 shrink-0">
+                    <Upload className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-[11px] font-bold text-slate-200">
+                      📸 Đẩy ảnh biểu đồ lên <span className="text-[10px] text-slate-400 font-normal">(Tùy chọn - có thể đẩy hoặc không)</span>
+                    </p>
+                    <p className="text-[10px] text-purple-300/90">
+                      Bấm để chọn file ảnh, kéo thả hoặc bấm <span className="underline font-bold">Ctrl + V</span> để dán ảnh trực tiếp
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative rounded-xl border border-purple-500/40 bg-slate-950 p-2 group">
+                  <div className="relative max-h-40 overflow-hidden rounded-lg flex items-center justify-center bg-slate-900">
+                    <img
+                      src={uploadedImage}
+                      alt="Biểu đồ đề bài"
+                      className="max-h-40 w-auto object-contain cursor-pointer"
+                      onClick={() => setIsZoomOpen(true)}
+                    />
+                    <div className="absolute inset-0 bg-slate-950/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2 backdrop-blur-[2px]">
+                      <button
+                        type="button"
+                        onClick={() => setIsZoomOpen(true)}
+                        className="px-2.5 py-1 rounded-lg bg-slate-900 text-white text-[11px] font-bold border border-slate-700 flex items-center gap-1 shadow"
+                      >
+                        <Maximize2 className="w-3 h-3 text-purple-400" />
+                        <span>Xem to</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-2.5 py-1 rounded-lg bg-purple-600 text-white text-[11px] font-bold flex items-center gap-1 shadow hover:bg-purple-500"
+                      >
+                        <Upload className="w-3 h-3" />
+                        <span>Đổi ảnh</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[10px] text-purple-300 px-1">
+                    <span className="font-semibold flex items-center gap-1">
+                      <Check className="w-3 h-3 text-emerald-400" />
+                      Đã đính kèm ảnh biểu đồ (Sẽ lưu cùng bài)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsZoomOpen(true)}
+                      className="underline text-slate-400 hover:text-white"
+                    >
+                      Phóng to ảnh
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Custom Question Action Buttons */}
             <div className="flex items-center gap-2 pt-1">
@@ -493,62 +710,41 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
               <button
                 type="button"
                 onClick={handleSaveCurrentToBank}
-                title="Lưu câu hỏi và câu trả lời hiện tại vào Kho tự tạo"
-                className="py-1.5 px-3 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold flex items-center gap-1.5 transition"
+                title="Lưu câu hỏi, câu trả lời và ảnh biểu đồ hiện tại vào Kho tự tạo"
+                className="py-1.5 px-3 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold flex items-center gap-1.5 transition shadow-sm"
               >
                 <Save className="w-3.5 h-3.5 text-emerald-400" />
-                <span>💾 Lưu câu này</span>
+                <span>💾 Lưu câu & ảnh</span>
               </button>
             </div>
           </div>
 
           {/* Options */}
           <div className="space-y-3 bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-300">Dạng câu hỏi:</span>
-              <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPartPreference('Part 1');
-                    setSelectedQuestionId(null);
-                  }}
-                  className={`px-2.5 py-1 rounded text-xs font-semibold transition ${
-                    partPreference === 'Part 1'
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Part 1
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPartPreference('Part 2');
-                    setSelectedQuestionId(null);
-                  }}
-                  className={`px-2.5 py-1 rounded text-xs font-semibold transition ${
-                    partPreference === 'Part 2'
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Part 2
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPartPreference('Part 3');
-                    setSelectedQuestionId(null);
-                  }}
-                  className={`px-2.5 py-1 rounded text-xs font-semibold transition ${
-                    partPreference === 'Part 3'
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Part 3
-                </button>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
+              <span className="font-semibold text-slate-300">Dạng câu hỏi / Đề thi:</span>
+              <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800 flex-wrap">
+                {(['Part 1', 'Part 2', 'Part 3', 'Writing Task 1', 'Writing Task 2'] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => {
+                      setPartPreference(p);
+                      setSelectedQuestionId(null);
+                    }}
+                    className={`px-2 py-1 rounded text-[11px] font-semibold transition ${
+                      partPreference === p
+                        ? p === 'Writing Task 1'
+                          ? 'bg-purple-600 text-white shadow-md'
+                          : p === 'Writing Task 2'
+                          ? 'bg-amber-600 text-white shadow-md'
+                          : 'bg-indigo-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -709,6 +905,7 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
                 question={currentLesson.question}
                 part={currentLesson.part}
                 fullAnswer={currentLesson.fullSpeakingAnswer}
+                imageUrl={uploadedImage || currentLesson.imageUrl}
                 bilingualSummary={currentLesson.bilingualSummary}
               />
             )}
@@ -761,7 +958,8 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
           question: questionInput,
           vocab: vocabInput,
           answer: readingInput,
-          part: partPreference
+          part: partPreference,
+          imageUrl: uploadedImage || undefined
         }}
         onSaved={(saved) => {
           setCustomVersion((v) => v + 1);
@@ -777,6 +975,28 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
         initialTab={mobileTab}
         onSelectIeltsQuestion={handleSelectFromModal}
       />
+
+      {/* Lightbox Zoom Image Modal */}
+      {isZoomOpen && (uploadedImage || currentLesson.imageUrl) && (
+        <div
+          onClick={() => setIsZoomOpen(false)}
+          className="fixed inset-0 z-60 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out animate-fadeIn"
+        >
+          <div className="relative max-w-5xl max-h-[90vh] overflow-auto">
+            <img
+              src={(uploadedImage || currentLesson.imageUrl) as string}
+              alt="Zoomed Chart"
+              className="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain mx-auto"
+            />
+            <button
+              onClick={() => setIsZoomOpen(false)}
+              className="absolute top-2 right-2 p-2 rounded-full bg-slate-900/80 text-white hover:bg-slate-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

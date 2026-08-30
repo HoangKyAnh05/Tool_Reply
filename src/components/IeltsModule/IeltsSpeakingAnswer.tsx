@@ -7,16 +7,21 @@ import {
   Sparkles, 
   FileText, 
   Languages, 
-  HelpCircle 
+  HelpCircle,
+  Image as ImageIcon,
+  Maximize2,
+  X
 } from 'lucide-react';
 import { audioService } from '../../services/audioService';
+import { IeltsQuestionPartType } from '../../types/ielts';
 
 interface IeltsSpeakingAnswerProps {
   topic: string;
   question: string;
-  part: 'Part 1' | 'Part 2' | 'Part 3';
+  part: IeltsQuestionPartType | string;
   fullAnswer: string;
-  bilingualSummary: {
+  imageUrl?: string;
+  bilingualSummary?: {
     english: string;
     vietnamese: string;
   };
@@ -27,11 +32,13 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
   question,
   part,
   fullAnswer,
+  imageUrl,
   bilingualSummary
 }) => {
   const [copied, setCopied] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(`${question}\n\n${fullAnswer}`);
@@ -57,10 +64,18 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
       <div className="border-b border-slate-800/80 pb-4 mb-5">
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+              part === 'Writing Task 1'
+                ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                : part === 'Writing Task 2'
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+            }`}>
               {part}
             </span>
-            <span className="text-xs font-semibold text-slate-400">Band 7.5 - 8.5 Model Answer</span>
+            <span className="text-xs font-semibold text-slate-400">
+              {part.includes('Writing') ? 'Band 8.0+ Model Essay / Report' : 'Band 7.5 - 8.5 Model Answer'}
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -91,6 +106,34 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
             <span>{question}</span>
           </h2>
         </div>
+
+        {/* Task 1 Attached Chart Image Viewer */}
+        {imageUrl && (
+          <div className="mt-4 p-3 rounded-xl bg-slate-950/80 border border-purple-500/30">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+                <ImageIcon className="w-4 h-4 text-purple-400" />
+                <span>📊 Biểu đồ đề bài Writing Task 1:</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsZoomOpen(true)}
+                className="text-[11px] text-purple-300 hover:text-white px-2 py-1 rounded-md bg-purple-950/60 border border-purple-500/30 flex items-center gap-1 transition"
+              >
+                <Maximize2 className="w-3 h-3" />
+                <span>Xem ảnh lớn</span>
+              </button>
+            </div>
+            <div className="flex justify-center bg-slate-900/60 rounded-lg p-2 overflow-hidden max-h-72">
+              <img
+                src={imageUrl}
+                alt="Biểu đồ đề bài"
+                onClick={() => setIsZoomOpen(true)}
+                className="max-h-72 w-auto object-contain rounded-md cursor-pointer hover:opacity-95 transition"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Answer Paragraphs with Highlighted Inline Anchor Icons */}
@@ -115,7 +158,7 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
           <span>{showSummary ? '▲ Thu gọn' : '▼ Mở rộng'}</span>
         </button>
 
-        {showSummary && (
+        {showSummary && bilingualSummary && (
           <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-slate-950/70 border border-slate-800 rounded-xl text-xs">
             <div className="space-y-1.5">
               <div className="flex items-center justify-between font-bold text-slate-300">
@@ -149,6 +192,24 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
           </div>
         )}
       </div>
+
+      {/* Lightbox Modal for Zooming Task 1 Chart */}
+      {isZoomOpen && imageUrl && (
+        <div
+          onClick={() => setIsZoomOpen(false)}
+          className="fixed inset-0 z-60 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out animate-fadeIn"
+        >
+          <div className="relative max-w-5xl max-h-[90vh] overflow-auto">
+            <img src={imageUrl} alt="Zoomed Chart" className="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain mx-auto" />
+            <button
+              onClick={() => setIsZoomOpen(false)}
+              className="absolute top-2 right-2 p-2 rounded-full bg-slate-900/80 text-white hover:bg-slate-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

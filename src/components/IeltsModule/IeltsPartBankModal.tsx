@@ -16,31 +16,35 @@ import {
   Volume2,
   ChevronLeft,
   ChevronRight,
-  Smartphone
+  Smartphone,
+  Image as ImageIcon
 } from 'lucide-react';
 import { ieltsPart1Bank, IeltsPart1Item } from '../../data/ieltsPart1Bank';
 import { ieltsPart2Bank, IeltsPart2Item } from '../../data/ieltsPart2Bank';
 import { ieltsPart3Bank, IeltsPart3Item } from '../../data/ieltsPart3Bank';
+import { ieltsWritingTask1Bank } from '../../data/ieltsWritingTask1Bank';
+import { ieltsWritingTask2Bank } from '../../data/ieltsWritingTask2Bank';
 import { storageService } from '../../services/storageService';
-import { IeltsCustomQuestion } from '../../types/ielts';
+import { IeltsCustomQuestion, IeltsQuestionPartType } from '../../types/ielts';
 import { IeltsCustomQuestionModal } from './IeltsCustomQuestionModal';
 import { MobileProjectSimulatorModal } from '../common/MobileProjectSimulatorModal';
 import { audioService } from '../../services/audioService';
 import { toggleNativeFullscreen } from '../../utils/fullscreen';
 
 export interface SelectedQuestionPayload {
-  part: 'Part 1' | 'Part 2' | 'Part 3';
+  part: IeltsQuestionPartType | string;
   question: string;
   vocab: string;
   answer: string;
   topic?: string;
   category: string;
+  imageUrl?: string;
 }
 
 interface IeltsPartBankModalProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultPart?: 'Part 1' | 'Part 2' | 'Part 3';
+  defaultPart?: IeltsQuestionPartType | string;
   defaultFullscreen?: boolean;
   onSelectQuestion: (payload: SelectedQuestionPayload) => void;
 }
@@ -52,7 +56,7 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
   defaultFullscreen = false,
   onSelectQuestion,
 }) => {
-  const [activePart, setActivePart] = useState<'Part 1' | 'Part 2' | 'Part 3'>(defaultPart);
+  const [activePart, setActivePart] = useState<IeltsQuestionPartType | string>(defaultPart);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -62,6 +66,7 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(defaultFullscreen);
   const [focusItem, setFocusItem] = useState<any | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
 
   // Sync activePart with defaultPart when opened
   useEffect(() => {
@@ -83,7 +88,9 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (focusItem) {
+        if (zoomImageUrl) {
+          setZoomImageUrl(null);
+        } else if (focusItem) {
           setFocusItem(null);
         } else if (isFullscreen) {
           setIsFullscreen(false);
@@ -95,19 +102,36 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, focusItem, isFullscreen, onClose]);
+  }, [isOpen, focusItem, isFullscreen, zoomImageUrl, onClose]);
 
   if (!isOpen) return null;
 
   // Retrieve current active default dataset + custom questions
-  const defaultDataset: { id: number | string; category: string; question: string; vocab: string; answer: string; cueCardPrompt?: string; topic?: string; isCustom?: boolean }[] =
+  const defaultDataset: { id: number | string; category: string; question: string; vocab: string; answer: string; cueCardPrompt?: string; topic?: string; isCustom?: boolean; imageUrl?: string }[] =
     activePart === 'Part 1'
       ? ieltsPart1Bank
       : activePart === 'Part 2'
       ? ieltsPart2Bank
-      : ieltsPart3Bank;
+      : activePart === 'Part 3'
+      ? ieltsPart3Bank
+      : activePart === 'Writing Task 1'
+      ? ieltsWritingTask1Bank.map((item) => ({
+          id: item.id,
+          category: item.category || 'Writing Task 1',
+          question: `${item.title}\n\n${item.prompt}`,
+          vocab: item.keyVocabulary?.map((v) => `${v.word} - ${v.meaning}`).join('\n') || '',
+          answer: item.sampleAnswerBand8,
+          imageUrl: item.imageUrl
+        }))
+      : ieltsWritingTask2Bank.map((item) => ({
+          id: item.id,
+          category: item.category || 'Writing Task 2',
+          question: item.prompt,
+          vocab: item.lexicalResource?.map((v) => `${v.term} - ${v.explanation}`).join('\n') || '',
+          answer: item.sampleAnswerBand8
+        }));
 
-  const customQuestions: { id: string; category: string; question: string; vocab: string; answer: string; cueCardPrompt?: string; topic?: string; isCustom: boolean }[] =
+  const customQuestions: { id: string; category: string; question: string; vocab: string; answer: string; cueCardPrompt?: string; topic?: string; isCustom: boolean; imageUrl?: string }[] =
     storageService.getCustomIeltsQuestions(activePart).map((q) => ({
       ...q,
       isCustom: true
@@ -162,7 +186,8 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
       vocab: item.vocab,
       answer: item.answer,
       topic: item.topic || item.category,
-      category: item.category
+      category: item.category,
+      imageUrl: item.imageUrl
     });
     setFocusItem(null);
     onClose();
@@ -231,7 +256,7 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
         className={`bg-slate-900 flex flex-col overflow-hidden transition-all duration-200 ${
           isFullscreen
             ? 'w-full h-full rounded-none border-none'
-            : 'border border-slate-800 w-full max-w-6xl h-[94vh] rounded-2xl shadow-2xl'
+            : 'border border-slate-800 w-full max-w-6xl h-[94vh] rounded-3xl shadow-2xl'
         }`}
       >
         {/* Modal Header */}
@@ -242,9 +267,9 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                <span>📚 Thư Viện 300 Câu Hỏi IELTS Speaking (Bank)</span>
+                <span>📚 Thư Viện Đề Thi IELTS (Speaking & Writing)</span>
                 <span className="hidden md:inline px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  Part 1 • Part 2 • Part 3
+                  Part 1 • Part 2 • Part 3 • Task 1 • Task 2
                 </span>
                 {isFullscreen && (
                   <span className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">
@@ -253,7 +278,7 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                 )}
               </h2>
               <p className="text-[11px] text-slate-400 hidden sm:block">
-                Tra cứu 300 câu mẫu kèm bài trả lời chi tiết và quản lý các câu hỏi tự tạo của bạn
+                Tra cứu đề thi Speaking & Writing Task 1 (kèm ảnh biểu đồ) và quản lý câu hỏi tự tạo
               </p>
             </div>
           </div>
@@ -309,13 +334,13 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
         {/* Top Part Segmented Control & Search */}
         <div className="p-3 sm:p-4 border-b border-slate-800 bg-slate-900/90 flex flex-wrap items-center justify-between gap-3 shrink-0">
           {/* Part Switcher */}
-          <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto max-w-full">
             <button
               onClick={() => {
                 setActivePart('Part 1');
                 setSelectedCategory('All');
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold shrink-0 transition ${
                 activePart === 'Part 1'
                   ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
@@ -329,13 +354,13 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                 setActivePart('Part 2');
                 setSelectedCategory('All');
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold shrink-0 transition ${
                 activePart === 'Part 2'
                   ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Part 2 Cue Cards (100 đề)
+              Part 2 Cue Cards
             </button>
 
             <button
@@ -343,13 +368,41 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                 setActivePart('Part 3');
                 setSelectedCategory('All');
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold shrink-0 transition ${
                 activePart === 'Part 3'
                   ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Part 3 Thảo Luận (100 câu)
+              Part 3 Thảo Luận
+            </button>
+
+            <button
+              onClick={() => {
+                setActivePart('Writing Task 1');
+                setSelectedCategory('All');
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold shrink-0 transition ${
+                activePart === 'Writing Task 1'
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
+                  : 'text-purple-400/80 hover:text-purple-200 hover:bg-purple-950/40'
+              }`}
+            >
+              📊 Writing Task 1 (Biểu Đồ)
+            </button>
+
+            <button
+              onClick={() => {
+                setActivePart('Writing Task 2');
+                setSelectedCategory('All');
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold shrink-0 transition ${
+                activePart === 'Writing Task 2'
+                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md'
+                  : 'text-amber-400/80 hover:text-amber-200 hover:bg-amber-950/40'
+              }`}
+            >
+              📝 Writing Task 2 (Nghị Luận)
             </button>
           </div>
 
@@ -516,10 +569,33 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                         </div>
                       </div>
 
+                      {/* Task 1 Image Thumbnail if available */}
+                      {item.imageUrl && (
+                        <div className="p-2.5 rounded-xl bg-slate-950 border border-purple-500/30 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <ImageIcon className="w-4 h-4 text-purple-400 shrink-0" />
+                            <span className="text-xs font-semibold text-purple-300">
+                              🖼️ Đã đính kèm ảnh biểu đồ Task 1
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setZoomImageUrl(item.imageUrl || null);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-purple-950/60 border border-purple-500/40 text-purple-200 hover:text-white text-[11px] font-bold flex items-center gap-1 transition"
+                          >
+                            <Maximize2 className="w-3 h-3" />
+                            <span>Xem ảnh</span>
+                          </button>
+                        </div>
+                      )}
+
                       {/* Question / Cue Card Prompt */}
                       <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80">
                         <span className="text-[11px] font-bold text-amber-300 block mb-1">
-                          {activePart === 'Part 2' ? '📋 Đề bài Cue Card (Part 2):' : `❓ Câu hỏi (${activePart}):`}
+                          {activePart === 'Part 2' ? '📋 Đề bài Cue Card (Part 2):' : `❓ Đề bài (${activePart}):`}
                         </span>
                         <p className="text-sm font-bold text-slate-100 mb-1">{item.question}</p>
                         {item.cueCardPrompt && (
@@ -544,7 +620,7 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                       {/* Answer Icon Chain */}
                       <div className="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800">
                         <span className="text-[11px] font-bold text-emerald-400 block mb-1">
-                          💬 Chuỗi Icon Bài Nói Mẫu (Icon-Anchored Model Answer):
+                          💬 Chuỗi Icon Bài Mẫu (Icon-Anchored Model Answer):
                         </span>
                         <div className="text-xs font-medium text-slate-200 leading-relaxed select-text space-y-2">
                           {item.answer.split('\n\n').map((para: string, idx: number) => (
@@ -683,6 +759,34 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
               )}
             </div>
 
+            {/* Task 1 Attached Chart in Zen View */}
+            {focusItem.imageUrl && (
+              <div className="p-4 rounded-2xl bg-slate-900/90 border border-purple-500/30 shadow-xl space-y-3">
+                <div className="flex items-center justify-between border-b border-purple-500/20 pb-2">
+                  <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-purple-400" />
+                    <span>📊 Biểu đồ đề bài Task 1</span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setZoomImageUrl(focusItem.imageUrl)}
+                    className="text-xs text-purple-300 hover:text-white px-2.5 py-1 rounded-lg bg-purple-950/60 border border-purple-500/40 flex items-center gap-1 font-semibold"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Xem phóng to</span>
+                  </button>
+                </div>
+                <div className="flex justify-center bg-slate-950/60 rounded-xl p-4 overflow-hidden">
+                  <img
+                    src={focusItem.imageUrl}
+                    alt="Biểu đồ Task 1"
+                    onClick={() => setZoomImageUrl(focusItem.imageUrl)}
+                    className="max-h-96 w-auto object-contain rounded-lg cursor-pointer hover:opacity-95 transition"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Key Vocabulary Highlights */}
             {focusItem.vocab && (
               <div className="p-6 rounded-2xl bg-slate-900/90 border border-indigo-500/30 shadow-lg space-y-3">
@@ -720,7 +824,7 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
             <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">
               <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                 <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-                  <span>💬 Bài Nói Mẫu Chuẩn IELTS (Icon-Anchored Model Answer)</span>
+                  <span>💬 Bài Nói / Viết Mẫu Chuẩn IELTS (Icon-Anchored Model Answer)</span>
                 </h3>
                 <button
                   onClick={() => handleCopy(focusItem)}
@@ -747,6 +851,24 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
             <div className="py-6 text-center text-xs text-slate-500">
               💡 Phím tắt: Dùng <b>←</b> hoặc <b>→</b> trên bàn phím để chuyển câu, bấm <b>Esc</b> để thoát phóng to.
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Zoom Image Modal */}
+      {zoomImageUrl && (
+        <div
+          onClick={() => setZoomImageUrl(null)}
+          className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out animate-fadeIn"
+        >
+          <div className="relative max-w-5xl max-h-[90vh] overflow-auto">
+            <img src={zoomImageUrl} alt="Zoomed Chart" className="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain mx-auto" />
+            <button
+              onClick={() => setZoomImageUrl(null)}
+              className="absolute top-2 right-2 p-2 rounded-full bg-slate-900/80 text-white hover:bg-slate-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
       )}

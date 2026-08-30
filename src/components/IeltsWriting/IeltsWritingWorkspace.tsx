@@ -359,7 +359,7 @@ export const IeltsWritingWorkspace: React.FC = () => {
               </div>
 
               {/* Dynamic Interactive Chart Viewer */}
-              <IeltsTask1ChartViewer chartData={currentTask1.chartData} title={currentTask1.title} />
+              <IeltsTask1ChartViewer chartData={currentTask1.chartData} title={currentTask1.title} imageUrl={currentTask1.imageUrl} />
 
               {/* Band 8 Overview Breakdown */}
               <div className="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-500/30 space-y-2">

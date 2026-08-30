@@ -168,6 +168,9 @@ export const App: React.FC = () => {
               noOldVocab: false,
               partPreference: payload.part
             });
+            if (payload.imageUrl) {
+              newLesson.imageUrl = payload.imageUrl;
+            }
             storageService.saveIeltsLesson(newLesson);
           } catch (err) {
             console.error('Generate lesson error:', err);

@@ -50,6 +50,7 @@ export interface IeltsTask1Item {
   category: string;
   prompt: string;
   chartData: ChartVisualData;
+  imageUrl?: string;
   overview: string;
   sampleAnswerBand8: string;
   keyVocabulary: { word: string; meaning: string }[];

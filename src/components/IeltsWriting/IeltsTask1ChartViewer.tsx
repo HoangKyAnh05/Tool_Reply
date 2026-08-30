@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChartVisualData } from '../../types/ieltsWriting';
-import { BarChart3, TrendingUp, PieChart as PieIcon, Table as TableIcon, MapPin, ArrowRight, Layers } from 'lucide-react';
+import { BarChart3, TrendingUp, PieChart as PieIcon, Table as TableIcon, MapPin, ArrowRight, Layers, Image as ImageIcon, Maximize2, X } from 'lucide-react';
 
 interface IeltsTask1ChartViewerProps {
-  chartData: ChartVisualData;
+  chartData?: ChartVisualData;
   title: string;
+  imageUrl?: string;
 }
 
-export const IeltsTask1ChartViewer: React.FC<IeltsTask1ChartViewerProps> = ({ chartData, title }) => {
-  const { chartType, series = [], categories = [], unit = '', mapLocations = [], processSteps = [], tableHeaders = [], tableRows = [] } = chartData;
+export const IeltsTask1ChartViewer: React.FC<IeltsTask1ChartViewerProps> = ({ chartData, title, imageUrl }) => {
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const { chartType = 'line', series = [], categories = [], unit = '', mapLocations = [], processSteps = [], tableHeaders = [], tableRows = [] } = chartData || { chartType: 'line' as const };
 
   // Find max value for scaling
   let maxValue = 100;
@@ -45,6 +47,51 @@ export const IeltsTask1ChartViewer: React.FC<IeltsTask1ChartViewerProps> = ({ ch
           </span>
         )}
       </div>
+
+      {/* Render uploaded image if present */}
+      {imageUrl && (
+        <div className="p-3 rounded-xl bg-slate-950/80 border border-purple-500/30 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-purple-300 flex items-center gap-1">
+              <ImageIcon className="w-3.5 h-3.5 text-purple-400" />
+              <span>Ảnh biểu đồ đề bài:</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsZoomOpen(true)}
+              className="text-[11px] text-purple-300 hover:text-white px-2 py-0.5 rounded bg-purple-950/60 border border-purple-500/30 flex items-center gap-1"
+            >
+              <Maximize2 className="w-3 h-3" />
+              <span>Phóng to</span>
+            </button>
+          </div>
+          <div className="flex justify-center bg-slate-900/50 rounded-lg p-2 max-h-72 overflow-hidden">
+            <img
+              src={imageUrl}
+              alt={title}
+              onClick={() => setIsZoomOpen(true)}
+              className="max-h-72 w-auto object-contain rounded cursor-pointer hover:opacity-95 transition"
+            />
+          </div>
+
+          {isZoomOpen && (
+            <div
+              onClick={() => setIsZoomOpen(false)}
+              className="fixed inset-0 z-60 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out animate-fadeIn"
+            >
+              <div className="relative max-w-5xl max-h-[90vh] overflow-auto">
+                <img src={imageUrl} alt={title} className="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain mx-auto" />
+                <button
+                  onClick={() => setIsZoomOpen(false)}
+                  className="absolute top-2 right-2 p-2 rounded-full bg-slate-900/80 text-white hover:bg-slate-800 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 1. LINE GRAPH VISUALIZATION */}
       {chartType === 'line' && (

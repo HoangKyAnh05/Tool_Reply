@@ -1,4 +1,4 @@
-import { IeltsSpeakingLesson, IeltsRecallTestResult } from '../types/ielts';
+import { IeltsSpeakingLesson, IeltsRecallTestResult, IeltsQuestionPartType } from '../types/ielts';
 import { GenzGenerationResult, GenzTone, GenzResultVersion, GenzVisualIdea } from '../types/genz';
 import { 
   ParallelUniverseSimulation, 
@@ -557,7 +557,7 @@ export const aiService = {
     vocabListText: string;
     readingText?: string;
     noOldVocab?: boolean;
-    partPreference?: 'Part 1' | 'Part 2' | 'Part 3';
+    partPreference?: IeltsQuestionPartType | string;
   }): string {
     return `Create an IELTS Speaking learning feature called "Visual Vocabulary Speaking System".
 
@@ -635,7 +635,7 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
     readingText: string;
     questionText?: string;
     noOldVocab?: boolean;
-    partPreference?: 'Part 1' | 'Part 2' | 'Part 3';
+    partPreference?: IeltsQuestionPartType | string;
   }): Promise<IeltsSpeakingLesson> {
     const settings = storageService.getSettings();
 
@@ -697,7 +697,7 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
     readingText: string;
     questionText?: string;
     noOldVocab?: boolean;
-    partPreference?: 'Part 1' | 'Part 2' | 'Part 3';
+    partPreference?: IeltsQuestionPartType | string;
   }): IeltsSpeakingLesson {
     const qPrefix = params.questionText ? `❓ ${params.questionText}\n` : '';
     const combinedInput = `${qPrefix}${params.readingText}\n${params.vocabListText}`.trim();
