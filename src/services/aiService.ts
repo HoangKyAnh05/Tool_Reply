@@ -696,7 +696,7 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
     vocabListText: string;
     readingText: string;
     questionText?: string;
-    noOldVocab: boolean;
+    noOldVocab?: boolean;
     partPreference?: 'Part 1' | 'Part 2' | 'Part 3';
   }): IeltsSpeakingLesson {
     const qPrefix = params.questionText ? `❓ ${params.questionText}\n` : '';
