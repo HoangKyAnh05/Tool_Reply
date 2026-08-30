@@ -37,27 +37,28 @@ export const PasteGenzJsonModal: React.FC<PasteGenzJsonModalProps> = ({
   const AI_PROMPT_TEMPLATE = `Bạn là Chuyên gia Ngôn ngữ Gen Z Việt Nam đỉnh cao trên TikTok, Threads, Facebook.
 Nhiệm vụ của bạn là đọc câu nói sau và tìm 10 CÁCH NÓI GEN Z ĐỘNG, BẮT TREND NHẤT cho câu này:
 
-👉 CÂU CẦN BIẾN TẤU: "${currentInputText || 'Cay vl'}"
+👉 CÂU CẦN BIẾN TẤU: "${currentInputText || 'Tôi đang bay bổng'}"
 👉 TONE GIỌNG YÊU CẦU: ${selectedTone}
 
 YÊU CẦU BẮT BUỘC:
-1. Phải HIỂU ĐÚNG NGHĨA THỰC TẾ của câu "${currentInputText || 'Cay vl'}" (không bám máy móc từng chữ mà diễn đạt đúng sắc thái cảm xúc, hành động của giới trẻ).
-2. Tạo ra ĐÚNG 10 câu biến tấu khác nhau mang năng lượng Gen Z tự nhiên (dùng các từ lóng thịnh hành như: cay đỏ mắt, ức chế, trầm cảm, slay, out trình, 10 điểm không nhưng, kiếp nạn thứ 82, tới công chuyện, deadpan, cứu bồ, gánh team, cháy phố...).
-3. Tuyệt đối KHÔNG dùng các câu mẫu chung chung không liên quan.
-4. Trả về DUY NHẤT 1 MÃ JSON ARRAY HỢP LỆ THEO ĐỊNH DẠNG DƯỚI ĐÂY (không kèm lời chào hay giải thích ngoài JSON):
+1. BẮT BUỘC PHẢI CÓ ICON / EMOJI: MỖI CÂU GEN Z SINH RA PHẢI KÈM THEO TỐI THIỂU 1 - 3 ICON / EMOJI CỰC CHẤT Ở CUỐI HOẶC GIỮA CÂU (như 🚀, ✨, 💅, 😭, 💀, 🤡, 🗿, 🔥, ❤️, 💣, 🥺, 🌶️, 💸, 🛸, 🌪️, 🧋...) để câu nói sinh động chuẩn vibe Gen Z TikTok / Threads.
+2. Phải HIỂU ĐÚNG NGHĨA THỰC TẾ của câu "${currentInputText || 'Tôi đang bay bổng'}" (không bám máy móc từng chữ mà diễn đạt đúng sắc thái cảm xúc, hành động của giới trẻ).
+3. Tạo ra ĐÚNG 10 câu biến tấu khác nhau mang năng lượng Gen Z tự nhiên (dùng các từ lóng thịnh hành như: bay màu, phiêu, slay trên tầng mây, out trình, cháy phố, 10 điểm không nhưng, kiếp nạn thứ 82, tới công chuyện, deadpan, cứu bồ, gánh team...).
+4. Tuyệt đối KHÔNG dùng các câu mẫu chung chung không liên quan.
+5. Trả về DUY NHẤT 1 MÃ JSON ARRAY HỢP LỆ THEO ĐỊNH DẠNG DƯỚI ĐÂY (không kèm lời chào hay giải thích ngoài JSON):
 
 \`\`\`json
 [
-  { "id": "1", "text": "Câu Gen Z số 1...", "styleTag": "Tên phong cách", "tone": "${selectedTone}" },
-  { "id": "2", "text": "Câu Gen Z số 2...", "styleTag": "Tên phong cách", "tone": "${selectedTone}" },
-  { "id": "3", "text": "Câu Gen Z số 3...", "styleTag": "Tên phong cách", "tone": "${selectedTone}" },
-  { "id": "4", "text": "Câu Gen Z số 4...", "styleTag": "Tên phong cách", "tone": "${selectedTone}" },
-  { "id": "5", "text": "Câu Gen Z số 5...", "styleTag": "Tên phong cách", "tone": "${selectedTone}" },
-  { "id": "6", "text": "Câu Gen Z số 6...", "styleTag": "Tên phong cách", "tone": "${selectedTone}" },
-  { "id": "7", "text": "Câu Gen Z số 7...", "styleTag": "Tên phong cách", "tone": "${selectedTone}" },
-  { "id": "8", "text": "Câu Gen Z số 8...", "styleTag": "Tên phong cách", "tone": "${selectedTone}" },
-  { "id": "9", "text": "Câu Gen Z số 9...", "styleTag": "Tên phong cách", "tone": "${selectedTone}" },
-  { "id": "10", "text": "Câu Gen Z số 10...", "styleTag": "Tên phong cách", "tone": "${selectedTone}" }
+  { "id": "1", "text": "Tâm hồn đang bay màu khỏi mặt đất, phiêu diêu giữa ngân hà luôn á trời ✨🛸", "styleTag": "Cà khịa nhẹ", "tone": "${selectedTone}" },
+  { "id": "2", "text": "Đầu óc đang phiêu, thân xác chỉ là người đi ké thôi nha 🗿🌪️", "styleTag": "Deadpan", "tone": "${selectedTone}" },
+  { "id": "3", "text": "Tôi đang slay trên tầng mây, ai gọi xuống tôi không nghe đâu nha bà nội 💅👑", "styleTag": "Slay đỉnh nóc", "tone": "${selectedTone}" },
+  { "id": "4", "text": "Não đang out trình mặt đất, xin đừng kéo tôi về thực tại 🚀😎", "styleTag": "Out trình", "tone": "${selectedTone}" },
+  { "id": "5", "text": "Tâm trí đang cháy phố trên không, hạ cánh là chuyện của tương lai 🔥🚀", "styleTag": "Cháy phố", "tone": "${selectedTone}" },
+  { "id": "6", "text": "Đang bay bổng tí thôi, thực tại cay đỏ mắt quá chưa muốn về 😭💣", "styleTag": "Cay đỏ mắt", "tone": "${selectedTone}" },
+  { "id": "7", "text": "10 điểm bay bổng không có nhưng, kiếp nạn thực tại xin phép né xa 🤡✨", "styleTag": "10 điểm không nhưng", "tone": "${selectedTone}" },
+  { "id": "8", "text": "Ủa alo, ai cho phép tôi bay bổng dễ thương cỡ này dọ ❤️🥺", "styleTag": "Thả thính ngọt", "tone": "${selectedTone}" },
+  { "id": "9", "text": "Tới công chuyện luôn rồi, đang trôi dạt vô tận cùng các vì sao 🌌🪐", "styleTag": "Drama vũ trụ", "tone": "${selectedTone}" },
+  { "id": "10", "text": "Cứ chill trên chín tầng mây, việc gì đến sẽ đến =))) 🌤️✨", "styleTag": "Chill tự nhiên", "tone": "${selectedTone}" }
 ]
 \`\`\`
 `;
@@ -88,15 +89,32 @@ YÊU CẦU BẮT BUỘC:
 
       let versionsList: GenzResultVersion[] = [];
 
+      // Emojis fallback array to enrich sentences if AI missed emojis
+      const fallbackEmojis = ['✨', '💅', '🔥', '💀', '😭', '🚀', '🗿', '❤️', '🤡', '🥺', '💣', '👑'];
+
+      const enrichTextWithEmoji = (txt: string, index: number): string => {
+        let trimmed = txt.trim();
+        const hasEmoji = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu.test(trimmed);
+        if (!hasEmoji) {
+          const emoji1 = fallbackEmojis[index % fallbackEmojis.length];
+          const emoji2 = fallbackEmojis[(index + 3) % fallbackEmojis.length];
+          return `${trimmed} ${emoji1}${emoji2}`;
+        }
+        return trimmed;
+      };
+
       if (Array.isArray(parsed)) {
         versionsList = parsed.map((item, idx) => ({
           id: item.id || String(idx + 1),
-          text: item.text || String(item),
+          text: enrichTextWithEmoji(item.text || String(item), idx),
           styleTag: item.styleTag || `Phiên bản #${idx + 1}`,
           tone: item.tone || selectedTone
         }));
       } else if (parsed.versions && Array.isArray(parsed.versions)) {
-        versionsList = parsed.versions;
+        versionsList = parsed.versions.map((item: any, idx: number) => ({
+          ...item,
+          text: enrichTextWithEmoji(item.text, idx)
+        }));
       } else {
         setErrorMessage('Dữ liệu JSON không đúng định dạng danh sách câu Gen Z.');
         return;
