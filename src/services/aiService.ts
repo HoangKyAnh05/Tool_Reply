@@ -976,7 +976,22 @@ So, yeah, I honestly can't imagine a day without it.`;
         { id: '10', text: `Đi ăn với bạn thì bao nhiêu calo tôi cũng chấp hết nha ✨❤️`, tone: params.tone, styleTag: 'Thả thính bàn ăn' }
       );
     }
-    // 8. Tâm trạng Buồn (Pure emotional sadness)
+    // 8. Cay cú / Tức tối / Ức chế / Bực mình (e.g. "cay vl", "ức chế", "bực mình", "tức điên")
+    else if (/cay|ức\s*chế|bực|tức|sôi\s*máu|nóng\s*máu|điên\s*tiết|cay\s*cú|chửi|vl\b|vcl\b|vcc\b|vđ\b/i.test(lower)) {
+      versions.push(
+        { id: '1', text: `Ủa alo, cay đỏ mắt luôn á trời, tức muốn nổ tung cái đầu 🤬💣`, tone: params.tone, styleTag: 'Cay đỏ mắt' },
+        { id: '2', text: `Ức chế muốn trầm cảm, quả này mà không xả ra chắc nội thương mất 😭🔥`, tone: params.tone, styleTag: 'Ức chế nội thương' },
+        { id: '3', text: `Tới công chuyện luôn rồi, máu dồn lên não 8000 độ C bà nội ơi 🌋💀`, tone: params.tone, styleTag: 'Sôi máu 8000 độ' },
+        { id: '4', text: `Cay cú cực mạnh, ai chọc thêm câu nữa là cắn liền á nha 🤡🔪`, tone: params.tone, styleTag: 'Cắn liền tay' },
+        { id: '5', text: `Bất biến bên ngoài nhưng bên trong đang gào thét vì cay 🗿🔥`, tone: params.tone, styleTag: 'Deadpan sôi máu' },
+        { id: '6', text: `10 điểm cay đắng không có nhưng, kiếp nạn thứ 82 ập đến 💅💔`, tone: params.tone, styleTag: '10 điểm cay' },
+        { id: '7', text: `Tức xỉu up xỉu down, combo ức chế này ai mà độ cho nổi 😭💨`, tone: params.tone, styleTag: 'Combo ức chế' },
+        { id: '8', text: `Cay như ăn 100 trái ớt hiểm chỉ thiên, nuốt không trôi cục tức này 🌶️🤬`, tone: params.tone, styleTag: '100 trái ớt hiểm' },
+        { id: '9', text: `Mặt lạnh như tiền nhưng trong lòng đang đốt lửa trại vì cay 🧊🔥`, tone: params.tone, styleTag: 'Lạnh lùng bốc hỏa' },
+        { id: '10', text: `Đang cay muốn bốc khói, chỉ có một cốc trà sữa full topping mới dập tắt nổi thôi nha ❤️🧋`, tone: params.tone, styleTag: 'Dập lửa trà sữa' }
+      );
+    }
+    // 9. Tâm trạng Buồn (Pure emotional sadness)
     else if (/^buồn$|^suy$|buồn\s*bã|tâm\s*trạng\s*buồn|khóc\s*thầm|tủi\s*thân|thất\s*tình|trầm\s*cảm/i.test(lower)) {
       versions.push(
         { id: '1', text: `Tâm trạng hôm nay chạm đáy xã hội, tự nhiên suy ngang luôn á trời 😭🥀`, tone: params.tone, styleTag: 'Overthinking / Suy' },
@@ -991,18 +1006,18 @@ So, yeah, I honestly can't imagine a day without it.`;
         { id: '10', text: `Trái tim này tổn thương sâu sắc rồi, không ai dỗ là dỗi luôn đó nha ❤️🥺`, tone: params.tone, styleTag: 'Thả thính dỗi hờn' }
       );
     }
-    // 9. Dynamic Morphing for ANY other sentence
+    // 10. Dynamic Morphing for ANY other sentence
     else {
       versions.push(
-        { id: '1', text: `Nói ngắn gọn là "${cleanCore}" nha phen, cứ chill đi việc đâu còn có đó =)) ✨`, tone: params.tone, styleTag: 'Chill tự nhiên' },
-        { id: '2', text: `Ủa alo, "${cleanCore}" thiệt á hả? Sốc ngang luôn á trời 😭💀`, tone: params.tone, styleTag: 'Sốc ngang / Meme' },
+        { id: '1', text: `Nói ngắn gọn về chuyện "${cleanCore}" nha phen, cứ chill đi việc đâu còn có đó =)) ✨`, tone: params.tone, styleTag: 'Chill tự nhiên' },
+        { id: '2', text: `Ủa alo, vụ "${cleanCore}" là sao dọ? Sốc ngang luôn á trời 😭💀`, tone: params.tone, styleTag: 'Sốc ngang / Meme' },
         { id: '3', text: `10 điểm cho pha "${cleanCore}" này, không có nhưng luôn nha bà nội 💅👑`, tone: params.tone, styleTag: '10 điểm không nhưng' },
-        { id: '4', text: `"${cleanCore}" - Nói một lần thôi nhé, không nhắc lại lần hai đâu 🔥😎`, tone: params.tone, styleTag: 'Ngông tay to' },
-        { id: '5', text: `Đã rõ: "${cleanCore}". Đang trong trạng thái bất biến giữa dòng đời vạn biến 🗿`, tone: params.tone, styleTag: 'Deadpan tối giản' },
+        { id: '4', text: `Về vụ "${cleanCore}" - Nói một lần thôi nhé, không nhắc lại lần hai đâu 🔥😎`, tone: params.tone, styleTag: 'Ngông tay to' },
+        { id: '5', text: `Đã rõ chuyện "${cleanCore}". Đang trong trạng thái bất biến giữa dòng đời vạn biến 🗿`, tone: params.tone, styleTag: 'Deadpan tối giản' },
         { id: '6', text: `Pha "${cleanCore}" này tới công chuyện luôn rồi, chuẩn bị đón nhận bão drama 💣😭`, tone: params.tone, styleTag: 'Drama căng cực' },
         { id: '7', text: `Chuyện "${cleanCore}" nghe qua tưởng đùa nhưng là thật, cười ẻ luôn á 🤡 =))`, tone: params.tone, styleTag: 'Hài hước thả miếng' },
         { id: '8', text: `Dù thế nào thì "${cleanCore}" vẫn phải giữ phong thái cực slay nha 💅✨`, tone: params.tone, styleTag: 'Slay tuyệt đối' },
-        { id: '9', text: `Nghe bảo "${cleanCore}" hả? Ai mà dễ thương quá vậy ta ❤️🥺`, tone: params.tone, styleTag: 'Thả thính ngọt ngào' },
+        { id: '9', text: `Nghe bảo vụ "${cleanCore}" hả? Ai mà dễ thương quá vậy ta ❤️🥺`, tone: params.tone, styleTag: 'Thả thính ngọt ngào' },
         { id: '10', text: `Chốt đơn vụ "${cleanCore}" liền tay, khỏi lăn tăn suy nghĩ cho mệt đầu 🚀`, tone: params.tone, styleTag: 'Chốt đơn dứt khoát' }
       );
     }

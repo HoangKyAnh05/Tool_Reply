@@ -20,7 +20,9 @@ import { aiService } from '../../services/aiService';
 import { storageService } from '../../services/storageService';
 import { GenzCard } from './GenzCard';
 import { GenzMemeModal } from './GenzMemeModal';
+import { PasteGenzJsonModal } from './PasteGenzJsonModal';
 import { audioService } from '../../services/audioService';
+import { Copy, FileJson } from 'lucide-react';
 
 const TONE_OPTIONS: { id: GenzTone; label: string; icon: string; desc: string }[] = [
   { id: 'cool', label: 'Cool / Tự nhiên', icon: '😎', desc: 'Chill, gần gũi như bạn bè' },
@@ -42,14 +44,15 @@ const SAMPLE_CHATS = [
 ];
 
 export const GenzWorkspace: React.FC = () => {
-  const [inputText, setInputText] = useState('Thầy nhắc nó rồi, yên tâm nha');
+  const [inputText, setInputText] = useState('Cay vl');
   const [contextText, setContextText] = useState('');
   const [showContext, setShowContext] = useState(false);
-  const [selectedTone, setSelectedTone] = useState<GenzTone>('cool');
+  const [selectedTone, setSelectedTone] = useState<GenzTone>('cakhia');
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<GenzGenerationResult | null>(null);
   const [activeMemeIdea, setActiveMemeIdea] = useState<GenzVisualIdea | null>(null);
   const [isMemeModalOpen, setIsMemeModalOpen] = useState(false);
+  const [isPasteJsonModalOpen, setIsPasteJsonModalOpen] = useState(false);
 
   const handleGenerate = async () => {
     if (!inputText.trim()) return;
@@ -100,14 +103,32 @@ export const GenzWorkspace: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Fill Button */}
+        {/* Right Tools: Copy Prompt & Paste JSON */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsPasteJsonModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/50 hover:bg-purple-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm"
+            title="Mở prompt để tạo JSON cho câu này"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>📋 Copy Prompt AI</span>
+          </button>
+
+          <button
+            onClick={() => setIsPasteJsonModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-pink-500 text-slate-200 text-xs font-bold transition shadow-sm"
+            title="Dán kết quả JSON từ AI vào đây"
+          >
+            <FileJson className="w-3.5 h-3.5 text-pink-400" />
+            <span>📥 Dán JSON</span>
+          </button>
+
           <button
             onClick={() => handleLoadSampleChat(SAMPLE_CHATS[0])}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pink-600/30 border border-pink-500/50 hover:bg-pink-600 hover:text-white text-pink-200 text-xs font-bold transition shadow-sm"
           >
             <Zap className="w-3.5 h-3.5 text-amber-400" />
-            <span>⚡ Nạp Mẫu Chat (Fill Demo)</span>
+            <span>⚡ Nạp Mẫu Chat</span>
           </button>
         </div>
       </div>
@@ -279,6 +300,17 @@ export const GenzWorkspace: React.FC = () => {
           idea={activeMemeIdea}
         />
       )}
+
+      {/* Paste JSON / AI Prompt Modal */}
+      <PasteGenzJsonModal
+        isOpen={isPasteJsonModalOpen}
+        onClose={() => setIsPasteJsonModalOpen(false)}
+        currentInputText={inputText}
+        selectedTone={selectedTone}
+        onApplyVersions={(newResult) => {
+          setResult(newResult);
+        }}
+      />
     </div>
   );
 };
