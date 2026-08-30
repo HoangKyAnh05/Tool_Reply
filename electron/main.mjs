@@ -275,6 +275,8 @@ function createWindow() {
     minWidth: 1100,
     minHeight: 700,
     frame: true,
+    show: true,
+    title: 'Imagine AI Studio - IELTS & Writing Master',
     titleBarStyle: 'default',
     backgroundColor: '#020617',
     webPreferences: {
@@ -285,6 +287,11 @@ function createWindow() {
       webviewTag: true,
     },
     icon: path.join(__dirname, '../assets/app-icon.png'),
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    mainWindow.focus();
   });
 
   const distHtml = path.join(__dirname, '../dist/index.html');

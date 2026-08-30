@@ -2,7 +2,7 @@
   "name": "ai-studio-multi-tool",
   "version": "1.0.0",
   "description": "Visual IELTS Speaking System, GenZify, and Parallel Universe Decision Simulator",
-  "main": "server.mjs",
+  "main": "electron/main.mjs",
   "type": "module",
   "scripts": {
     "dev": "vite",

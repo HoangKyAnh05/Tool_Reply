@@ -1,3 +1,7 @@
 @echo off
 cd /d "%~dp0"
-start "" npx electron electron/main.mjs
+if exist "node_modules\electron\dist\electron.exe" (
+  start "" "node_modules\electron\dist\electron.exe" "electron\main.mjs"
+) else (
+  start "" npx electron electron/main.mjs
+)
