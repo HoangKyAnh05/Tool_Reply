@@ -18,19 +18,21 @@ import {
   Globe,
   Bell,
   ExternalLink,
-  Smartphone
+  Smartphone,
+  PenTool
 } from 'lucide-react';
 import { AppSettings } from '../../types/settings';
 import { audioService } from '../../services/audioService';
 import { notificationService } from '../../services/notificationService';
 
-export type ActiveTab = 'ielts' | 'genz' | 'universe' | 'action' | 'fishbone' | 'miniweb' | 'library' | 'settings';
+export type ActiveTab = 'ielts' | 'writing' | 'genz' | 'universe' | 'action' | 'fishbone' | 'miniweb' | 'library' | 'settings';
 
 interface NavbarProps {
   activeTab: ActiveTab;
   onTabChange: (tab: ActiveTab) => void;
   onNavigateToMiniWeb?: (serviceId: string) => void;
   onOpen300Questions?: () => void;
+  onOpenWritingBank?: () => void;
   onOpenMobileSimulator?: () => void;
   settings: AppSettings;
   onToggleSound: () => void;
@@ -44,6 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onTabChange,
   onNavigateToMiniWeb,
   onOpen300Questions,
+  onOpenWritingBank,
   onOpenMobileSimulator,
   settings,
   onToggleSound,
@@ -135,6 +138,19 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <BrainCircuit className="w-3.5 h-3.5 text-indigo-400" />
           <span>IELTS Map</span>
+        </button>
+
+        {/* 2.5 IELTS Writing */}
+        <button
+          onClick={() => onTabChange('writing')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${
+            activeTab === 'writing'
+              ? 'bg-gradient-to-r from-amber-600 via-orange-600 to-purple-600 text-white shadow-md shadow-amber-600/30 scale-[1.02]'
+              : 'text-amber-400/80 hover:text-amber-300 hover:bg-slate-800/60'
+          }`}
+        >
+          <PenTool className="w-3.5 h-3.5 text-amber-400" />
+          <span>Writing (600 Đề)</span>
         </button>
 
         {/* 3. GenZ Studio */}
@@ -257,6 +273,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             <BookMarked className="w-3.5 h-3.5 text-amber-400" />
             <span className="hidden xl:inline">📚 300 Câu Hỏi (Full)</span>
             <span className="xl:hidden">300 Câu</span>
+          </button>
+        )}
+
+        {/* Quick Open Writing Bank Button */}
+        {onOpenWritingBank && (
+          <button
+            onClick={() => {
+              audioService.playBeep('click');
+              onOpenWritingBank();
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-600/30 to-purple-600/30 border border-amber-500/40 hover:bg-amber-600 hover:text-white text-amber-200 text-xs font-bold transition shadow-sm hover:scale-105 active:scale-95"
+            title="Mở Thư Viện 600 Đề IELTS Writing Task 1 & 2"
+          >
+            <PenTool className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden xl:inline">✍️ 600 Writing</span>
+            <span className="xl:hidden">Writing</span>
           </button>
         )}
 

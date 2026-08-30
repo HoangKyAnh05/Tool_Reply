@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Navbar, ActiveTab } from './components/common/Navbar';
 import { IeltsWorkspace } from './components/IeltsModule/IeltsWorkspace';
 import { IeltsPartBankModal } from './components/IeltsModule/IeltsPartBankModal';
+import { IeltsWritingWorkspace } from './components/IeltsWriting/IeltsWritingWorkspace';
+import { IeltsWritingBankModal } from './components/IeltsWriting/IeltsWritingBankModal';
 import { GenzWorkspace } from './components/GenzModule/GenzWorkspace';
 import { GenzSavedLibrary } from './components/GenzModule/GenzSavedLibrary';
 import { GenzMemeModal } from './components/GenzModule/GenzMemeModal';
@@ -30,6 +32,7 @@ export const App: React.FC = () => {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isNotificationHubOpen, setIsNotificationHubOpen] = useState(false);
   const [isGlobalPartBankOpen, setIsGlobalPartBankOpen] = useState(false);
+  const [isWritingBankOpen, setIsWritingBankOpen] = useState(false);
   const [isGlobalMobileSimulatorOpen, setIsGlobalMobileSimulatorOpen] = useState(false);
   const [mobileSimulatorTab, setMobileSimulatorTab] = useState<MobileProjectTab>('ielts300');
   const [activeMemeModalIdea, setActiveMemeModalIdea] = useState<GenzVisualIdea | null>(null);
@@ -74,6 +77,7 @@ export const App: React.FC = () => {
         onTabChange={(tab) => setActiveTab(tab)}
         onNavigateToMiniWeb={(serviceId) => handleNavigateToMiniWebService(serviceId)}
         onOpen300Questions={() => setIsGlobalPartBankOpen(true)}
+        onOpenWritingBank={() => setIsWritingBankOpen(true)}
         onOpenMobileSimulator={() => {
           const tab: MobileProjectTab =
             activeTab === 'fishbone'
@@ -102,6 +106,7 @@ export const App: React.FC = () => {
           />
         </div>
         {activeTab === 'ielts' && <IeltsWorkspace />}
+        {activeTab === 'writing' && <IeltsWritingWorkspace />}
         {activeTab === 'genz' && <GenzWorkspace />}
         {activeTab === 'universe' && <UniverseWorkspace />}
         {activeTab === 'action' && <ActionEngineWorkspace />}
@@ -195,6 +200,16 @@ export const App: React.FC = () => {
             setIsGlobalMobileSimulatorOpen(false);
             setActiveTab('ielts');
           }
+        }}
+      />
+
+      {/* Global Writing 600 Bank Modal */}
+      <IeltsWritingBankModal
+        isOpen={isWritingBankOpen}
+        onClose={() => setIsWritingBankOpen(false)}
+        onSelectTask={(_) => {
+          setActiveTab('writing');
+          setIsWritingBankOpen(false);
         }}
       />
     </div>

@@ -20,11 +20,15 @@ import {
   ExternalLink,
   Zap,
   Play,
-  RotateCcw
+  RotateCcw,
+  PenTool
 } from 'lucide-react';
 import { ieltsPart1Bank } from '../../data/ieltsPart1Bank';
 import { ieltsPart2Bank } from '../../data/ieltsPart2Bank';
 import { ieltsPart3Bank } from '../../data/ieltsPart3Bank';
+import { ieltsWritingTask1Bank } from '../../data/ieltsWritingTask1Bank';
+import { ieltsWritingTask2Bank } from '../../data/ieltsWritingTask2Bank';
+import { IeltsTask1ChartViewer } from '../IeltsWriting/IeltsTask1ChartViewer';
 import { storageService } from '../../services/storageService';
 import { audioService } from '../../services/audioService';
 import { FishboneProject } from '../../types/fishbone';
@@ -42,7 +46,7 @@ interface MobileIeltsItem {
   isCustom?: boolean;
 }
 
-export type MobileProjectTab = 'ielts300' | 'fishbone' | 'genz' | 'current_lesson';
+export type MobileProjectTab = 'ielts300' | 'writing' | 'fishbone' | 'genz' | 'current_lesson';
 
 interface MobileProjectSimulatorModalProps {
   isOpen: boolean;
@@ -76,6 +80,11 @@ export const MobileProjectSimulatorModal: React.FC<MobileProjectSimulatorModalPr
 
   // Current IELTS Lesson
   const [currentLesson, setCurrentLesson] = useState<IeltsSpeakingLesson>(() => storageService.getCurrentIeltsLesson());
+
+  // IELTS Writing 600 State
+  const [writingSubTask, setWritingSubTask] = useState<'task1' | 'task2'>('task1');
+  const [writingTask1Index, setWritingTask1Index] = useState(0);
+  const [writingTask2Index, setWritingTask2Index] = useState(0);
 
   // Update on open
   useEffect(() => {
@@ -262,7 +271,7 @@ export const MobileProjectSimulatorModal: React.FC<MobileProjectSimulatorModalPr
           {/* Mobile In-App Header & Project Selector */}
           <div className="p-3 border-b border-slate-800/80 bg-slate-900/90 shrink-0">
             {/* Quick Project Switcher Pills */}
-            <div className="grid grid-cols-4 gap-1 p-1 bg-slate-950 rounded-xl border border-slate-800 text-[11px] font-bold">
+            <div className="grid grid-cols-5 gap-1 p-1 bg-slate-950 rounded-xl border border-slate-800 text-[11px] font-bold">
               <button
                 onClick={() => {
                   audioService.playBeep('click');
@@ -275,7 +284,22 @@ export const MobileProjectSimulatorModal: React.FC<MobileProjectSimulatorModalPr
                 }`}
               >
                 <span>📚</span>
-                <span className="text-[10px] leading-none">300 Từ</span>
+                <span className="text-[9px] leading-none">300 Từ</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  audioService.playBeep('click');
+                  setActiveTab('writing');
+                }}
+                className={`py-1.5 rounded-lg flex flex-col items-center gap-0.5 transition ${
+                  activeTab === 'writing'
+                    ? 'bg-amber-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <span>✍️</span>
+                <span className="text-[9px] leading-none">Writing</span>
               </button>
 
               <button
@@ -290,7 +314,7 @@ export const MobileProjectSimulatorModal: React.FC<MobileProjectSimulatorModalPr
                 }`}
               >
                 <span>🐟</span>
-                <span className="text-[10px] leading-none">Xương Cá</span>
+                <span className="text-[9px] leading-none">Xương Cá</span>
               </button>
 
               <button
@@ -305,7 +329,7 @@ export const MobileProjectSimulatorModal: React.FC<MobileProjectSimulatorModalPr
                 }`}
               >
                 <span>💖</span>
-                <span className="text-[10px] leading-none">Gen Z</span>
+                <span className="text-[9px] leading-none">Gen Z</span>
               </button>
 
               <button
@@ -320,7 +344,7 @@ export const MobileProjectSimulatorModal: React.FC<MobileProjectSimulatorModalPr
                 }`}
               >
                 <span>🎯</span>
-                <span className="text-[10px] leading-none">Bài Học</span>
+                <span className="text-[9px] leading-none">Bài Học</span>
               </button>
             </div>
           </div>
@@ -505,6 +529,221 @@ export const MobileProjectSimulatorModal: React.FC<MobileProjectSimulatorModalPr
                   <div className="text-center py-12 text-slate-400 text-xs">
                     Không tìm thấy câu hỏi phù hợp.
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* ========================================================= */}
+            {/* TAB WRITING: 600 ĐỀ IELTS WRITING (TASK 1 & TASK 2) TRÊN MOBILE */}
+            {/* ========================================================= */}
+            {activeTab === 'writing' && (
+              <div className="space-y-3 pb-6 animate-fadeIn">
+                {/* Task 1 vs Task 2 Switcher */}
+                <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-bold">
+                  <button
+                    onClick={() => {
+                      audioService.playBeep('click');
+                      setWritingSubTask('task1');
+                    }}
+                    className={`flex-1 py-1.5 rounded-lg text-center transition ${
+                      writingSubTask === 'task1'
+                        ? 'bg-purple-600 text-white shadow'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Task 1: Biểu Đồ (300)
+                  </button>
+                  <button
+                    onClick={() => {
+                      audioService.playBeep('click');
+                      setWritingSubTask('task2');
+                    }}
+                    className={`flex-1 py-1.5 rounded-lg text-center transition ${
+                      writingSubTask === 'task2'
+                        ? 'bg-amber-600 text-white shadow'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Task 2: Nghị Luận (300)
+                  </button>
+                </div>
+
+                {writingSubTask === 'task1' ? (
+                  /* Task 1 Mobile View */
+                  (() => {
+                    const item = ieltsWritingTask1Bank[writingTask1Index] || ieltsWritingTask1Bank[0];
+                    return (
+                      <div className="space-y-3">
+                        {/* Header Badge */}
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 uppercase">
+                            #{item.id} • {item.chartType.toUpperCase()}
+                          </span>
+                          <span className="text-[10px] text-amber-400 font-bold">Band {item.bandScore}</span>
+                        </div>
+
+                        {/* Title & Prompt */}
+                        <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+                          <h4 className="text-xs font-extrabold text-white leading-snug">{item.title}</h4>
+                          <p className="text-[11px] text-slate-300 leading-relaxed bg-slate-950 p-2.5 rounded-lg border border-slate-800/80">
+                            {item.prompt}
+                          </p>
+                        </div>
+
+                        {/* Visual Chart for Mobile */}
+                        <IeltsTask1ChartViewer chartData={item.chartData} title={item.title} />
+
+                        {/* Overview */}
+                        <div className="p-3 rounded-xl bg-indigo-950/30 border border-indigo-500/30 text-[11px] text-indigo-200 italic leading-relaxed">
+                          <strong className="block text-[10px] font-bold uppercase not-italic text-indigo-400 mb-1">
+                            Điểm Nhấn (Overview):
+                          </strong>
+                          {item.overview}
+                        </div>
+
+                        {/* Model Answer */}
+                        <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase text-emerald-400">
+                              Bài Mẫu ({item.wordCount} words)
+                            </span>
+                            <button
+                              onClick={() => {
+                                handleCopyText(`m_t1_${item.id}`, `${item.title}\n\n${item.sampleAnswerBand8}`);
+                              }}
+                              className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1"
+                            >
+                              <Copy className="w-3 h-3" />
+                              <span>{copiedId === `m_t1_${item.id}` ? 'Đã chép!' : 'Chép'}</span>
+                            </button>
+                          </div>
+                          <div className="space-y-2 text-[11px] text-slate-300 leading-relaxed max-h-52 overflow-y-auto custom-scrollbar p-1">
+                            {item.sampleAnswerBand8.split('\n\n').map((p, idx) => (
+                              <p key={idx}>{p}</p>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Prev / Next Controls */}
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                          <button
+                            onClick={() => {
+                              audioService.playBeep('click');
+                              setWritingTask1Index((i) => Math.max(0, i - 1));
+                            }}
+                            disabled={writingTask1Index === 0}
+                            className="px-3 py-1.5 rounded-xl bg-slate-800 disabled:opacity-30 text-slate-300 text-xs font-bold"
+                          >
+                            Trước
+                          </button>
+                          <span className="font-mono text-purple-300 text-xs">
+                            {writingTask1Index + 1} / {ieltsWritingTask1Bank.length}
+                          </span>
+                          <button
+                            onClick={() => {
+                              audioService.playBeep('click');
+                              setWritingTask1Index((i) => Math.min(ieltsWritingTask1Bank.length - 1, i + 1));
+                            }}
+                            disabled={writingTask1Index >= ieltsWritingTask1Bank.length - 1}
+                            className="px-3 py-1.5 rounded-xl bg-slate-800 disabled:opacity-30 text-slate-300 text-xs font-bold"
+                          >
+                            Sau
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  /* Task 2 Mobile View */
+                  (() => {
+                    const item = ieltsWritingTask2Bank[writingTask2Index] || ieltsWritingTask2Bank[0];
+                    return (
+                      <div className="space-y-3">
+                        {/* Header Badge */}
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
+                            #{item.id} • {item.essayType.replace('_', ' ').toUpperCase()}
+                          </span>
+                          <span className="text-[10px] text-emerald-400 font-bold">Band {item.bandScore}</span>
+                        </div>
+
+                        {/* Title & Prompt */}
+                        <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+                          <h4 className="text-xs font-extrabold text-white leading-snug">{item.topic}</h4>
+                          <p className="text-[11px] text-amber-200 leading-relaxed bg-slate-950 p-2.5 rounded-lg border border-slate-800/80">
+                            {item.prompt}
+                          </p>
+                        </div>
+
+                        {/* 4-Step Outline */}
+                        <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 text-[11px]">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Dàn Ý 4 Đoạn:</span>
+                          <p className="text-slate-300">
+                            <strong className="text-amber-400">Intro:</strong> {item.outline.introduction}
+                          </p>
+                          <p className="text-slate-300">
+                            <strong className="text-indigo-400">Body 1:</strong> {item.outline.bodyParagraph1}
+                          </p>
+                          <p className="text-slate-300">
+                            <strong className="text-cyan-400">Body 2:</strong> {item.outline.bodyParagraph2}
+                          </p>
+                          <p className="text-slate-300">
+                            <strong className="text-emerald-400">Concl:</strong> {item.outline.conclusion}
+                          </p>
+                        </div>
+
+                        {/* Model Essay */}
+                        <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase text-amber-400">
+                              Bài Viết Mẫu ({item.wordCount} words)
+                            </span>
+                            <button
+                              onClick={() => {
+                                handleCopyText(`m_t2_${item.id}`, `${item.topic}\n\n${item.sampleAnswerBand8}`);
+                              }}
+                              className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1"
+                            >
+                              <Copy className="w-3 h-3" />
+                              <span>{copiedId === `m_t2_${item.id}` ? 'Đã chép!' : 'Chép'}</span>
+                            </button>
+                          </div>
+                          <div className="space-y-2 text-[11px] text-slate-300 leading-relaxed max-h-52 overflow-y-auto custom-scrollbar p-1">
+                            {item.sampleAnswerBand8.split('\n\n').map((p, idx) => (
+                              <p key={idx}>{p}</p>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Prev / Next Controls */}
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                          <button
+                            onClick={() => {
+                              audioService.playBeep('click');
+                              setWritingTask2Index((i) => Math.max(0, i - 1));
+                            }}
+                            disabled={writingTask2Index === 0}
+                            className="px-3 py-1.5 rounded-xl bg-slate-800 disabled:opacity-30 text-slate-300 text-xs font-bold"
+                          >
+                            Trước
+                          </button>
+                          <span className="font-mono text-amber-300 text-xs">
+                            {writingTask2Index + 1} / {ieltsWritingTask2Bank.length}
+                          </span>
+                          <button
+                            onClick={() => {
+                              audioService.playBeep('click');
+                              setWritingTask2Index((i) => Math.min(ieltsWritingTask2Bank.length - 1, i + 1));
+                            }}
+                            disabled={writingTask2Index >= ieltsWritingTask2Bank.length - 1}
+                            className="px-3 py-1.5 rounded-xl bg-slate-800 disabled:opacity-30 text-slate-300 text-xs font-bold"
+                          >
+                            Sau
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()
                 )}
               </div>
             )}
