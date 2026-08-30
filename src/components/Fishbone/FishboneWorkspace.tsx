@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Layers, 
   GitCompare, 
@@ -9,11 +9,14 @@ import {
   Plus, 
   TrendingUp,
   BarChart3,
-  Zap
+  Zap,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { FishboneProject, EvolutionLevel } from '../../types/fishbone';
 import { storageService, defaultFishboneProject } from '../../services/storageService';
 import { fishboneService } from '../../services/fishboneService';
+import { toggleNativeFullscreen } from '../../utils/fullscreen';
 import { FishboneCanvas } from './FishboneCanvas';
 import { LevelDetailView } from './LevelDetailView';
 import { LevelComparisonView } from './LevelComparisonView';
@@ -139,6 +142,24 @@ export const FishboneWorkspace: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'levels' | 'compare' | 'timeline'>('levels');
   const [isQualityGateOpen, setIsQualityGateOpen] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
+  const handleToggleFullscreen = async () => {
+    audioService.playBeep('click');
+    const nextState = !isFullscreen;
+    setIsFullscreen(nextState);
+    await toggleNativeFullscreen();
+  };
 
   const activeLevel = project.levels.find((l) => l.id === activeLevelId) || project.levels[0];
 
@@ -197,7 +218,13 @@ export const FishboneWorkspace: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-slate-950">
+    <div
+      className={`flex flex-col bg-slate-950 transition-all ${
+        isFullscreen
+          ? 'fixed inset-0 z-50 w-screen h-screen overflow-hidden animate-fadeIn'
+          : 'flex-1 overflow-hidden'
+      }`}
+    >
       {/* Top action header */}
       <div className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-6 py-3 flex items-center justify-between z-10 shrink-0">
         <div className="flex items-center gap-3">
@@ -210,6 +237,11 @@ export const FishboneWorkspace: React.FC = () => {
                 EVOLUTION ENGINE
               </span>
               <h2 className="text-sm font-extrabold text-white">{project.name}</h2>
+              {isFullscreen && (
+                <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono text-[10px] font-bold border border-cyan-500/30">
+                  TOÀN MÀN HÌNH
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-slate-400">
               Cấp độ hiện tại: <strong className="text-cyan-300">Level {project.currentLevelNumber}</strong> • Mục tiêu: <strong className="text-purple-300">Level {project.targetLevelNumber}</strong>
@@ -272,6 +304,20 @@ export const FishboneWorkspace: React.FC = () => {
           >
             <Code className="w-3.5 h-3.5" />
             <span>AI Prompt / JSON Loop</span>
+          </button>
+
+          {/* Fullscreen Toggle Button */}
+          <button
+            onClick={handleToggleFullscreen}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm ${
+              isFullscreen
+                ? 'bg-cyan-600 border-cyan-400 text-white shadow-lg shadow-cyan-500/30'
+                : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white'
+            }`}
+            title={isFullscreen ? 'Thu nhỏ giao diện dự án (Esc)' : 'Mở to toàn màn hình dự án'}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5 text-cyan-400" />}
+            <span>{isFullscreen ? 'Thu nhỏ (Esc)' : 'Toàn màn hình'}</span>
           </button>
         </div>
       </div>

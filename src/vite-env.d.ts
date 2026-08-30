@@ -25,6 +25,8 @@ declare global {
       restartApp: () => Promise<boolean>;
       reloadApp: () => Promise<boolean>;
       toggleDevTools: () => Promise<boolean>;
+      toggleFullScreen: () => Promise<boolean>;
+      isFullScreen: () => Promise<boolean>;
       openExternal: (url: string) => Promise<boolean>;
       openSeparateWindow: (options: { url: string; title?: string; width?: number; height?: number }) => Promise<boolean>;
       openGoogleLogin: (url?: string) => Promise<boolean>;

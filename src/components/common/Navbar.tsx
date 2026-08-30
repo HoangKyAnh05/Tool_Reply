@@ -29,6 +29,7 @@ interface NavbarProps {
   activeTab: ActiveTab;
   onTabChange: (tab: ActiveTab) => void;
   onNavigateToMiniWeb?: (serviceId: string) => void;
+  onOpen300Questions?: () => void;
   settings: AppSettings;
   onToggleSound: () => void;
   openSettingsModal: () => void;
@@ -40,6 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   onTabChange,
   onNavigateToMiniWeb,
+  onOpen300Questions,
   settings,
   onToggleSound,
   openSettingsModal,
@@ -238,6 +240,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           )}
         </button>
+
+        {/* Quick Open 300 Questions Fullscreen Button */}
+        {onOpen300Questions && (
+          <button
+            onClick={() => {
+              audioService.playBeep('click');
+              onOpen300Questions();
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600/30 to-indigo-600/30 border border-purple-500/40 hover:bg-purple-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm hover:scale-105 active:scale-95"
+            title="Mở to toàn màn hình Thư Viện 300 Câu Hỏi IELTS Speaking (Focus Mode)"
+          >
+            <BookMarked className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden xl:inline">📚 300 Câu Hỏi (Full)</span>
+            <span className="xl:hidden">300 Câu</span>
+          </button>
+        )}
 
         {/* Tool Imagine GitHub Page Button */}
         <button

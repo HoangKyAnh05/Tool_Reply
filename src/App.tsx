@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar, ActiveTab } from './components/common/Navbar';
 import { IeltsWorkspace } from './components/IeltsModule/IeltsWorkspace';
+import { IeltsPartBankModal } from './components/IeltsModule/IeltsPartBankModal';
 import { GenzWorkspace } from './components/GenzModule/GenzWorkspace';
 import { GenzSavedLibrary } from './components/GenzModule/GenzSavedLibrary';
 import { GenzMemeModal } from './components/GenzModule/GenzMemeModal';
@@ -14,6 +15,7 @@ import { SocialNotificationHubModal } from './components/Notifications/SocialNot
 import { storageService } from './services/storageService';
 import { notificationService } from './services/notificationService';
 import { audioService } from './services/audioService';
+import { aiService } from './services/aiService';
 import { GenzVisualIdea } from './types/genz';
 import { AppSettings } from './types/settings';
 
@@ -26,6 +28,7 @@ export const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isNotificationHubOpen, setIsNotificationHubOpen] = useState(false);
+  const [isGlobalPartBankOpen, setIsGlobalPartBankOpen] = useState(false);
   const [activeMemeModalIdea, setActiveMemeModalIdea] = useState<GenzVisualIdea | null>(null);
 
   // Unified Direct Service Navigation
@@ -67,6 +70,7 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab)}
         onNavigateToMiniWeb={(serviceId) => handleNavigateToMiniWebService(serviceId)}
+        onOpen300Questions={() => setIsGlobalPartBankOpen(true)}
         settings={settings}
         onToggleSound={handleToggleSound}
         openSettingsModal={() => setIsSettingsOpen(true)}
@@ -130,6 +134,31 @@ export const App: React.FC = () => {
           idea={activeMemeModalIdea}
         />
       )}
+
+      {/* Global 300 Questions Bank Modal (Full Screen by default when triggered from Navbar) */}
+      <IeltsPartBankModal
+        isOpen={isGlobalPartBankOpen}
+        onClose={() => setIsGlobalPartBankOpen(false)}
+        defaultFullscreen={true}
+        onSelectQuestion={async (payload) => {
+          try {
+            audioService.playBeep('success');
+            const newLesson = await aiService.generateIeltsLesson({
+              vocabListText: payload.vocab,
+              readingText: payload.answer,
+              questionText: payload.question,
+              noOldVocab: false,
+              partPreference: payload.part
+            });
+            storageService.saveIeltsLesson(newLesson);
+          } catch (err) {
+            console.error('Generate lesson error:', err);
+          } finally {
+            setIsGlobalPartBankOpen(false);
+            setActiveTab('ielts');
+          }
+        }}
+      />
     </div>
   );
 };

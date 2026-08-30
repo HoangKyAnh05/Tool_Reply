@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   restartApp: () => ipcRenderer.invoke('app:restart'),
   reloadApp: () => ipcRenderer.invoke('app:reload'),
   toggleDevTools: () => ipcRenderer.invoke('app:toggle-devtools'),
+  toggleFullScreen: () => ipcRenderer.invoke('app:toggle-fullscreen'),
+  isFullScreen: () => ipcRenderer.invoke('app:is-fullscreen'),
   openExternal: (url) => ipcRenderer.invoke('app:open-external', url),
   openSeparateWindow: (options) => ipcRenderer.invoke('app:open-separate-window', options),
   openGoogleLogin: (url) => ipcRenderer.invoke('app:open-google-login', url),

@@ -556,7 +556,7 @@ export const aiService = {
   generateIeltsMasterPrompt(params: {
     vocabListText: string;
     readingText?: string;
-    noOldVocab: boolean;
+    noOldVocab?: boolean;
     partPreference?: 'Part 1' | 'Part 2' | 'Part 3';
   }): string {
     return `Create an IELTS Speaking learning feature called "Visual Vocabulary Speaking System".
@@ -634,7 +634,7 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
     vocabListText: string;
     readingText: string;
     questionText?: string;
-    noOldVocab: boolean;
+    noOldVocab?: boolean;
     partPreference?: 'Part 1' | 'Part 2' | 'Part 3';
   }): Promise<IeltsSpeakingLesson> {
     const settings = storageService.getSettings();
@@ -642,10 +642,11 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
     // If Gemini or OpenAI API configured, attempt live call
     if (settings.aiProvider === 'gemini' && settings.geminiApiKey) {
       try {
+        const noOld = Boolean(params.noOldVocab);
         const prompt = this.generateIeltsMasterPrompt({
           vocabListText: params.vocabListText,
           readingText: `${params.questionText ? `Question: ${params.questionText}\n` : ''}${params.readingText}`,
-          noOldVocab: params.noOldVocab,
+          noOldVocab: noOld,
           partPreference: params.partPreference
         }) + '\n\nRespond with ONLY valid JSON.';
         const res = await this.callGeminiApi(prompt, settings.geminiApiKey, settings.geminiModel);
@@ -662,10 +663,11 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
 
     if (settings.aiProvider === 'openai' && settings.openaiApiKey) {
       try {
+        const noOld = Boolean(params.noOldVocab);
         const prompt = this.generateIeltsMasterPrompt({
           vocabListText: params.vocabListText,
           readingText: `${params.questionText ? `Question: ${params.questionText}\n` : ''}${params.readingText}`,
-          noOldVocab: params.noOldVocab,
+          noOldVocab: noOld,
           partPreference: params.partPreference
         });
         const res = await this.callOpenAiApi(prompt, settings.openaiApiKey, settings.openaiModel);
@@ -681,7 +683,10 @@ OUTPUT STRUCTURE MUST BE VALID JSON:
     }
 
     // Built-in intelligent generator
-    return this.generateAutonomousIeltsLesson(params);
+    return this.generateAutonomousIeltsLesson({
+      ...params,
+      noOldVocab: Boolean(params.noOldVocab)
+    });
   },
 
   /**

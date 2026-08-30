@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, 
   BrainCircuit, 
@@ -11,7 +11,9 @@ import {
   Code,
   ToggleLeft,
   ToggleRight,
-  Zap
+  Zap,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { IeltsSpeakingLesson } from '../../types/ielts';
 import { aiService } from '../../services/aiService';
@@ -28,9 +30,14 @@ import { ieltsPart1Bank, IeltsPart1Item } from '../../data/ieltsPart1Bank';
 import { ieltsPart2Bank, IeltsPart2Item } from '../../data/ieltsPart2Bank';
 import { ieltsPart3Bank, IeltsPart3Item } from '../../data/ieltsPart3Bank';
 import { audioService } from '../../services/audioService';
+import { toggleNativeFullscreen } from '../../utils/fullscreen';
 import { Plus, Save, Star } from 'lucide-react';
 
-export const IeltsWorkspace: React.FC = () => {
+interface IeltsWorkspaceProps {
+  openPartBankSignal?: number;
+}
+
+export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSignal }) => {
   const [currentLesson, setCurrentLesson] = useState<IeltsSpeakingLesson>(() =>
     storageService.getCurrentIeltsLesson()
   );
@@ -45,9 +52,37 @@ export const IeltsWorkspace: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [isPartBankOpen, setIsPartBankOpen] = useState(false);
+  const [isPartBankFullscreen, setIsPartBankFullscreen] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [customVersion, setCustomVersion] = useState(0);
   const [activeSubTab, setActiveSubTab] = useState<'answer' | 'vocab' | 'connectors' | 'test'>('answer');
+
+  // Listen to openPartBankSignal from navbar to open directly in fullscreen
+  useEffect(() => {
+    if (openPartBankSignal && openPartBankSignal > 0) {
+      setIsPartBankFullscreen(true);
+      setIsPartBankOpen(true);
+    }
+  }, [openPartBankSignal]);
+
+  // Handle ESC key to exit focus mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFocusMode) {
+        setIsFocusMode(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFocusMode]);
+
+  const handleToggleFocusMode = async () => {
+    audioService.playBeep('click');
+    const nextState = !isFocusMode;
+    setIsFocusMode(nextState);
+    await toggleNativeFullscreen();
+  };
 
   // Custom user-created questions for current part
   const customQuestions = storageService.getCustomIeltsQuestions(partPreference).map((q) => ({
@@ -224,11 +259,27 @@ export const IeltsWorkspace: React.FC = () => {
         <div className="flex items-center gap-2">
           {/* 300 Questions Master Bank Button */}
           <button
-            onClick={() => setIsPartBankOpen(true)}
+            onClick={() => {
+              setIsPartBankFullscreen(false);
+              setIsPartBankOpen(true);
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600/40 to-indigo-600/40 border border-purple-500/50 hover:from-purple-600 hover:to-indigo-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm"
           >
             <BookMarked className="w-3.5 h-3.5 text-amber-400" />
-            <span>📚 Kho 300 Câu Part 1-2-3 (Bank)</span>
+            <span>📚 Kho 300 Câu Part 1-2-3</span>
+          </button>
+
+          {/* Direct Fullscreen 300 Questions Button */}
+          <button
+            onClick={() => {
+              setIsPartBankFullscreen(true);
+              setIsPartBankOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600/30 border border-purple-500/50 hover:bg-purple-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm"
+            title="Mở to toàn màn hình kho 300 câu hỏi IELTS"
+          >
+            <Maximize2 className="w-3.5 h-3.5 text-cyan-300" />
+            <span>⛶ Mở To 300 Câu</span>
           </button>
 
           {/* Quick Sample Fill Button */}
@@ -518,9 +569,39 @@ export const IeltsWorkspace: React.FC = () => {
         </aside>
 
         {/* Right Preview Area */}
-        <section className="flex-1 flex flex-col overflow-hidden bg-slate-950">
+        <section
+          className={`${
+            isFocusMode
+              ? 'fixed inset-0 z-50 w-screen h-screen bg-slate-950 flex flex-col overflow-hidden animate-fadeIn'
+              : 'flex-1 flex flex-col overflow-hidden bg-slate-950'
+          }`}
+        >
+          {/* Focus Mode Top Bar if active */}
+          {isFocusMode && (
+            <div className="bg-gradient-to-r from-purple-950/90 via-slate-900 to-indigo-950/90 px-6 py-2.5 border-b border-purple-500/30 flex items-center justify-between shrink-0 shadow-lg">
+              <div className="flex items-center gap-3">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-500/30 text-purple-200 border border-purple-500/40 uppercase tracking-wide">
+                  ⛶ FOCUS MODE • CHỈ XEM BÀI HỌC
+                </span>
+                <span className="text-xs font-bold text-slate-200 truncate max-w-xl">
+                  {currentLesson.topic || currentLesson.question}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleToggleFocusMode}
+                  className="px-3 py-1 rounded-xl bg-slate-800 hover:bg-purple-600 text-slate-200 hover:text-white text-xs font-bold transition flex items-center gap-1.5 border border-slate-700"
+                  title="Thoát chế độ toàn màn hình bài học (Esc)"
+                >
+                  <Minimize2 className="w-3.5 h-3.5" />
+                  <span>Thu nhỏ lại (Esc)</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Sub Navigation Bar */}
-          <div className="border-b border-slate-800/80 bg-slate-900/40 px-6 py-2 flex items-center justify-between">
+          <div className="border-b border-slate-800/80 bg-slate-900/40 px-6 py-2 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setActiveSubTab('answer')}
@@ -562,6 +643,22 @@ export const IeltsWorkspace: React.FC = () => {
               >
                 <Award className="w-3.5 h-3.5" />
                 <span>Interactive Recall Quiz</span>
+              </button>
+            </div>
+
+            {/* Right Action: Focus / Fullscreen Mode Toggle */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleToggleFocusMode}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm ${
+                  isFocusMode
+                    ? 'bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-500/30'
+                    : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700'
+                }`}
+                title={isFocusMode ? 'Thu nhỏ lại giao diện bình thường (Esc)' : 'Mở to toàn màn hình chỉ xem riêng bài học (Focus Mode)'}
+              >
+                {isFocusMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5 text-purple-400" />}
+                <span>{isFocusMode ? 'Thu nhỏ bài học' : 'Toàn màn hình bài học'}</span>
               </button>
             </div>
           </div>
@@ -614,8 +711,12 @@ export const IeltsWorkspace: React.FC = () => {
       {/* 300 Questions Master Bank Modal (Part 1, 2, 3) */}
       <IeltsPartBankModal
         isOpen={isPartBankOpen}
-        onClose={() => setIsPartBankOpen(false)}
+        onClose={() => {
+          setIsPartBankOpen(false);
+          setIsPartBankFullscreen(false);
+        }}
         defaultPart={partPreference}
+        defaultFullscreen={isPartBankFullscreen}
         onSelectQuestion={handleSelectFromModal}
       />
 

@@ -531,6 +531,19 @@ ipcMain.handle('app:open-external', (_, url) => {
   return true;
 });
 
+ipcMain.handle('app:toggle-fullscreen', () => {
+  if (mainWindow) {
+    const isFull = mainWindow.isFullScreen();
+    mainWindow.setFullScreen(!isFull);
+    return !isFull;
+  }
+  return false;
+});
+
+ipcMain.handle('app:is-fullscreen', () => {
+  return mainWindow ? mainWindow.isFullScreen() : false;
+});
+
 ipcMain.handle('app:open-google-login', (_, url) => {
   openAuthWindow(url || 'https://accounts.google.com');
   return true;
