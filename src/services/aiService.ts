@@ -861,25 +861,92 @@ So, yeah, I honestly can't imagine a day without it.`;
     const ctx = params.conversationContext?.trim();
     const lower = text.toLowerCase();
 
-    // 10 Context-Aware Semantic Variations based on user's exact input sentence
+    // Clean core semantic phrase
+    const cleanCore = text.replace(/^[tao|tôi|mình|em|anh|chị|bác|tớ]+\s*/i, '')
+                          .replace(/[.!?,;]+$/g, '')
+                          .replace(/\s*quá\s*$/i, '')
+                          .replace(/\s*lắm\s*$/i, '')
+                          .trim();
+
+    // 10 Context-Aware Dynamic Variations
     const versions: GenzResultVersion[] = [];
 
-    // Category A: Buồn, Suy sụp, Khóc, Chán nản, Thất tình, Tụt mood
-    if (/buồn|khóc|suy|chán|nản|tệ|tồi tệ|thất tình|tổn thương|cô đơn|đau lòng|tụt mood|trầm cảm|bế tắc|tuyệt vọng/i.test(lower)) {
+    // 1. Nhu cầu vệ sinh / Đau bụng / Tiêu hóa (e.g. "buồn đi ẻ", "đi vệ sinh", "đau bụng", "buồn đái", "tháo dạ")
+    if (/buồn\s*(?:đi\s*)?(?:ẻ|ỉa|đái|cầu|vệ sinh)|đau\s*bụng|tháo\s*dạ|nhẹ\s*người|toilet|wc\b/i.test(lower)) {
       versions.push(
-        { id: '1', text: `Tâm trạng hôm nay chạm đáy xã hội, tự nhiên suy ngang luôn á trời 😭🥀`, tone: params.tone, styleTag: 'Overthinking / Suy' },
-        { id: '2', text: `Ủa alo, trầm cảm ngang vậy đó, kiếp nạn thứ 82 ập đến rồi 💀💔`, tone: params.tone, styleTag: 'Meme TikTok' },
-        { id: '3', text: `Tụt mood không phanh, ai cứu vớt tâm hồn mong manh dễ vỡ này với 🥺🌧️`, tone: params.tone, styleTag: 'Cần cứu bồ' },
-        { id: '4', text: `Hôm nay mị bận gặm nhấm nỗi buồn, xin đừng ai làm phiền 🗿`, tone: params.tone, styleTag: 'Deadpan vô cảm' },
-        { id: '5', text: `Ổn... mà là ổn lòi lìa á trời, cười trong nước mắt luôn =))) 😭`, tone: params.tone, styleTag: 'Tự giễu / Hài hước' },
-        { id: '6', text: `Nỗi buồn này to lớn đến mức 10 cốc trà sữa full topping cũng chưa chắc vá nổi 🧋💔`, tone: params.tone, styleTag: 'Thả miếng ẩm thực' },
-        { id: '7', text: `Chúa hề hôm nay xin phép tắt nụ cười, khóc trôi một dòng sông luôn á 🌊😭`, tone: params.tone, styleTag: 'Drama căng cực' },
-        { id: '8', text: `Nhìn đâu cũng thấy xui, vũ trụ tính thử thách lòng kiên nhẫn của con đến bao giờ 🤡💅`, tone: params.tone, styleTag: 'Hờn cả vũ trụ' },
-        { id: '9', text: `Buồn muốn xỉu up xỉu down, chỉ muốn trùm chăn ngủ 3 ngày 3 đêm cho qua kiếp nạn 🛏️💤`, tone: params.tone, styleTag: 'Trốn chạy thực tại' },
-        { id: '10', text: `Trái tim này tổn thương sâu sắc rồi, không ai dỗ là dỗi luôn đó nha ❤️🥺`, tone: params.tone, styleTag: 'Thả thính dỗi hờn' }
+        { id: '1', text: `Ủa alo, bụng đang réo 8000 hồi chuông báo động, xin 1 slot đi xả lũ khẩn cấp 🚨💀`, tone: params.tone, styleTag: 'Xả lũ khẩn cấp' },
+        { id: '2', text: `Cái bụng đang biểu tình dữ dội, né ra cho tui đi giải quyết nỗi buồn coi 😭💨`, tone: params.tone, styleTag: 'Bụng dạ biểu tình' },
+        { id: '3', text: `Kiếp nạn thứ 82: Cơn đau bụng ập đến bất ngờ, chạy muốn tụt quần luôn á trời 🏃🚽`, tone: params.tone, styleTag: 'Meme TikTok' },
+        { id: '4', text: `Xin phép offline 10 phút để đi trút bầu tâm sự với bồn cầu 🗿`, tone: params.tone, styleTag: 'Deadpan tối giản' },
+        { id: '5', text: `Bụng dạ bất ổn cực căng, quả này không tìm thấy WC là toang cả đời 💣💩`, tone: params.tone, styleTag: 'Drama căng cực' },
+        { id: '6', text: `Hệ tiêu hóa đang đánh bom liều chết, cứu tuiii với bà nội ơi 🤡💅`, tone: params.tone, styleTag: 'Hài hước tấu hề' },
+        { id: '7', text: `Tới công chuyện luôn rồi, chiếc bụng này sắp phun trào như núi lửa 🌋💥`, tone: params.tone, styleTag: 'Núi lửa phun trào' },
+        { id: '8', text: `Nhường đường gấp! Người chơi hệ xả lũ đang trên đường tới đích 🚀🚽`, tone: params.tone, styleTag: 'Ngông tay to' },
+        { id: '9', text: `Đau quặn thắt ruột gan, một sự thôi thúc không thể chối từ 🥺🔥`, tone: params.tone, styleTag: 'Thôi thúc mãnh liệt' },
+        { id: '10', text: `Đi vệ sinh mà cũng phải giữ thần thái sang chảnh cực slay nha =))) 💅✨`, tone: params.tone, styleTag: 'Slay tuyệt đối' }
       );
     }
-    // Category B: Mệt mỏi, Kiệt sức, Buồn ngủ, Đuối, Stress
+    // 2. Hết tiền / Nghèo / Cháy túi / Trừ lương
+    else if (/hết\s*tiền|nghèo|cháy\s*túi|viêm\s*màng\s*túi|lương\s*chưa\s*về|kẹt\s*tiền|không\s*có\s*tiền|trừ\s*lương/i.test(lower)) {
+      versions.push(
+        { id: '1', text: `Ví tiền đang trong trạng thái thở oxy, đỗ nghèo khỉ chính là tôi 💸💀`, tone: params.tone, styleTag: 'Đỗ nghèo khỉ' },
+        { id: '2', text: `Tài khoản còn đúng số dư tối thiểu, chuẩn bị ăn mì tôm qua ngày 🍜😭`, tone: params.tone, styleTag: 'Ăn mì qua ngày' },
+        { id: '3', text: `Ủa alo, tiền lương vừa ghé qua chào một câu rồi bay màu luôn là sao 🤡💅`, tone: params.tone, styleTag: 'Meme TikTok' },
+        { id: '4', text: `Cháy túi toàn tập, xin đừng ai rủ rê gì tầm này kẻo tội nghiệp 🗿`, tone: params.tone, styleTag: 'Deadpan tối giản' },
+        { id: '5', text: `Kiếp nạn viêm màng túi giai đoạn cuối, ai cứu trợ 1 ly trà sữa coi 🥺🧋`, tone: params.tone, styleTag: 'Cứu trợ trà sữa' },
+        { id: '6', text: `Nghèo rớt mồng tơi nhưng độ chịu chơi thì vẫn phải ngút ngàn =)) 🔥👑`, tone: params.tone, styleTag: 'Ngông tay to' },
+        { id: '7', text: `Drama tài chính căng cực: Tiền đi không trở lại 💣💸`, tone: params.tone, styleTag: 'Drama tài chính' },
+        { id: '8', text: `10 điểm nghèo đói không có nhưng, xin một vé được bao ăn 🥺✨`, tone: params.tone, styleTag: '10 điểm nghèo' },
+        { id: '9', text: `Đang chạy bằng năng lượng tâm linh và niềm tin vào vũ trụ 🌌🙏`, tone: params.tone, styleTag: 'Năng lượng tâm linh' },
+        { id: '10', text: `Nghèo tiền nghèo bạc nhưng tình cảm dành cho bạn thì bao la nha ❤️🥺`, tone: params.tone, styleTag: 'Thả thính bao la' }
+      );
+    }
+    // 3. Trúng số / Giàu / Nhiều tiền / Thắng đậm
+    else if (/trúng\s*số|giàu|nhiều\s*tiền|đại\s*gia|tiền\s*về|ting\s*ting|thắng/i.test(lower)) {
+      versions.push(
+        { id: '1', text: `Ting ting đổi đời luôn bà nội ơi, giàu ú sụ 10 điểm không có nhưng 🤑💅`, tone: params.tone, styleTag: 'Ting ting đổi đời' },
+        { id: '2', text: `Hào quang rực rỡ, thời tới cản không kịp, hôm nay tui bao trọn gói 🔥👑`, tone: params.tone, styleTag: 'Thời tới cản không kịp' },
+        { id: '3', text: `Ủa alo, tự nhiên vũ trụ rót tiền vào tài khoản, sốc ngang luôn á 💸✨`, tone: params.tone, styleTag: 'Sốc ngang vì giàu' },
+        { id: '4', text: `Đẳng cấp là mãi mãi, dăm ba cái thành công này trong tầm tay 😎🚀`, tone: params.tone, styleTag: 'Ngông tay to' },
+        { id: '5', text: `Chốt đơn biệt thự xe hơi liền tay, khỏi phải suy nghĩ nhiều 🏎️💎`, tone: params.tone, styleTag: 'Đại gia chốt đơn' },
+        { id: '6', text: `Tiền về như nước sông Đà, ai muốn ăn gì cứ lên tiếng để đại gia này lo =)) 🍲❤️`, tone: params.tone, styleTag: 'Bao trọn gói' },
+        { id: '7', text: `Gánh team thành công, aura người chiến thắng tỏa sáng chói lòa 🌟👏`, tone: params.tone, styleTag: 'Aura chiến thắng' },
+        { id: '8', text: `Ngồi đếm tiền mà mỏi cả tay, kiếp nạn giàu sang ập đến 🤡💅`, tone: params.tone, styleTag: 'Meme TikTok' },
+        { id: '9', text: `Bất biến trước sự giàu có bất ngờ, cứ chill chill thôi 🗿💸`, tone: params.tone, styleTag: 'Deadpan tỷ phú' },
+        { id: '10', text: `Giàu có thế này chỉ thiếu mỗi một người cùng tiêu tiền chung thôi nè ❤️🥺`, tone: params.tone, styleTag: 'Thả thính tuyển người' }
+      );
+    }
+    // 4. Thủng lốp / Kẹt xe / Hư xe / Tai nạn giao thông
+    else if (/thủng\s*lốp|hư\s*xe|hỏng\s*xe|kẹt\s*xe|trễ\s*xe|hết\s*xăng|bể\s*bánh/i.test(lower)) {
+      versions.push(
+        { id: '1', text: `Kiếp nạn giao thông: Xe dở chứng giữa đường, khóc thét trong bất lực 🛵😭`, tone: params.tone, styleTag: 'Kiếp nạn giao thông' },
+        { id: '2', text: `Ủa alo con xe báo thủ, tính thử thách lòng kiên nhẫn của tui tới bao giờ 🤡💣`, tone: params.tone, styleTag: 'Xe báo thủ' },
+        { id: '3', text: `Chiến thần dắt bộ xuất hiện, dắt xe mà tưởng đang tập gym cardio =))) 🏃💀`, tone: params.tone, styleTag: 'Chiến thần dắt bộ' },
+        { id: '4', text: `Đứng giữa dòng đời nhìn xe bất động, bất biến giữa vạn biến 🗿🛵`, tone: params.tone, styleTag: 'Deadpan dắt xe' },
+        { id: '5', text: `Sự cố kịch tính: Chiếc xe chính thức đình công từ chối phục vụ 🚫💔`, tone: params.tone, styleTag: 'Xe đình công' },
+        { id: '6', text: `10 điểm xui xẻo không có nhưng, ai đi ngang qua đón tui với coi 🥺🛵`, tone: params.tone, styleTag: '10 điểm xui' },
+        { id: '7', text: `Dắt xe cũng phải giữ phong thái slay sang chảnh nha bà nội 💅✨`, tone: params.tone, styleTag: 'Slay giữa đường' },
+        { id: '8', text: `Tới công chuyện luôn rồi, trễ hẹn quả này là toang cả ngày 🔥😭`, tone: params.tone, styleTag: 'Toang cả ngày' },
+        { id: '9', text: `Đang cầu cứu vũ trụ gửi một anh thợ sửa xe đẹp trai tới giải cứu ✨❤️`, tone: params.tone, styleTag: 'Thả thính cứu hộ' },
+        { id: '10', text: `Thôi xong, coi như hôm nay cúng cho đường phố một bài tập thể dục bất đắc dĩ 🤡🏃`, tone: params.tone, styleTag: 'Tự giễu thể dục' }
+      );
+    }
+    // 5. Mưa to / Thời tiết xấu
+    else if (/mưa|ngập|bão|nắng|nóng\s*quá|thời\s*tiết/i.test(lower)) {
+      versions.push(
+        { id: '1', text: `Mưa ngập trôi cả sông Hồng rồi bà nội ơi, biến đường thành công viên nước 🌧️🏊`, tone: params.tone, styleTag: 'Công viên nước' },
+        { id: '2', text: `Ủa alo ông trời, tính đổ hết nước biển xuống trần gian hay gì dọ 🤡🌊`, tone: params.tone, styleTag: 'Hờn ông trời' },
+        { id: '3', text: `Kiếp nạn mưa bão: Người ướt như chuột lột nhưng tâm hồn vẫn chill =)) 🐭🌧️`, tone: params.tone, styleTag: 'Chuột lột chill' },
+        { id: '4', text: `Thời tiết này chỉ muốn cuộn tròn trong chăn ngủ xuyên thế kỷ 🛏️💤`, tone: params.tone, styleTag: 'Ngủ xuyên thế kỷ' },
+        { id: '5', text: `Mưa gió bão bùng cỡ này chỉ có một bát mì tôm nóng hổi mới cứu rỗi được 🍜✨`, tone: params.tone, styleTag: 'Cứu rỗi mì tôm' },
+        { id: '6', text: `Trời mưa mà lòng không bão dông, miễn là có người che ô cho là ấm áp ❤️🥺`, tone: params.tone, styleTag: 'Thả thính che ô' },
+        { id: '7', text: `Bất biến trước bão giông, mưa rơi ướt áo chứ không ướt được tinh thần 🗿🌧️`, tone: params.tone, styleTag: 'Deadpan bão giông' },
+        { id: '8', text: `Đường bơi miễn phí, chuẩn bị mang thuyền sup ra chèo đi làm 🚣🔥`, tone: params.tone, styleTag: 'Chèo sup đi làm' },
+        { id: '9', text: `Mưa kiểu này trôi hết lớp makeup slay của người ta rồi bắt đền ai 💅😭`, tone: params.tone, styleTag: 'Trôi makeup' },
+        { id: '10', text: `Chốt đơn ở nhà lướt điện thoại cho lành, ra đường làm gì cho thành cá bơi 🐟🏠`, tone: params.tone, styleTag: 'Ở nhà lướt phone' }
+      );
+    }
+    // 6. Mệt mỏi, Kiệt sức, Buồn ngủ, Đuối, Stress
     else if (/mệt|đuối|ngất|stress|kiệt sức|buồn ngủ|thức khuya|oải|hết pin/i.test(lower)) {
       versions.push(
         { id: '1', text: `Hết pin toàn tập, đang chạy bằng 1% năng lượng tâm linh 🪫💀`, tone: params.tone, styleTag: 'Hết pin sinh học' },
@@ -894,7 +961,7 @@ So, yeah, I honestly can't imagine a day without it.`;
         { id: '10', text: `Mệt mỏi thế này chỉ cần một cái ôm hoặc một cái chuyển khoản là khỏe liền =)) ❤️💸`, tone: params.tone, styleTag: 'Thả thính thực tế' }
       );
     }
-    // Category C: Ăn uống, Rủ đi ăn, Đói bụng, Trà sữa
+    // 7. Ăn uống, Rủ đi ăn, Đói bụng, Trà sữa
     else if (/ăn|lẩu|đói|uống|trà sữa|đi ăn|buffet|cà phê|nhậu|kèo/i.test(lower)) {
       versions.push(
         { id: '1', text: `Kèo này tới công chuyện luôn, chiếc bụng đói đang réo 8000 thứ tiếng 🍲🔥`, tone: params.tone, styleTag: 'Chốt kèo liền tay' },
@@ -909,69 +976,23 @@ So, yeah, I honestly can't imagine a day without it.`;
         { id: '10', text: `Đi ăn với bạn thì bao nhiêu calo tôi cũng chấp hết nha ✨❤️`, tone: params.tone, styleTag: 'Thả thính bàn ăn' }
       );
     }
-    // Category D: Công việc, Deadline, Đi làm, Sếp, Trễ giờ, Bận rộn
-    else if (/deadline|đi làm|trễ|muộn|bận|sếp|họp|báo cáo|công ty|kẹt xe|task/i.test(lower)) {
+    // 8. Tâm trạng Buồn (Pure emotional sadness)
+    else if (/^buồn$|^suy$|buồn\s*bã|tâm\s*trạng\s*buồn|khóc\s*thầm|tủi\s*thân|thất\s*tình|trầm\s*cảm/i.test(lower)) {
       versions.push(
-        { id: '1', text: `Deadline đang dí sát mông, chạy muốn tụt huyết áp luôn á trời 🏃💀`, tone: params.tone, styleTag: 'Dí deadline tụt huyết áp' },
-        { id: '2', text: `Kiếp nạn đi làm: Kẹt xe muốn bất tỉnh nhân sự, tới nơi mặt không còn hột máu 🚗😭`, tone: params.tone, styleTag: 'Kiếp nạn kẹt xe' },
-        { id: '3', text: `Bận tối mắt tối mũi, thở thôi cũng phải canh từng giây từng phút ⏱️🔥`, tone: params.tone, styleTag: 'Bận rộn max ping' },
-        { id: '4', text: `Làm riết rồi không biết mình là nhân viên hay cái máy chạy bằng cơm nữa 🤡`, tone: params.tone, styleTag: 'Máy chạy bằng cơm' },
-        { id: '5', text: `Dí nhẹ một cái là tim nhảy ra ngoài lồng ngực luôn á, từ từ khoai mới nhừ chứ 💣🗿`, tone: params.tone, styleTag: 'Từ từ khoai mới nhừ' },
-        { id: '6', text: `Đang tập trung cao độ gánh team, xin vui lòng không làm phiền kẻo toang cả lũ 😎🔥`, tone: params.tone, styleTag: 'Gánh team' },
-        { id: '7', text: `Báo cáo đang bay về phía sếp với tốc độ ánh sáng, yên tâm đi phen ✨📋`, tone: params.tone, styleTag: 'Tốc độ ánh sáng' },
-        { id: '8', text: `Cố nốt hôm nay rồi mai xin nghỉ dưỡng già, kiếp làm thuê thật nghiệt ngã 😭`, tone: params.tone, styleTag: 'Nghỉ dưỡng già' },
-        { id: '9', text: `Dí deadline thì gắt, mà tiền lương về thì nhỏ giọt, hờn cả thế giới 💸💔`, tone: params.tone, styleTag: 'Hờn lương bổng' },
-        { id: '10', text: `Bận với cả thế giới nhưng với bạn thì lúc nào cũng có thời gian nha ❤️🥺`, tone: params.tone, styleTag: 'Thả thính công sở' }
+        { id: '1', text: `Tâm trạng hôm nay chạm đáy xã hội, tự nhiên suy ngang luôn á trời 😭🥀`, tone: params.tone, styleTag: 'Overthinking / Suy' },
+        { id: '2', text: `Ủa alo, trầm cảm ngang vậy đó, kiếp nạn thứ 82 ập đến rồi 💀💔`, tone: params.tone, styleTag: 'Meme TikTok' },
+        { id: '3', text: `Tụt mood không phanh, ai cứu vớt tâm hồn mong manh dễ vỡ này với 🥺🌧️`, tone: params.tone, styleTag: 'Cần cứu bồ' },
+        { id: '4', text: `Hôm nay mị bận gặm nhấm nỗi buồn, xin đừng ai làm phiền 🗿`, tone: params.tone, styleTag: 'Deadpan vô cảm' },
+        { id: '5', text: `Ổn... mà là ổn lòi lìa á trời, cười trong nước mắt luôn =))) 😭`, tone: params.tone, styleTag: 'Tự giễu / Hài hước' },
+        { id: '6', text: `Nỗi buồn này to lớn đến mức 10 cốc trà sữa full topping cũng chưa chắc vá nổi 🧋💔`, tone: params.tone, styleTag: 'Thả miếng ẩm thực' },
+        { id: '7', text: `Chúa hề hôm nay xin phép tắt nụ cười, khóc trôi một dòng sông luôn á 🌊😭`, tone: params.tone, styleTag: 'Drama căng cực' },
+        { id: '8', text: `Nhìn đâu cũng thấy xui, vũ trụ tính thử thách lòng kiên nhẫn của con đến bao giờ 🤡💅`, tone: params.tone, styleTag: 'Hờn cả vũ trụ' },
+        { id: '9', text: `Buồn muốn xỉu up xỉu down, chỉ muốn trùm chăn ngủ 3 ngày 3 đêm cho qua kiếp nạn 🛏️💤`, tone: params.tone, styleTag: 'Trốn chạy thực tại' },
+        { id: '10', text: `Trái tim này tổn thương sâu sắc rồi, không ai dỗ là dỗi luôn đó nha ❤️🥺`, tone: params.tone, styleTag: 'Thả thính dỗi hờn' }
       );
     }
-    // Category E: Tình cảm, Crush, Yêu, Nhớ, Seen, Chia tay, Hẹn hò
-    else if (/crush|yêu|thích|nhớ|seen|chia tay|hẹn hò|người yêu|ghen|tỏ tình/i.test(lower)) {
-      versions.push(
-        { id: '1', text: `Bị crush seen tin nhắn là tự hiểu số phận, lặng lẽ rút lui trong nước mắt 💔🗿`, tone: params.tone, styleTag: 'Seen không rep' },
-        { id: '2', text: `Thả thính sương sương mà người ta tưởng rải truyền đơn, quê chữ ê kéo dài 🤡💅`, tone: params.tone, styleTag: 'Quê chữ ê kéo dài' },
-        { id: '3', text: `Tim đập nhanh hơn cả nhịp beat nhạc quẩy, crush tính bỏ bùa mê thuốc lú gì tui dọ ❤️🔥`, tone: params.tone, styleTag: 'Đốn tim cực mạnh' },
-        { id: '4', text: `Seen không rep là một loại độc ác, tính giam cầm trái tim người ta đến bao giờ 😭💣`, tone: params.tone, styleTag: 'Drama hờn dỗi' },
-        { id: '5', text: `Yêu đương chi cho đau đầu, độc thân vui tính cho đời thanh thản 💅😎`, tone: params.tone, styleTag: 'Độc thân sang chảnh' },
-        { id: '6', text: `Đã dính thính là khỏi cứu, tự nguyện làm tù nhân trong ánh mắt của bạn ✨🥺`, tone: params.tone, styleTag: 'Tù nhân tình yêu' },
-        { id: '7', text: `Một chấm là say đắm, hai chấm là đắm say, crush nhắn một câu là cả ngày bừng sáng 🌸❤️`, tone: params.tone, styleTag: 'Ngọt lịm tim' },
-        { id: '8', text: `Chiến tranh lạnh cực căng, phen không dỗ là tui dỗi tới mùa quýt năm sau luôn á 🥺❄️`, tone: params.tone, styleTag: 'Chiến tranh lạnh' },
-        { id: '9', text: `Thích thì nhích liền tay, chần chừ là người ta hốt mất ráng chịu nha =))) 🚀`, tone: params.tone, styleTag: 'Nhích liền tay' },
-        { id: '10', text: `Đường tình duyên gập ghềnh như ổ gà, thôi về ăn cơm mẹ nấu cho lành 🍲💔`, tone: params.tone, styleTag: 'Về với mẹ' }
-      );
-    }
-    // Category F: Khen ngợi, Tốt, Đẹp, Giỏi, Đỉnh cao, Thành công
-    else if (/giỏi|tốt|đẹp|đỉnh|xuất sắc|thành công|tuyệt vời|ngầu|vip|hay/i.test(lower)) {
-      versions.push(
-        { id: '1', text: `Đỉnh nóc kịch trần bay phấp phới luôn bạn ơi, 10 điểm không có nhưng! 👑✨`, tone: params.tone, styleTag: 'Đỉnh nóc kịch trần' },
-        { id: '2', text: `Out trình thực sự, pha này đỉnh chóp khỏi bàn cãi luôn 🔥😎`, tone: params.tone, styleTag: 'Out trình' },
-        { id: '3', text: `Slay quá bà nội ơi, hào quang rực rỡ chói lòa cả khung hình 💅✨`, tone: params.tone, styleTag: 'Slay chói lòa' },
-        { id: '4', text: `Chiến thần gánh team là đây chứ đâu, nhận của tại hạ một lạy 🙏🔥`, tone: params.tone, styleTag: 'Chiến thần gánh team' },
-        { id: '5', text: `Đẳng cấp là mãi mãi, làm nhẹ cái là cả hội phải ngước nhìn 🚀👑`, tone: params.tone, styleTag: 'Đẳng cấp tay to' },
-        { id: '6', text: `Quá ghê gớm, pha xử lý đi vào lòng đất... à nhầm, đi vào lịch sử! 🤡👏`, tone: params.tone, styleTag: 'Đi vào lịch sử' },
-        { id: '7', text: `Chuẩn không cần chỉnh, phát này xứng đáng được phong danh hiệu vip pro 💎`, tone: params.tone, styleTag: 'Vip pro' },
-        { id: '8', text: `Nể thật sự, xin hãy nhận em làm đệ tử chân truyền với ạ 🥺🙏`, tone: params.tone, styleTag: 'Bái phục' },
-        { id: '9', text: `Cứ như hack game vậy trời, làm sao mà out trình dữ vậy phen =)) 🎮⚡`, tone: params.tone, styleTag: 'Hack game' },
-        { id: '10', text: `Đẹp xuất sắc thế này thì ai mà chịu nổi, đốn tim cả thế giới rồi ❤️🔥`, tone: params.tone, styleTag: 'Đốn tim thế giới' }
-      );
-    }
-    // Category G: Từ chối, Không thích, Không chịu, Chê, Thôi
-    else if (/không|khum|chê|thôi|dẹp|bỏ đi|không thích|hủy/i.test(lower)) {
-      versions.push(
-        { id: '1', text: `Dạ khum nha, chối đây đẩy từ chối lia lịa luôn á 🙅‍♀️💅`, tone: params.tone, styleTag: 'Khum nha' },
-        { id: '2', text: `Chê mạnh nha bà nội, quả này xin phép né vội kẻo rước họa vào thân 🤡🚩`, tone: params.tone, styleTag: 'Chê mạnh / Red flag' },
-        { id: '3', text: `Ủa alo, tha cho con đi, nhìn là thấy xu cà na rồi đó 😭💀`, tone: params.tone, styleTag: 'Xu cà na' },
-        { id: '4', text: `Dẹp dẹp, kèo này thúi quắc, ai rảnh đâu mà dây vào =))) 🗿`, tone: params.tone, styleTag: 'Kèo thúi' },
-        { id: '5', text: `Xin cáo từ tại đây, liêm sỉ không cho phép tui gật đầu 🚫✋`, tone: params.tone, styleTag: 'Cáo từ lịch thiệp' },
-        { id: '6', text: `Nói một từ thôi: KHUM! Khỏi nài nỉ mất công nha 🧊`, tone: params.tone, styleTag: 'Lạnh lùng từ chối' },
-        { id: '7', text: `Thôi giùm con, nghe mùi drama nồng nặc là tui né trước 💣🏃`, tone: params.tone, styleTag: 'Né drama' },
-        { id: '8', text: `Tránh xa tui ra 2 mét, quả này không độ nổi đâu 💀🤡`, tone: params.tone, styleTag: 'Không độ nổi' },
-        { id: '9', text: `Gạt phắt qua một bên, không có cửa đâu nha phen 😎🚫`, tone: params.tone, styleTag: 'Không có cửa' },
-        { id: '10', text: `Từ chối nhẹ nhàng nhưng dứt khoát, hẹn kiếp sau ta gặp lại nha ✨🥺`, tone: params.tone, styleTag: 'Hẹn kiếp sau' }
-      );
-    }
-    // Category H: Dynamic Semantic Morphing (For any other custom phrase)
+    // 9. Dynamic Morphing for ANY other sentence
     else {
-      const cleanCore = text.replace(/[.!?,;]+$/g, '').trim();
       versions.push(
         { id: '1', text: `Nói ngắn gọn là "${cleanCore}" nha phen, cứ chill đi việc đâu còn có đó =)) ✨`, tone: params.tone, styleTag: 'Chill tự nhiên' },
         { id: '2', text: `Ủa alo, "${cleanCore}" thiệt á hả? Sốc ngang luôn á trời 😭💀`, tone: params.tone, styleTag: 'Sốc ngang / Meme' },
@@ -985,6 +1006,7 @@ So, yeah, I honestly can't imagine a day without it.`;
         { id: '10', text: `Chốt đơn vụ "${cleanCore}" liền tay, khỏi lăn tăn suy nghĩ cho mệt đầu 🚀`, tone: params.tone, styleTag: 'Chốt đơn dứt khoát' }
       );
     }
+
 
     // Build context-aware meme idea
     const visualIdea: GenzVisualIdea = {
