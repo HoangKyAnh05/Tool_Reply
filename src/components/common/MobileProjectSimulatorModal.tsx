@@ -28,6 +28,7 @@ import { ieltsPart2Bank } from '../../data/ieltsPart2Bank';
 import { ieltsPart3Bank } from '../../data/ieltsPart3Bank';
 import { ieltsWritingTask1Bank } from '../../data/ieltsWritingTask1Bank';
 import { ieltsWritingTask2Bank } from '../../data/ieltsWritingTask2Bank';
+import { fishboneVocab3000Bank } from '../../data/fishboneVocab3000Bank';
 import { IeltsTask1ChartViewer } from '../IeltsWriting/IeltsTask1ChartViewer';
 import { storageService } from '../../services/storageService';
 import { audioService } from '../../services/audioService';
@@ -85,6 +86,10 @@ export const MobileProjectSimulatorModal: React.FC<MobileProjectSimulatorModalPr
   const [writingSubTask, setWritingSubTask] = useState<'task1' | 'task2'>('task1');
   const [writingTask1Index, setWritingTask1Index] = useState(0);
   const [writingTask2Index, setWritingTask2Index] = useState(0);
+
+  // Fishbone Mobile Vocab State
+  const [fishboneSubMode, setFishboneSubMode] = useState<'roadmap' | 'vocab'>('roadmap');
+  const [fishboneVocabIndex, setFishboneVocabIndex] = useState<number>(0);
 
   // Update on open
   useEffect(() => {
@@ -749,27 +754,59 @@ export const MobileProjectSimulatorModal: React.FC<MobileProjectSimulatorModalPr
             )}
 
             {/* ========================================================= */}
-            {/* TAB 2: SƠ ĐỒ XƯƠNG CÁ FISHBONE TRÊN ĐIỆN THOẠI (ROADMAP) */}
+            {/* TAB 2: SƠ ĐỒ XƯƠNG CÁ FISHBONE TRÊN ĐIỆN THOẠI (ROADMAP & 3000 TỪ) */}
             {/* ========================================================= */}
             {activeTab === 'fishbone' && (
               <div className="space-y-3 pb-6 animate-fadeIn">
-                <div className="p-3 bg-gradient-to-r from-cyan-950/60 to-slate-900 border border-cyan-500/30 rounded-2xl">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-base">🐟</span>
-                    <h3 className="text-xs font-extrabold text-white truncate">{fishboneProject.name}</h3>
-                  </div>
-                  <p className="text-[11px] text-slate-400 line-clamp-2">{fishboneProject.description}</p>
-                  <div className="mt-2 flex items-center justify-between text-[11px] font-bold">
-                    <span className="text-cyan-300">Level Hiện Tại: Lvl {fishboneProject.currentLevelNumber}</span>
-                    <span className="text-purple-300">Mục Tiêu: Lvl {fishboneProject.targetLevelNumber}</span>
-                  </div>
+                {/* Sub-mode switcher */}
+                <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-bold">
+                  <button
+                    onClick={() => {
+                      audioService.playBeep('click');
+                      setFishboneSubMode('roadmap');
+                    }}
+                    className={`flex-1 py-1.5 rounded-lg text-center transition ${
+                      fishboneSubMode === 'roadmap'
+                        ? 'bg-cyan-600 text-white shadow'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Lộ Trình Cấp Độ
+                  </button>
+                  <button
+                    onClick={() => {
+                      audioService.playBeep('click');
+                      setFishboneSubMode('vocab');
+                    }}
+                    className={`flex-1 py-1.5 rounded-lg text-center transition ${
+                      fishboneSubMode === 'vocab'
+                        ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    🦴 3000 Từ 7.5+
+                  </button>
                 </div>
 
-                {/* Vertical Evolution Roadmap for Mobile */}
-                <div className="space-y-3">
-                  <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    Lộ Trình Tiến Hóa Từng Cấp Độ (Mobile Roadmap)
-                  </h4>
+                {fishboneSubMode === 'roadmap' ? (
+                  <>
+                    <div className="p-3 bg-gradient-to-r from-cyan-950/60 to-slate-900 border border-cyan-500/30 rounded-2xl">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-base">🐟</span>
+                        <h3 className="text-xs font-extrabold text-white truncate">{fishboneProject.name}</h3>
+                      </div>
+                      <p className="text-[11px] text-slate-400 line-clamp-2">{fishboneProject.description}</p>
+                      <div className="mt-2 flex items-center justify-between text-[11px] font-bold">
+                        <span className="text-cyan-300">Level Hiện Tại: Lvl {fishboneProject.currentLevelNumber}</span>
+                        <span className="text-purple-300">Mục Tiêu: Lvl {fishboneProject.targetLevelNumber}</span>
+                      </div>
+                    </div>
+
+                    {/* Vertical Evolution Roadmap for Mobile */}
+                    <div className="space-y-3">
+                      <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        Lộ Trình Tiến Hóa Từng Cấp Độ (Mobile Roadmap)
+                      </h4>
 
                   {fishboneProject.levels.map((level) => {
                     const isCurrent = level.number === fishboneProject.currentLevelNumber;
@@ -832,6 +869,113 @@ export const MobileProjectSimulatorModal: React.FC<MobileProjectSimulatorModalPr
                     );
                   })}
                 </div>
+                </>
+                ) : (
+                  /* Mobile 3000 Vocab View */
+                  (() => {
+                    const item = fishboneVocab3000Bank[fishboneVocabIndex] || fishboneVocab3000Bank[0];
+                    return (
+                      <div className="space-y-3">
+                        {/* Word Card */}
+                        <div className="p-4 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 space-y-3 shadow-md">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-3xl filter drop-shadow">{item.icon}</span>
+                              <div>
+                                <h3 className="text-base font-extrabold text-white">{item.word}</h3>
+                                <span className="text-xs font-mono text-cyan-400">{item.phonetic}</span>
+                              </div>
+                            </div>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                              Band {item.band}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                            <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 uppercase font-mono">
+                              {item.pos}
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                              Lvl {item.levelNumber}
+                            </span>
+                            <span className="text-slate-400 truncate max-w-[140px]">
+                              {item.boneName}
+                            </span>
+                          </div>
+
+                          <div className="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 space-y-1">
+                            <span className="text-[10px] font-bold uppercase text-slate-400 block">Nghĩa Tiếng Việt:</span>
+                            <p className="text-xs font-bold text-emerald-300">{item.meaning}</p>
+                          </div>
+
+                          <div className="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 space-y-1">
+                            <span className="text-[10px] font-bold uppercase text-cyan-400 block font-mono">Collocation:</span>
+                            <p className="text-xs font-medium text-slate-200 italic">{item.collocation}</p>
+                          </div>
+
+                          <p className="text-[11px] text-slate-300 italic leading-relaxed">
+                            "{item.example}"
+                          </p>
+
+                          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/80">
+                            <button
+                              onClick={() => {
+                                const clean = `${item.word}. ${item.example}`;
+                                if ('speechSynthesis' in window) {
+                                  window.speechSynthesis.cancel();
+                                  const u = new SpeechSynthesisUtterance(clean);
+                                  u.lang = 'en-US';
+                                  window.speechSynthesis.speak(u);
+                                }
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-cyan-600 text-cyan-300 hover:text-white text-xs font-bold flex items-center gap-1 transition"
+                            >
+                              <Volume2 className="w-3.5 h-3.5" />
+                              <span>Nghe</span>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                handleCopyText(`mb_voc_${item.id}`, `${item.icon} ${item.word} (${item.pos})\nNghĩa: ${item.meaning}\nCollocation: ${item.collocation}\nVí dụ: ${item.example}`);
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold flex items-center gap-1 transition"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>{copiedId === `mb_voc_${item.id}` ? 'Đã chép!' : 'Chép'}</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Prev / Next Nav */}
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                          <button
+                            onClick={() => {
+                              audioService.playBeep('click');
+                              setFishboneVocabIndex((i) => Math.max(0, i - 1));
+                            }}
+                            disabled={fishboneVocabIndex === 0}
+                            className="px-3 py-1.5 rounded-xl bg-slate-800 disabled:opacity-30 text-slate-300 text-xs font-bold"
+                          >
+                            Trước
+                          </button>
+                          <span className="font-mono text-cyan-300 text-xs">
+                            {fishboneVocabIndex + 1} / {fishboneVocab3000Bank.length}
+                          </span>
+                          <button
+                            onClick={() => {
+                              audioService.playBeep('click');
+                              setFishboneVocabIndex((i) => Math.min(fishboneVocab3000Bank.length - 1, i + 1));
+                            }}
+                            disabled={fishboneVocabIndex >= fishboneVocab3000Bank.length - 1}
+                            className="px-3 py-1.5 rounded-xl bg-slate-800 disabled:opacity-30 text-slate-300 text-xs font-bold"
+                          >
+                            Sau
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
               </div>
             )}
 

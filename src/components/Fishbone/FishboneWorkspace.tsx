@@ -24,6 +24,7 @@ import { LevelComparisonView } from './LevelComparisonView';
 import { EvolutionTimelineView } from './EvolutionTimelineView';
 import { QualityGateModal } from './QualityGateModal';
 import { FishbonePromptModal } from './FishbonePromptModal';
+import { FishboneVocabExplorer } from './FishboneVocabExplorer';
 import { MobileProjectSimulatorModal } from '../common/MobileProjectSimulatorModal';
 import { audioService } from '../../services/audioService';
 
@@ -141,7 +142,7 @@ export const FishboneWorkspace: React.FC = () => {
     return cur.id;
   });
 
-  const [activeTab, setActiveTab] = useState<'levels' | 'compare' | 'timeline'>('levels');
+  const [activeTab, setActiveTab] = useState<'levels' | 'vocab3000' | 'compare' | 'timeline'>('levels');
   const [isQualityGateOpen, setIsQualityGateOpen] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -277,6 +278,18 @@ export const FishboneWorkspace: React.FC = () => {
             </button>
 
             <button
+              onClick={() => setActiveTab('vocab3000')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition ${
+                activeTab === 'vocab3000'
+                  ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md'
+                  : 'text-cyan-300 hover:text-white hover:bg-slate-800/80'
+              }`}
+            >
+              <span>🦴</span>
+              <span>3000 Từ 7.5+ (Xương Cá)</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('compare')}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition ${
                 activeTab === 'compare'
@@ -360,6 +373,10 @@ export const FishboneWorkspace: React.FC = () => {
               />
             </div>
           </div>
+        )}
+
+        {activeTab === 'vocab3000' && (
+          <FishboneVocabExplorer />
         )}
 
         {activeTab === 'compare' && (
