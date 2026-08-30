@@ -15,7 +15,9 @@ import {
   ArrowRight,
   TrendingDown,
   TrendingUp,
-  CheckCircle2
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { CascadeScenario, CascadeMessageNode } from '../../types/fishboneCascade';
 import { audioService } from '../../services/audioService';
@@ -58,14 +60,229 @@ export const FishboneCascadeCanvas: React.FC<FishboneCascadeCanvasProps> = ({
     window.speechSynthesis.speak(utterance);
   };
 
+  const renderFishboneChain = (
+    nodes: CascadeMessageNode[],
+    type: 'top_down' | 'bottom_up',
+    title: string,
+    badgeText: string,
+    description: string,
+    themeColor: string
+  ) => {
+    const isTopDown = type === 'top_down';
+
+    return (
+      <div className="space-y-4 bg-slate-900/40 p-4 sm:p-6 rounded-3xl border border-slate-800/80 shadow-2xl">
+        {/* Chain Header */}
+        <div className="flex items-center gap-3">
+          <div 
+            className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white shadow-md"
+            style={{ backgroundColor: `${themeColor}30`, border: `1px solid ${themeColor}60` }}
+          >
+            {isTopDown ? <ArrowDown className="w-5 h-5" style={{ color: themeColor }} /> : <ArrowUp className="w-5 h-5" style={{ color: themeColor }} />}
+          </div>
+          <div>
+            <h4 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
+              <span>{title}</span>
+              <span 
+                className="text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold border"
+                style={{ backgroundColor: `${themeColor}20`, color: themeColor, borderColor: `${themeColor}40` }}
+              >
+                {badgeText}
+              </span>
+            </h4>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {description}
+            </p>
+          </div>
+        </div>
+
+        {/* Horizontal Scrollable Fishbone Spine Container */}
+        <div className="overflow-x-auto pb-6 pt-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-950">
+          <div className="min-w-[1350px] flex flex-col space-y-3 px-2">
+            
+            {/* ------------------------------------------------------------- */}
+            {/* TIER 1: TOP RIBS (Xương Nhánh Trên: Cấp Bậc, Phòng Ban, Tiêu Đề) */}
+            {/* ------------------------------------------------------------- */}
+            <div className="grid grid-cols-5 gap-4">
+              {nodes.map((node) => (
+                <div 
+                  key={`top_${node.id}`}
+                  className="bg-slate-900/95 border border-slate-800 hover:border-cyan-500/60 rounded-2xl p-4 shadow-xl flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5"
+                >
+                  <div>
+                    {/* Badge & Department (No truncate, full display) */}
+                    <div className="flex items-center justify-between gap-1 mb-2">
+                      <span 
+                        className="text-[10px] font-mono font-black px-2 py-0.5 rounded border"
+                        style={{ backgroundColor: `${themeColor}20`, color: themeColor, borderColor: `${themeColor}40` }}
+                      >
+                        {isTopDown ? `CẤP ${node.stageOrder}` : `BƯỚC ${node.stageOrder}`}
+                      </span>
+                      <span className="text-[11px] font-semibold text-slate-400 text-right leading-tight">
+                        {node.department}
+                      </span>
+                    </div>
+
+                    {/* Role Name */}
+                    <div className="text-xs sm:text-sm font-black text-white flex items-center gap-1.5 mb-1.5">
+                      <span className="text-base">{node.roleIcon}</span>
+                      <span className="leading-snug">{node.roleName}</span>
+                    </div>
+
+                    {/* Message Title */}
+                    <div 
+                      className="text-xs font-bold leading-snug"
+                      style={{ color: isTopDown ? '#f59e0b' : '#34d399' }}
+                    >
+                      {node.messageTitle}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ------------------------------------------------------------- */}
+            {/* TIER 2: CENTRAL SPINE BEAM & STATION NODES (Trục Xương Sống)  */}
+            {/* ------------------------------------------------------------- */}
+            <div className="relative py-4 my-2">
+              {/* Central Glowing Horizontal Rail Beam running strictly behind the nodes */}
+              <div 
+                className="absolute left-10 right-10 top-1/2 -translate-y-1/2 h-3.5 rounded-full z-0 shadow-lg"
+                style={{
+                  background: isTopDown 
+                    ? 'linear-gradient(90deg, #06b6d4, #6366f1, #a855f7)' 
+                    : 'linear-gradient(90deg, #10b981, #06b6d4, #f59e0b)',
+                  boxShadow: `0 0 20px ${themeColor}40`
+                }}
+              >
+                {/* Sleepers / Tie texture */}
+                <div className="w-full h-full opacity-30 flex items-center justify-around px-6">
+                  {Array.from({ length: 30 }).map((_, i) => (
+                    <div key={i} className="w-1 h-full bg-slate-950 rounded-sm" />
+                  ))}
+                </div>
+              </div>
+
+              {/* Station Circle Nodes */}
+              <div className="grid grid-cols-5 gap-4 relative z-10">
+                {nodes.map((node) => (
+                  <div key={`node_${node.id}`} className="flex flex-col items-center justify-center">
+                    <div 
+                      className="w-14 h-14 rounded-2xl bg-slate-950 border-2 flex flex-col items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110"
+                      style={{
+                        borderColor: themeColor,
+                        boxShadow: `0 0 25px ${themeColor}50`
+                      }}
+                    >
+                      <span className="text-2xl">{node.roleIcon}</span>
+                    </div>
+                    <div className="mt-1 px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700 text-[10px] font-mono font-extrabold text-slate-300 shadow">
+                      #{node.stageOrder}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ------------------------------------------------------------- */}
+            {/* TIER 3: BOTTOM RIBS (Xương Nhánh Dưới: Lời Dặn, Action, Chứng Từ) */}
+            {/* ------------------------------------------------------------- */}
+            <div className="grid grid-cols-5 gap-4">
+              {nodes.map((node) => (
+                <div 
+                  key={`bot_${node.id}`}
+                  className="bg-slate-900/95 border border-slate-800 hover:border-indigo-500/60 rounded-2xl p-4 shadow-xl flex flex-col justify-between space-y-3 transition-all duration-200 hover:-translate-y-0.5"
+                >
+                  {/* Message Title & Action Toolbar */}
+                  <div>
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                      <span 
+                        className="text-[11px] font-mono font-bold uppercase flex items-center gap-1"
+                        style={{ color: themeColor }}
+                      >
+                        <span>💬</span>
+                        <span>{isTopDown ? 'Lời Dặn / Chỉ Đạo:' : 'Lời Báo Tin:'}</span>
+                      </span>
+
+                      <div className="flex items-center gap-1">
+                        {/* Audio TTS Button */}
+                        <button
+                          onClick={() => handleSpeakMessage(node.exactMessage, node.id)}
+                          className={`p-1.5 rounded-lg transition ${
+                            activeSpeechId === node.id 
+                              ? 'bg-cyan-500 text-white animate-pulse' 
+                              : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-800'
+                          }`}
+                          title="Nghe đọc lời nhắn"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Copy Button */}
+                        <button
+                          onClick={() => handleCopyMessage(node)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                          title="Sao chép toàn bộ lời dặn"
+                        >
+                          {copiedId === node.id ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Verbatim Message Text (Full text, no cutting off) */}
+                    <div className="mt-2.5 p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-200 leading-relaxed italic select-text">
+                      "{node.exactMessage}"
+                    </div>
+                  </div>
+
+                  {/* Action Required, Constraints & Evidence */}
+                  <div className="space-y-2 pt-2 border-t border-slate-800/80 text-xs">
+                    {/* Action */}
+                    <div className="text-slate-300 leading-snug">
+                      <strong className="text-indigo-400 block text-[11px] uppercase font-mono mb-0.5">
+                        ⚡ Hành Động:
+                      </strong>
+                      <span>{node.actionRequired}</span>
+                    </div>
+
+                    {/* Constraints / QA */}
+                    <div className="text-slate-300 leading-snug">
+                      <strong className="text-teal-400 block text-[11px] uppercase font-mono mb-0.5">
+                        🎯 Tiêu Chuẩn / Ràng Buộc:
+                      </strong>
+                      <span className="text-slate-300 font-medium">{node.keyConstraints}</span>
+                    </div>
+
+                    {/* Output / Evidence */}
+                    <div className="text-slate-300 leading-snug">
+                      <strong className="text-amber-400 block text-[11px] uppercase font-mono mb-0.5">
+                        📜 Chứng Từ / Kết Quả:
+                      </strong>
+                      <span className="text-amber-200/90 font-medium">{node.evidenceOrOutput}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full flex-1 flex flex-col bg-slate-950 text-slate-100 overflow-hidden select-none">
-      {/* 1. Header Overview & Actions */}
+      {/* Top Header Overview & Action Tools */}
       <div className="p-4 sm:p-5 border-b border-slate-800/80 bg-slate-900/90 shrink-0 space-y-3 shadow-md">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div 
-              className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-lg border"
+              className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-lg border shrink-0"
               style={{
                 backgroundColor: `${scenario.color}20`,
                 borderColor: `${scenario.color}50`,
@@ -83,8 +300,8 @@ export const FishboneCascadeCanvas: React.FC<FishboneCascadeCanvasProps> = ({
                   2 CHIỀU (SẾP ⇄ BÊN BÁN)
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
-                {scenario.companyType} • {scenario.budgetAndDeadline}
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                🏢 <strong className="text-slate-300">{scenario.companyType}</strong> • 💰 {scenario.budgetAndDeadline}
               </p>
             </div>
           </div>
@@ -141,265 +358,31 @@ export const FishboneCascadeCanvas: React.FC<FishboneCascadeCanvasProps> = ({
         </div>
       </div>
 
-      {/* 2. Main Fishbone Spine Canvas Container */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-10 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-950">
+      {/* Main Canvas Scroll Area */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-950">
         
-        {/* ========================================================================= */}
-        {/* LUỒNG 1: CHIỀU CHỈ ĐẠO XUỐNG (TOP-DOWN DIRECTIVES: SẾP -> BÊN BÁN)       */}
-        {/* ========================================================================= */}
+        {/* TOP-DOWN CHAIN */}
         {(activeTab === 'both' || activeTab === 'top_down') && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-bold">
-                <ArrowDown className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
-                  <span>LUỒNG 1: CHIỀU CHỈ ĐẠO TỪ SẾP TỔNG XUỐNG CẤP DƯỚI & BÊN BÁN</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                    TOP-DOWN DIRECTIVE
-                  </span>
-                </h4>
-                <p className="text-xs text-slate-400">
-                  Lời dặn, ngân sách và yêu cầu kỹ thuật truyền đạt từ Ban Giám Đốc qua các phòng ban đến Nhà cung ứng
-                </p>
-              </div>
-            </div>
-
-            {/* Fishbone Horizontal Train Track for Top-Down */}
-            <div className="relative py-6 overflow-x-auto pb-6">
-              {/* Central Spine Beam */}
-              <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-3 rounded-full bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-600 z-0 shadow-lg shadow-cyan-500/30" />
-
-              <div className="min-w-[1000px] flex items-center justify-between relative z-10 px-4 gap-4">
-                {scenario.topDownDirectives.map((node, idx) => (
-                  <div key={node.id} className="flex-1 flex flex-col items-center group relative">
-                    
-                    {/* Top Rib (Xương Nhánh Trên: Role & Tiêu Đề Chỉ Đạo) */}
-                    <div className="w-full mb-3 flex flex-col items-center">
-                      <div className="w-full bg-slate-900/95 border border-slate-800 group-hover:border-cyan-500/60 rounded-2xl p-3 shadow-xl backdrop-blur-md transition">
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                            CẤP {node.stageOrder}
-                          </span>
-                          <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
-                            {node.department}
-                          </span>
-                        </div>
-
-                        <div className="text-xs font-black text-white flex items-center gap-1 mb-1">
-                          <span>{node.roleIcon}</span>
-                          <span className="truncate">{node.roleName}</span>
-                        </div>
-
-                        <div className="text-[11px] font-bold text-amber-300 leading-snug line-clamp-2">
-                          {node.messageTitle}
-                        </div>
-                      </div>
-
-                      {/* Rib connecting line */}
-                      <div className="w-0.5 h-4 bg-cyan-500/60" />
-                    </div>
-
-                    {/* Central Node on Spine */}
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-950 border-2 border-cyan-400 flex items-center justify-center text-xl shadow-xl shadow-cyan-500/40 group-hover:scale-110 transition duration-300">
-                        {node.roleIcon}
-                      </div>
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-900 border border-slate-700 text-cyan-300">
-                        #{node.stageOrder}
-                      </div>
-                    </div>
-
-                    {/* Bottom Rib (Xương Nhánh Dưới: Lời Nhắn Nguyên Văn & Hành Động) */}
-                    <div className="w-full mt-3 flex flex-col items-center">
-                      <div className="w-0.5 h-4 bg-indigo-500/60" />
-
-                      <div className="w-full bg-slate-900/95 border border-slate-800 group-hover:border-indigo-500/60 rounded-2xl p-3.5 shadow-xl backdrop-blur-md transition space-y-2">
-                        {/* Verbatim message with audio & copy */}
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-mono font-bold text-cyan-400 uppercase">
-                              💬 Lời Dặn / Chỉ Đạo:
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => handleSpeakMessage(node.exactMessage, node.id)}
-                                className={`p-1 rounded-lg transition ${
-                                  activeSpeechId === node.id 
-                                    ? 'bg-cyan-500 text-white animate-pulse' 
-                                    : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-800'
-                                }`}
-                                title="Nghe đọc lời dặn"
-                              >
-                                <Volume2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleCopyMessage(node)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-                                title="Sao chép lời nhắn"
-                              >
-                                {copiedId === node.id ? (
-                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                ) : (
-                                  <Copy className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                          <p className="text-[11px] text-slate-200 italic line-clamp-3 bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
-                            "{node.exactMessage}"
-                          </p>
-                        </div>
-
-                        {/* Action Required & Evidence */}
-                        <div className="space-y-1 pt-1 border-t border-slate-800/60 text-[10px]">
-                          <div className="text-slate-300 flex items-start gap-1">
-                            <strong className="text-indigo-400 shrink-0">⚡ Hành động:</strong>
-                            <span className="line-clamp-2">{node.actionRequired}</span>
-                          </div>
-                          <div className="text-slate-400 flex items-start gap-1">
-                            <strong className="text-amber-400 shrink-0">📋 Chứng từ:</strong>
-                            <span className="truncate text-slate-300">{node.evidenceOrOutput}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          renderFishboneChain(
+            scenario.topDownDirectives,
+            'top_down',
+            'LUỒNG 1: CHIỀU CHỈ ĐẠO TỪ SẾP TỔNG XUỐNG CÁC BAN BỆ & BÊN BÁN',
+            'TOP-DOWN DIRECTIVE',
+            'Chỉ đạo chiến lược, phê duyệt ngân sách và tiêu chuẩn kỹ thuật truyền dần xuống Nhà cung ứng',
+            '#06b6d4'
+          )
         )}
 
-        {/* ========================================================================= */}
-        {/* LUỒNG 2: CHIỀU BÁO TIN NGƯỢC LẠI (BOTTOM-UP FEEDBACK: BÊN BÁN -> SẾP)    */}
-        {/* ========================================================================= */}
+        {/* BOTTOM-UP CHAIN */}
         {(activeTab === 'both' || activeTab === 'bottom_up') && (
-          <div className="space-y-4 pt-4 border-t border-slate-800/80">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">
-                <ArrowUp className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
-                  <span>LUỒNG 2: CHIỀU BÁO TIN / NGHIỆM THU NGƯỢC LÊN CẤP CAO DẦN ĐẾN SẾP</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    BOTTOM-UP FEEDBACK LOOP
-                  </span>
-                </h4>
-                <p className="text-xs text-slate-400">
-                  Bên bán xuất hàng $\rightarrow$ Nhân viên kiểm kho $\rightarrow$ Trưởng phòng nghiệm thu $\rightarrow$ Giám đốc $\rightarrow$ Sếp phê duyệt mở bán & khen thưởng
-                </p>
-              </div>
-            </div>
-
-            {/* Fishbone Horizontal Train Track for Bottom-Up */}
-            <div className="relative py-6 overflow-x-auto pb-6">
-              {/* Central Spine Beam (Reverse Gradient) */}
-              <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-3 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-amber-500 z-0 shadow-lg shadow-emerald-500/30" />
-
-              <div className="min-w-[1000px] flex items-center justify-between relative z-10 px-4 gap-4">
-                {scenario.bottomUpFeedback.map((node, idx) => (
-                  <div key={node.id} className="flex-1 flex flex-col items-center group relative">
-                    
-                    {/* Top Rib (Role & Tiêu Đề Báo Cáo) */}
-                    <div className="w-full mb-3 flex flex-col items-center">
-                      <div className="w-full bg-slate-900/95 border border-slate-800 group-hover:border-emerald-500/60 rounded-2xl p-3 shadow-xl backdrop-blur-md transition">
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                            BƯỚC {node.stageOrder}
-                          </span>
-                          <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
-                            {node.department}
-                          </span>
-                        </div>
-
-                        <div className="text-xs font-black text-white flex items-center gap-1 mb-1">
-                          <span>{node.roleIcon}</span>
-                          <span className="truncate">{node.roleName}</span>
-                        </div>
-
-                        <div className="text-[11px] font-bold text-emerald-300 leading-snug line-clamp-2">
-                          {node.messageTitle}
-                        </div>
-                      </div>
-
-                      {/* Rib connecting line */}
-                      <div className="w-0.5 h-4 bg-emerald-500/60" />
-                    </div>
-
-                    {/* Central Node on Spine */}
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-950 border-2 border-emerald-400 flex items-center justify-center text-xl shadow-xl shadow-emerald-500/40 group-hover:scale-110 transition duration-300">
-                        {node.roleIcon}
-                      </div>
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-900 border border-slate-700 text-emerald-300">
-                        #{node.stageOrder}
-                      </div>
-                    </div>
-
-                    {/* Bottom Rib (Lời Báo Tin & Kết Quả Bàn Giao) */}
-                    <div className="w-full mt-3 flex flex-col items-center">
-                      <div className="w-0.5 h-4 bg-teal-500/60" />
-
-                      <div className="w-full bg-slate-900/95 border border-slate-800 group-hover:border-teal-500/60 rounded-2xl p-3.5 shadow-xl backdrop-blur-md transition space-y-2">
-                        {/* Verbatim report message */}
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase">
-                              📢 Lời Báo Cáo:
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => handleSpeakMessage(node.exactMessage, node.id)}
-                                className={`p-1 rounded-lg transition ${
-                                  activeSpeechId === node.id 
-                                    ? 'bg-emerald-500 text-white animate-pulse' 
-                                    : 'text-slate-400 hover:text-emerald-300 hover:bg-slate-800'
-                                }`}
-                                title="Nghe đọc lời báo cáo"
-                              >
-                                <Volume2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleCopyMessage(node)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-                                title="Sao chép báo cáo"
-                              >
-                                {copiedId === node.id ? (
-                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                ) : (
-                                  <Copy className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                          <p className="text-[11px] text-slate-200 italic line-clamp-3 bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
-                            "{node.exactMessage}"
-                          </p>
-                        </div>
-
-                        {/* Constraints Met & Final Output */}
-                        <div className="space-y-1 pt-1 border-t border-slate-800/60 text-[10px]">
-                          <div className="text-slate-300 flex items-start gap-1">
-                            <strong className="text-teal-400 shrink-0">✓ Nghiệm thu:</strong>
-                            <span className="line-clamp-2 text-emerald-300 font-semibold">{node.keyConstraints}</span>
-                          </div>
-                          <div className="text-slate-400 flex items-start gap-1">
-                            <strong className="text-amber-400 shrink-0">📜 Hồ sơ bàn giao:</strong>
-                            <span className="truncate text-slate-300">{node.evidenceOrOutput}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          renderFishboneChain(
+            scenario.bottomUpFeedback,
+            'bottom_up',
+            'LUỒNG 2: CHIỀU BÁO TIN / NGHIỆM THU NGƯỢC LÊN CẤP CAO DẦN ĐẾN SẾP TỔNG',
+            'BOTTOM-UP FEEDBACK LOOP',
+            'Bên bán xuất hàng ➔ Nhân viên kiểm kho ➔ Trưởng phòng nghiệm thu ➔ Giám đốc báo cáo ➔ Sếp ký lệnh mở bán & khen thưởng',
+            '#10b981'
+          )
         )}
 
       </div>
