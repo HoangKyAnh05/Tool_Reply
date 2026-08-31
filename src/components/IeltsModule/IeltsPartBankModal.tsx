@@ -30,6 +30,9 @@ import { IeltsCustomQuestionModal } from './IeltsCustomQuestionModal';
 import { MobileProjectSimulatorModal } from '../common/MobileProjectSimulatorModal';
 import { audioService } from '../../services/audioService';
 import { toggleNativeFullscreen } from '../../utils/fullscreen';
+import { IeltsAnnotatedPhraseViewer } from '../common/IeltsAnnotatedPhraseViewer';
+import { annotateSpeakingAnswer, annotateWritingParagraph } from '../../utils/ieltsTextAnnotator';
+import { getStandardizedSpeakingAnswer } from '../../utils/ieltsSpeakingExpander';
 
 export interface SelectedQuestionPayload {
   part: IeltsQuestionPartType | string;
@@ -65,6 +68,7 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
   const [customVersion, setCustomVersion] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(defaultFullscreen);
   const [focusItem, setFocusItem] = useState<any | null>(null);
+  const [focusViewMode, setFocusViewMode] = useState<'annotated' | 'plain'>('annotated');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
 
@@ -173,18 +177,26 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
   };
 
   const handleCopy = (item: any) => {
-    const text = `Part: ${activePart}\nCategory: ${item.category}\nQuestion: ${item.question}\n${item.cueCardPrompt ? `Prompt:\n${item.cueCardPrompt}\n` : ''}Vocab:\n${item.vocab}\n\nAnswer:\n${item.answer}`;
+    const isWriting = activePart.includes('Writing');
+    const ans = isWriting
+      ? item.answer
+      : getStandardizedSpeakingAnswer(activePart, item.question, item.answer, item.vocab, item.cueCardPrompt, item.id);
+    const text = `Part: ${activePart}\nCategory: ${item.category}\nQuestion: ${item.question}\n${item.cueCardPrompt ? `Prompt:\n${item.cueCardPrompt}\n` : ''}Vocab:\n${item.vocab}\n\nAnswer:\n${ans}`;
     navigator.clipboard.writeText(text);
     setCopiedId(`${activePart}_${item.id}`);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleSelect = (item: any) => {
+    const isWriting = activePart.includes('Writing');
+    const ans = isWriting
+      ? item.answer
+      : getStandardizedSpeakingAnswer(activePart, item.question, item.answer, item.vocab, item.cueCardPrompt, item.id);
     onSelectQuestion({
       part: activePart,
       question: item.question,
       vocab: item.vocab,
-      answer: item.answer,
+      answer: ans,
       topic: item.topic || item.category,
       category: item.category,
       imageUrl: item.imageUrl
@@ -617,16 +629,29 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                         </div>
                       )}
 
-                      {/* Answer Icon Chain */}
-                      <div className="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800">
-                        <span className="text-[11px] font-bold text-emerald-400 block mb-1">
-                          💬 Chuỗi Icon Bài Mẫu (Icon-Anchored Model Answer):
-                        </span>
-                        <div className="text-xs font-medium text-slate-200 leading-relaxed select-text space-y-2">
-                          {item.answer.split('\n\n').map((para: string, idx: number) => (
-                            <p key={idx}>{para}</p>
-                          ))}
+                      {/* Answer Icon Chain with Deep Learning Annotations */}
+                      <div className="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5">
+                            <Sparkles className="w-3 h-3 text-amber-300" />
+                            <span>💬 Chuỗi Icon & Ý Nghĩa Từng Cụm Từ (Học Sâu):</span>
+                          </span>
                         </div>
+                        {(() => {
+                          const isWriting = activePart.includes('Writing');
+                          const standardAnswer = isWriting
+                            ? item.answer
+                            : getStandardizedSpeakingAnswer(activePart, item.question, item.answer, item.vocab, item.cueCardPrompt, item.id);
+                          const chunks = isWriting
+                            ? annotateWritingParagraph(standardAnswer)
+                            : annotateSpeakingAnswer(standardAnswer, item.vocab);
+                          return (
+                            <IeltsAnnotatedPhraseViewer
+                              chunks={chunks}
+                              defaultExpandFirst={false}
+                            />
+                          );
+                        })()}
                       </div>
                     </div>
                   );
@@ -700,7 +725,13 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
               </button>
 
               <button
-                onClick={() => handleSpeakText(`${focusItem.question}. ${focusItem.answer}`)}
+                onClick={() => {
+                  const isWriting = activePart.includes('Writing');
+                  const ans = isWriting
+                    ? focusItem.answer
+                    : getStandardizedSpeakingAnswer(activePart, focusItem.question, focusItem.answer, focusItem.vocab, focusItem.cueCardPrompt, focusItem.id);
+                  handleSpeakText(`${focusItem.question}. ${ans}`);
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm ${
                   isSpeaking
                     ? 'bg-rose-600 text-white animate-pulse'
@@ -820,31 +851,90 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
               </div>
             )}
 
-            {/* Complete Model Speaking Answer with Icons */}
+            {/* Complete Model Speaking Answer with Icons & Annotated Breakdown */}
             <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
                 <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
                   <span>💬 Bài Nói / Viết Mẫu Chuẩn IELTS (Icon-Anchored Model Answer)</span>
                 </h3>
-                <button
-                  onClick={() => handleCopy(focusItem)}
-                  className="text-xs text-slate-400 hover:text-white flex items-center gap-1 font-semibold"
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Sao chép bài trả lời</span>
-                </button>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                    <button
+                      onClick={() => {
+                        audioService.playBeep('click');
+                        setFocusViewMode('annotated');
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition ${
+                        focusViewMode === 'annotated'
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Tách Icon & Giải Thích Ý Nghĩa</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        audioService.playBeep('click');
+                        setFocusViewMode('plain');
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition ${
+                        focusViewMode === 'plain'
+                          ? 'bg-slate-800 text-white'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <span>Văn Bản Liền</span>
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => handleCopy(focusItem)}
+                    className="text-xs text-slate-400 hover:text-white flex items-center gap-1 font-semibold px-2 py-1 bg-slate-800 rounded-lg transition"
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Sao chép</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="text-base font-normal text-slate-100 leading-loose space-y-4">
-                {focusItem.answer.split('\n\n').map((paragraph: string, idx: number) => (
-                  <p
-                    key={idx}
-                    className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition"
-                  >
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
+              {focusViewMode === 'annotated' ? (
+                <div className="space-y-4 pt-1">
+                  {(() => {
+                    const isWriting = activePart.includes('Writing');
+                    const standardAnswer = isWriting
+                      ? focusItem.answer
+                      : getStandardizedSpeakingAnswer(activePart, focusItem.question, focusItem.answer, focusItem.vocab, focusItem.cueCardPrompt, focusItem.id);
+                    const chunks = isWriting
+                      ? annotateWritingParagraph(standardAnswer)
+                      : annotateSpeakingAnswer(standardAnswer, focusItem.vocab);
+                    return (
+                      <IeltsAnnotatedPhraseViewer
+                        chunks={chunks}
+                        defaultExpandFirst={false}
+                      />
+                    );
+                  })()}
+                </div>
+              ) : (
+                <div className="text-base font-normal text-slate-100 leading-loose space-y-4 pt-1">
+                  {(() => {
+                    const isWriting = activePart.includes('Writing');
+                    const standardAnswer = isWriting
+                      ? focusItem.answer
+                      : getStandardizedSpeakingAnswer(activePart, focusItem.question, focusItem.answer, focusItem.vocab, focusItem.cueCardPrompt, focusItem.id);
+                    return standardAnswer.split('\n\n').map((paragraph: string, idx: number) => (
+                      <p
+                        key={idx}
+                        className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition"
+                      >
+                        {paragraph}
+                      </p>
+                    ));
+                  })()}
+                </div>
+              )}
             </div>
 
             {/* Bottom floating helper inside focus */}

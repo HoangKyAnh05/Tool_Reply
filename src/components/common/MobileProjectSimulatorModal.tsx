@@ -35,6 +35,7 @@ import { audioService } from '../../services/audioService';
 import { FishboneProject } from '../../types/fishbone';
 import { GenzSavedPhrase } from '../../types/genz';
 import { IeltsSpeakingLesson } from '../../types/ielts';
+import { getStandardizedSpeakingAnswer } from '../../utils/ieltsSpeakingExpander';
 
 interface MobileIeltsItem {
   id: string | number;
@@ -472,26 +473,41 @@ export const MobileProjectSimulatorModal: React.FC<MobileProjectSimulatorModalPr
 
                     {/* Model Speaking Answer */}
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <h4 className="text-xs font-semibold text-cyan-300 uppercase tracking-wider">
-                          Bài Nói Mẫu (Model Answer):
-                        </h4>
-                        <button
-                          onClick={() => handleSpeak(currentIeltsItem.answer)}
-                          className={`p-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition ${
-                            isSpeaking
-                              ? 'bg-rose-600 border-rose-400 text-white animate-pulse'
-                              : 'bg-slate-800 border-slate-700 text-cyan-300 hover:text-white'
-                          }`}
-                        >
-                          <Volume2 className="w-3.5 h-3.5" />
-                          <span>{isSpeaking ? 'Dừng đọc' : 'Nghe Audio'}</span>
-                        </button>
-                      </div>
+                      {(() => {
+                        const stdAnswer = getStandardizedSpeakingAnswer(
+                          activePart,
+                          currentIeltsItem.question,
+                          currentIeltsItem.answer,
+                          currentIeltsItem.vocab,
+                          currentIeltsItem.cueCardPrompt,
+                          typeof currentIeltsItem.id === 'number' ? currentIeltsItem.id : undefined
+                        );
 
-                      <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-200 leading-relaxed max-h-48 overflow-y-auto custom-scrollbar whitespace-pre-line">
-                        {currentIeltsItem.answer}
-                      </div>
+                        return (
+                          <>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <h4 className="text-xs font-semibold text-cyan-300 uppercase tracking-wider">
+                                Bài Nói Mẫu ({activePart === 'Part 2' ? '10-15 Câu' : '3-5 Câu'}):
+                              </h4>
+                              <button
+                                onClick={() => handleSpeak(stdAnswer)}
+                                className={`p-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition ${
+                                  isSpeaking
+                                    ? 'bg-rose-600 border-rose-400 text-white animate-pulse'
+                                    : 'bg-slate-800 border-slate-700 text-cyan-300 hover:text-white'
+                                }`}
+                              >
+                                <Volume2 className="w-3.5 h-3.5" />
+                                <span>{isSpeaking ? 'Dừng đọc' : 'Nghe Audio'}</span>
+                              </button>
+                            </div>
+
+                            <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-200 leading-relaxed max-h-48 overflow-y-auto custom-scrollbar whitespace-pre-line">
+                              {stdAnswer}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
 
                     {/* Bottom Flashcard Actions */}
@@ -507,12 +523,20 @@ export const MobileProjectSimulatorModal: React.FC<MobileProjectSimulatorModalPr
 
                       <button
                         onClick={() => {
+                          const stdAnswer = getStandardizedSpeakingAnswer(
+                            activePart,
+                            currentIeltsItem.question,
+                            currentIeltsItem.answer,
+                            currentIeltsItem.vocab,
+                            currentIeltsItem.cueCardPrompt,
+                            typeof currentIeltsItem.id === 'number' ? currentIeltsItem.id : undefined
+                          );
                           if (onSelectIeltsQuestion) {
-                            onSelectIeltsQuestion(currentIeltsItem);
+                            onSelectIeltsQuestion({ ...currentIeltsItem, answer: stdAnswer });
                             audioService.playBeep('decision');
                             onClose();
                           } else {
-                            handleCopyText('ans_all', `${currentIeltsItem.question}\n\n${currentIeltsItem.answer}`);
+                            handleCopyText('ans_all', `${currentIeltsItem.question}\n\n${stdAnswer}`);
                           }
                         }}
                         className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-extrabold shadow hover:scale-105 active:scale-95 transition"
@@ -1018,11 +1042,24 @@ export const MobileProjectSimulatorModal: React.FC<MobileProjectSimulatorModalPr
                           </button>
                         </div>
 
+                        {phrase.context && (
+                          <div className="text-[10px] text-purple-300 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-500/20 truncate">
+                            🏷️ {phrase.context}
+                          </div>
+                        )}
+
                         <p className="text-xs font-extrabold text-white leading-relaxed">
                           "{phrase.generatedText}"
                         </p>
 
-                        <p className="text-[10px] text-slate-400 border-t border-slate-800 pt-1.5">
+                        {phrase.usageImpact && (
+                          <div className="p-2 rounded-lg bg-slate-950/80 border border-indigo-500/30 text-[10px] text-slate-300">
+                            <span className="text-amber-300 font-bold block mb-0.5">✨ Tác dụng:</span>
+                            {phrase.usageImpact}
+                          </div>
+                        )}
+
+                        <p className="text-[10px] text-slate-400 border-t border-slate-800 pt-1.5 truncate">
                           Gốc: {phrase.originalText}
                         </p>
                       </div>

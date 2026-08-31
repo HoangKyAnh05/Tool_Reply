@@ -12,8 +12,12 @@ export const ieltsPart3Bank: IeltsPart3Item[] = [
     id: 1,
     category: "Technology & Automation Impact",
     question: "How will artificial intelligence reshape the job market in the next decade?",
-    vocab: "routine task automation - tự động hóa tác vụ lặp lại\nupskill workforce - nâng cao tay nghề người lao động\ncreative and analytical roles - vai trò phân tích và sáng tạo",
-    answer: "🤖 AI will inevitably automate routine manual and clerical tasks, → ⚙️ displacing repetitive jobs while creating high-demand positions in prompt engineering and data ethics. → 📈 Consequently, workers must continuously upskill → 🧠 to focus on uniquely human creative problem-solving and emotional leadership."
+    vocab: "routine task automation - tự động hóa tác vụ lặp lại\nupskill workforce - nâng cao tay nghề người lao động\ncreative and analytical roles - vai trò phân tích và sáng tạo\neconomic paradigm - mô hình kinh tế mới",
+    answer: `🤖 In my perspective, artificial intelligence will fundamentally reshape the global employment landscape over the coming decade.
+⚙️ Routine manual and clerical duties will inevitably be automated, displacing repetitive roles across various traditional sectors.
+📈 However, this disruptive shift simultaneously creates unprecedented demand for high-value roles in algorithmic oversight and data ethics.
+🧠 Consequently, workers must proactively upskill to specialize in uniquely human faculties, such as creative problem-solving and emotional leadership.
+🌍 Ultimately, those who successfully harness AI tools will thrive in this newly evolving economic paradigm.`
   },
   {
     id: 2,

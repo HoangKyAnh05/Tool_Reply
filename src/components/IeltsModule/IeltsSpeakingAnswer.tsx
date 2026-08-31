@@ -13,13 +13,17 @@ import {
   X
 } from 'lucide-react';
 import { audioService } from '../../services/audioService';
-import { IeltsQuestionPartType } from '../../types/ielts';
+import { IeltsQuestionPartType, IeltsVocabItem } from '../../types/ielts';
+import { IeltsAnnotatedPhraseViewer } from '../common/IeltsAnnotatedPhraseViewer';
+import { annotateSpeakingAnswer, annotateWritingParagraph } from '../../utils/ieltsTextAnnotator';
+import { getStandardizedSpeakingAnswer } from '../../utils/ieltsSpeakingExpander';
 
 interface IeltsSpeakingAnswerProps {
   topic: string;
   question: string;
   part: IeltsQuestionPartType | string;
   fullAnswer: string;
+  vocabList?: IeltsVocabItem[];
   imageUrl?: string;
   bilingualSummary?: {
     english: string;
@@ -32,16 +36,24 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
   question,
   part,
   fullAnswer,
+  vocabList,
   imageUrl,
   bilingualSummary
 }) => {
+  const [viewMode, setViewMode] = useState<'annotated' | 'plain'>('annotated');
   const [copied, setCopied] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
 
+  const vocabRaw = vocabList?.map((v) => `${v.word} - ${v.meaning}`).join('\n') || '';
+  const isWriting = part.includes('Writing');
+  const standardizedAnswer = isWriting
+    ? fullAnswer
+    : getStandardizedSpeakingAnswer(part, question, fullAnswer, vocabRaw);
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(`${question}\n\n${fullAnswer}`);
+    navigator.clipboard.writeText(`${question}\n\n${standardizedAnswer}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -52,7 +64,7 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
       setIsPlaying(false);
     } else {
       setIsPlaying(true);
-      audioService.speakText(fullAnswer, 'en', () => {
+      audioService.speakText(standardizedAnswer, 'en', () => {
         setIsPlaying(false);
       });
     }
@@ -136,13 +148,67 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
         )}
       </div>
 
-      {/* Answer Paragraphs with Highlighted Inline Anchor Icons */}
+      {/* Answer Paragraphs with Highlighted Inline Anchor Icons & Deep Learning Breakdown */}
       <div className="space-y-4 text-slate-200 text-sm leading-relaxed font-sans select-text">
-        {fullAnswer.split('\n\n').map((para, pIdx) => (
-          <p key={pIdx} className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/60 hover:border-slate-700/80 transition">
-            {para}
-          </p>
-        ))}
+        <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>Phân Tích Chi Tiết Câu Trả Lời:</span>
+          </span>
+
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+            <button
+              onClick={() => {
+                audioService.playBeep('click');
+                setViewMode('annotated');
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition ${
+                viewMode === 'annotated'
+                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Tách Icon & Giải Thích Từng Từ (Học Sâu)</span>
+            </button>
+            <button
+              onClick={() => {
+                audioService.playBeep('click');
+                setViewMode('plain');
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition ${
+                viewMode === 'plain'
+                  ? 'bg-slate-800 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5 text-slate-400" />
+              <span>Đọc Liền Mạch</span>
+            </button>
+          </div>
+        </div>
+
+        {viewMode === 'annotated' ? (
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800/80">
+            {(() => {
+              const chunks = isWriting
+                ? annotateWritingParagraph(standardizedAnswer)
+                : annotateSpeakingAnswer(standardizedAnswer, vocabRaw);
+              return (
+                <IeltsAnnotatedPhraseViewer
+                  chunks={chunks}
+                  defaultExpandFirst={false}
+                />
+              );
+            })()}
+          </div>
+        ) : (
+          standardizedAnswer.split('\n\n').map((para, pIdx) => (
+            <p key={pIdx} className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/60 hover:border-slate-700/80 transition">
+              {para}
+            </p>
+          ))
+        )}
       </div>
 
       {/* Bilingual Summary Drawer */}

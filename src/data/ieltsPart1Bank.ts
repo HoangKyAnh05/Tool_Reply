@@ -12,15 +12,22 @@ export const ieltsPart1Bank: IeltsPart1Item[] = [
     id: 1,
     category: "Work & Study",
     question: "Are you a student or do you work?",
-    vocab: "software engineer - kỹ sư phần mềm\ntech firm - công ty công nghệ\nweb applications - ứng dụng web",
-    answer: "💼 Currently, → 💻 I work as a software engineer → 🏢 at a tech firm, → 🚀 where I build web applications → 🎯 every single day."
+    vocab: "software engineer - kỹ sư phần mềm\ntech firm - công ty công nghệ\nweb applications - ứng dụng web\ncareer advancement - thăng tiến sự nghiệp",
+    answer: `💼 Well, currently I work as a full-time software engineer at an international tech firm.
+💻 My primary responsibility involves designing and building responsive web applications for global clients.
+🏢 I have been immersed in this profession for nearly three years since graduating with honors from university.
+🚀 What I appreciate most is the collaborative corporate environment that encourages continuous technological innovation.
+🎯 Looking ahead, I aspire to lead my own engineering team to deliver impactful digital solutions.`
   },
   {
     id: 2,
     category: "Work & Study",
     question: "What do you like most about your job?",
-    vocab: "solving complex problems - giải quyết vấn đề phức tạp\ncreative colleagues - đồng nghiệp sáng tạo\nhighly motivated - có động lực cao",
-    answer: "💡 The best part → 🧠 is solving complex problems → 🤝 alongside creative colleagues, → 🔥 which keeps me highly motivated."
+    vocab: "solving complex problems - giải quyết vấn đề phức tạp\ncreative colleagues - đồng nghiệp sáng tạo\nhighly motivated - có động lực cao\nintellectual stimulation - kích thích tư duy trí tuệ",
+    answer: `💡 Without a doubt, the most captivating aspect of my profession is solving complex technical problems.
+🤝 On a daily basis, I collaborate closely alongside extraordinarily creative colleagues who challenge my perspectives.
+🧠 Tackling intricate programming bugs provides immense intellectual stimulation and satisfaction.
+🔥 This dynamic atmosphere keeps me highly motivated and eager to expand my technical skill set every single morning.`
   },
   {
     id: 3,

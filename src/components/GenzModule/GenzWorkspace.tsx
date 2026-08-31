@@ -64,6 +64,25 @@ export const GenzWorkspace: React.FC = () => {
         conversationContext: showContext ? contextText : undefined
       });
       setResult(res);
+
+      // TỰ ĐỘNG LƯU TẤT CẢ CÁC KẾT QUẢ VÀO THƯ VIỆN GEN Z
+      if (res && res.versions && res.versions.length > 0) {
+        res.versions.forEach((v, idx) => {
+          storageService.saveGenzPhrase({
+            id: `genz_auto_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
+            originalText: res.originalText,
+            generatedText: v.text,
+            tone: v.tone,
+            styleTag: v.styleTag,
+            context: v.context || (showContext ? contextText : 'Tình huống giao tiếp hàng ngày / Chat mạng xã hội'),
+            usageImpact: v.usageImpact || `Biến đổi câu từ thông thường sang phong thái ${v.styleTag} giúp tăng độ cuốn hút và gây ấn tượng mạnh với người nghe.`,
+            imageIdea: res.visualIdea,
+            imagePrompt: res.visualIdea?.imagePrompt,
+            createdAt: Date.now()
+          });
+        });
+        audioService.playBeep('success');
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -282,6 +301,7 @@ export const GenzWorkspace: React.FC = () => {
                       originalText={result.originalText}
                       version={v}
                       visualIdea={result.visualIdea}
+                      context={showContext ? contextText : undefined}
                       onOpenImageModal={(idea) => handleOpenMemeModal(idea)}
                     />
                   ))}
@@ -309,6 +329,23 @@ export const GenzWorkspace: React.FC = () => {
         selectedTone={selectedTone}
         onApplyVersions={(newResult) => {
           setResult(newResult);
+          if (newResult && newResult.versions && newResult.versions.length > 0) {
+            newResult.versions.forEach((v, idx) => {
+              storageService.saveGenzPhrase({
+                id: `genz_json_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
+                originalText: newResult.originalText,
+                generatedText: v.text,
+                tone: v.tone,
+                styleTag: v.styleTag,
+                context: v.context || 'Nhập từ JSON / Prompt bên ngoài',
+                usageImpact: v.usageImpact || `Biến đổi phong thái ${v.styleTag} tạo điểm nhấn độc đáo trong giao tiếp.`,
+                imageIdea: newResult.visualIdea,
+                imagePrompt: newResult.visualIdea?.imagePrompt,
+                createdAt: Date.now()
+              });
+            });
+            audioService.playBeep('success');
+          }
         }}
       />
     </div>

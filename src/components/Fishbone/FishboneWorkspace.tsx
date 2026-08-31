@@ -18,13 +18,14 @@ import { DEFAULT_CASCADE_PRESETS } from '../../data/defaultCascadePresets';
 import { FishboneCascadeCanvas } from './FishboneCascadeCanvas';
 import { PasteCascadeJsonModal } from './PasteCascadeJsonModal';
 import { FishboneVocabExplorer } from './FishboneVocabExplorer';
+import { Roadmap100Canvas } from './Roadmap100Canvas';
 import { MobileProjectSimulatorModal } from '../common/MobileProjectSimulatorModal';
 import { toggleNativeFullscreen } from '../../utils/fullscreen';
 import { audioService } from '../../services/audioService';
 
 export const FishboneWorkspace: React.FC = () => {
   // Active Workspace Tab: 'cascade' (Xương Cá Truyền Tin Đa Tầng) vs 'vocab3000' (Bản Đồ Xương Cá IELTS)
-  const [activeTab, setActiveTab] = useState<'cascade' | 'vocab3000'>('cascade');
+  const [activeTab, setActiveTab] = useState<'cascade' | 'vocab3000' | 'roadmap100'>('roadmap100');
 
   // Cascade Scenario State
   const [activeScenario, setActiveScenario] = useState<CascadeScenario>(() => DEFAULT_CASCADE_PRESETS[0]);
@@ -80,7 +81,9 @@ export const FishboneWorkspace: React.FC = () => {
                 FISHBONE PROTOCOL
               </span>
               <h2 className="text-sm font-extrabold text-white">
-                {activeTab === 'cascade'
+                {activeTab === 'roadmap100'
+                  ? 'Đường Ray Lộ Trình 100 Ngày (Creator & Action Roadmap)'
+                  : activeTab === 'cascade'
                   ? 'Sơ Đồ Xương Cá Truyền Tin Đa Tầng (Sếp ⇄ Cấp Dưới ⇄ Bên Bán)'
                   : 'Bản Đồ Xương Cá IELTS (Từ Vựng, Ngữ Pháp & Cấu Trúc)'}
               </h2>
@@ -91,7 +94,9 @@ export const FishboneWorkspace: React.FC = () => {
               )}
             </div>
             <p className="text-[11px] text-slate-400">
-              {activeTab === 'cascade'
+              {activeTab === 'roadmap100'
+                ? 'Đường ray uốn lượn zíc zắc 100 ngày • Đẩy ảnh/video • Nhiệm vụ quay chụp • Hậu trường & Lợi ích'
+                : activeTab === 'cascade'
                 ? 'Luồng chỉ đạo từ Sếp xuống cấp thấp nhất & bên bán ➔ Báo tin ngược lên cấp cao tới Sếp'
                 : '20 Bộ Xương Cá học thuật • Đường ray uốn lượn zíc zắc vô tận từ trên xuống dưới'}
             </p>
@@ -113,6 +118,24 @@ export const FishboneWorkspace: React.FC = () => {
           >
             <span>🏢</span>
             <span>Xương Cá Truyền Tin Đa Tầng</span>
+          </button>
+
+          <button
+            onClick={() => {
+              audioService.playBeep('click');
+              setActiveTab('roadmap100');
+            }}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition ${
+              activeTab === 'roadmap100'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md font-black'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span>🛣️</span>
+            <span>Lộ Trình 100 Ngày</span>
+            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 border border-amber-400/40">
+              HOT
+            </span>
           </button>
 
           <button

@@ -8,7 +8,7 @@ import { GenzWorkspace } from './components/GenzModule/GenzWorkspace';
 import { GenzSavedLibrary } from './components/GenzModule/GenzSavedLibrary';
 import { GenzMemeModal } from './components/GenzModule/GenzMemeModal';
 import { UniverseWorkspace } from './components/UniverseModule/UniverseWorkspace';
-import { ActionEngineWorkspace } from './components/ActionEngine/ActionEngineWorkspace';
+import { DailyNewsCalendarWorkspace } from './components/NewsCalendar/DailyNewsCalendarWorkspace';
 import { FishboneWorkspace } from './components/Fishbone/FishboneWorkspace';
 import { MiniWebWorkspace } from './components/MiniWeb/MiniWebWorkspace';
 import { SettingsModal } from './components/Settings/SettingsModal';
@@ -109,7 +109,7 @@ export const App: React.FC = () => {
         {activeTab === 'writing' && <IeltsWritingWorkspace />}
         {activeTab === 'genz' && <GenzWorkspace />}
         {activeTab === 'universe' && <UniverseWorkspace />}
-        {activeTab === 'action' && <ActionEngineWorkspace />}
+        {activeTab === 'action' && <DailyNewsCalendarWorkspace />}
         {activeTab === 'fishbone' && <FishboneWorkspace />}
         {activeTab === 'library' && (
           <GenzSavedLibrary onOpenImageModal={(idea) => setActiveMemeModalIdea(idea)} />

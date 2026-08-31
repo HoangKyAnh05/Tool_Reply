@@ -30,6 +30,10 @@ export interface GenzResultVersion {
   text: string;
   tone: GenzTone;
   styleTag: string; // e.g. "Natural", "Funny / Chuồng gà", "Savage / Cà khịa"
+  context?: string; // Bối cảnh sử dụng
+  usageImpact?: string; // Tác dụng & công năng giao tiếp (Gen Z Impact)
+  category?: string;
+  icon?: string;
 }
 
 export interface GenzGenerationResult {
@@ -47,6 +51,10 @@ export interface GenzSavedPhrase {
   generatedText: string;
   tone: GenzTone;
   styleTag?: string;
+  context?: string; // Bối cảnh sử dụng cụ thể
+  usageImpact?: string; // Tác dụng & công năng giao tiếp (Gen Z Impact)
+  category?: string; // 'slang_en' | 'music_trend' | 'viet_genz' | 'office' | 'dating' | 'cakhia' | string
+  icon?: string;
   imageIdea?: GenzVisualIdea;
   imagePrompt?: string;
   generatedImageUrl?: string;

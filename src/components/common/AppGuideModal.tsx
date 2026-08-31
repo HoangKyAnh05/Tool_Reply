@@ -85,10 +85,10 @@ export const AppGuideModal: React.FC<AppGuideModalProps> = ({
           <button
             onClick={() => setActiveGuideTab('action')}
             className={`px-3 py-1.5 rounded-xl transition ${
-              activeGuideTab === 'action' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              activeGuideTab === 'action' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            🔥 4. Action Engine
+            📅 4. Lịch Báo & Radar
           </button>
           <button
             onClick={() => setActiveGuideTab('fishbone')}
@@ -191,12 +191,12 @@ export const AppGuideModal: React.FC<AppGuideModalProps> = ({
 
           {activeGuideTab === 'action' && (
             <div className="space-y-3">
-              <h4 className="font-bold text-white text-sm">Hướng Dẫn Động Cơ Hành Động (Action Engine):</h4>
+              <h4 className="font-bold text-white text-sm">Hướng Dẫn Lịch Báo Tin Tức Hot & Radar Nhu Cầu Đột Biến:</h4>
               <ol className="list-decimal list-inside space-y-2 text-slate-300">
-                <li>Xem <strong>Hero Card ("The One Next Action")</strong> để biết việc quan trọng nhất cần làm ngay hôm nay.</li>
-                <li>Bấm <strong>"⚡ LÀM 5 PHÚT"</strong> để bật đồng hồ Focus Mode vượt qua sức ỳ tâm lý ban đầu.</li>
-                <li>Nếu thấy ngại hoặc bế tắc, bấm nút <strong>"❓ Tại sao chưa làm?"</strong> để chọn nguyên nhân (Sợ sai, Việc quá lớn, Bị phân tâm...) và nhận giải pháp tức thì.</li>
-                <li>Sau khi làm xong, nhận ngay <strong>+75 XP</strong> (Procrastination Defeated) hoặc <strong>+100 XP</strong> (Courage Moment) và vinh danh lên <strong>Hall of Fame</strong>!</li>
+                <li>Bấm vào <strong>dải ngày ngang</strong> hoặc chọn <strong>bất kỳ ngày nào trong lịch</strong> (hôm nay hoặc những ngày trước đó) để xem dữ liệu của ngày hôm đó.</li>
+                <li>Xem <strong>10 bài báo & tin hot nhất thuộc 10 chủ đề khác nhau</strong> (AI, Tài chính, Khởi nghiệp, Xã hội, Giáo dục, Giải trí, Sức khỏe, BĐS, Khoa học xanh, Gen Z).</li>
+                <li>Bấm nút <strong>"📖 ĐỌC TRONG APP"</strong> để mở giao diện đọc toàn văn bài báo đầy đủ, xem 3 điểm cốt lõi (Key Takeaways) và nghe phát âm Audio TTS.</li>
+                <li>Chuyển sang tab <strong>"🚀 10 Nhu Cầu Đột Biến"</strong> để theo dõi Radar các nhu cầu tiêu dùng và thị trường tăng vọt (+200% đến +600%), nguyên nhân kích hoạt và cơ hội hành động kinh doanh!</li>
               </ol>
             </div>
           )}

@@ -5,6 +5,7 @@ import { AppSettings } from '../types/settings';
 import { ActionTask, CompletedAction, ActionUserProfile, ActionBadge } from '../types/actionEngine';
 import { FishboneProject } from '../types/fishbone';
 import { FishboneVocabItem } from '../types/fishboneVocab';
+import { genzMaster1000Bank } from '../data/genzMaster1000Bank';
 
 const STORAGE_KEYS = {
   SETTINGS: 'app_settings_v1',
@@ -482,23 +483,62 @@ export const storageService = {
   // GenZify
   getGenzSaved(): GenzSavedPhrase[] {
     const raw = localStorage.getItem(STORAGE_KEYS.GENZ_SAVED);
-    if (!raw) return [];
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return [];
+    let userCustom: GenzSavedPhrase[] = [];
+    if (raw) {
+      try {
+        userCustom = JSON.parse(raw);
+      } catch {
+        userCustom = [];
+      }
     }
+    // Lấy danh sách ID đã xóa nếu có
+    const deletedRaw = localStorage.getItem(`${STORAGE_KEYS.GENZ_SAVED}_deleted`);
+    const deletedIds = new Set<string>(deletedRaw ? JSON.parse(deletedRaw) : []);
+
+    const userIds = new Set(userCustom.map((p) => p.id));
+    const activeBank = genzMaster1000Bank.filter((p) => !userIds.has(p.id) && !deletedIds.has(p.id));
+    return [...userCustom.filter((p) => !deletedIds.has(p.id)), ...activeBank];
   },
 
   saveGenzPhrase(phrase: GenzSavedPhrase): void {
-    const list = this.getGenzSaved();
-    list.unshift(phrase);
-    localStorage.setItem(STORAGE_KEYS.GENZ_SAVED, JSON.stringify(list));
+    const raw = localStorage.getItem(STORAGE_KEYS.GENZ_SAVED);
+    let userCustom: GenzSavedPhrase[] = [];
+    if (raw) {
+      try {
+        userCustom = JSON.parse(raw);
+      } catch {
+        userCustom = [];
+      }
+    }
+    const idx = userCustom.findIndex((p) => p.id === phrase.id || p.generatedText === phrase.generatedText);
+    if (idx >= 0) {
+      userCustom[idx] = phrase;
+    } else {
+      userCustom.unshift(phrase);
+    }
+    localStorage.setItem(STORAGE_KEYS.GENZ_SAVED, JSON.stringify(userCustom));
   },
 
   deleteGenzPhrase(id: string): void {
-    const list = this.getGenzSaved().filter((p) => p.id !== id);
-    localStorage.setItem(STORAGE_KEYS.GENZ_SAVED, JSON.stringify(list));
+    const raw = localStorage.getItem(STORAGE_KEYS.GENZ_SAVED);
+    let userCustom: GenzSavedPhrase[] = [];
+    if (raw) {
+      try {
+        userCustom = JSON.parse(raw);
+      } catch {
+        userCustom = [];
+      }
+    }
+    userCustom = userCustom.filter((p) => p.id !== id);
+    localStorage.setItem(STORAGE_KEYS.GENZ_SAVED, JSON.stringify(userCustom));
+
+    // Thêm vào danh sách deletedIds để không bị nạp lại từ bank mặc định
+    const deletedRaw = localStorage.getItem(`${STORAGE_KEYS.GENZ_SAVED}_deleted`);
+    const deletedIds: string[] = deletedRaw ? JSON.parse(deletedRaw) : [];
+    if (!deletedIds.includes(id)) {
+      deletedIds.push(id);
+      localStorage.setItem(`${STORAGE_KEYS.GENZ_SAVED}_deleted`, JSON.stringify(deletedIds));
+    }
   },
 
   // Simulations

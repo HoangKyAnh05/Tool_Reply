@@ -359,30 +359,30 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-slate-950">
       {/* Top action header */}
-      <div className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
-            <BrainCircuit className="w-5 h-5" />
+      <div className="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 overflow-x-auto no-scrollbar shrink-0 select-none">
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="p-1.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shrink-0">
+            <BrainCircuit className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-base font-extrabold text-white">Visual Vocabulary Speaking System</h2>
-            <p className="text-xs text-slate-400">
+            <h2 className="text-xs sm:text-sm font-extrabold text-white whitespace-nowrap">Visual Speaking System</h2>
+            <p className="text-[10px] text-slate-400 hidden sm:block whitespace-nowrap">
               Ghi nhớ ý tưởng bằng Visual Icons & Phản xạ Band 7–8+ IELTS
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* 300 Questions Master Bank Button */}
           <button
             onClick={() => {
               setIsPartBankFullscreen(false);
               setIsPartBankOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600/40 to-indigo-600/40 border border-purple-500/50 hover:from-purple-600 hover:to-indigo-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600/40 to-indigo-600/40 border border-purple-500/50 hover:from-purple-600 hover:to-indigo-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm whitespace-nowrap shrink-0"
           >
             <BookMarked className="w-3.5 h-3.5 text-amber-400" />
-            <span>📚 Kho 300 Câu Part 1-2-3</span>
+            <span>📚 Kho 300 Câu</span>
           </button>
 
           {/* Direct Fullscreen 300 Questions Button */}
@@ -391,11 +391,11 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
               setIsPartBankFullscreen(true);
               setIsPartBankOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600/30 border border-purple-500/50 hover:bg-purple-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-purple-600/30 border border-purple-500/50 hover:bg-purple-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm whitespace-nowrap shrink-0"
             title="Mở to toàn màn hình kho 300 câu hỏi IELTS"
           >
             <Maximize2 className="w-3.5 h-3.5 text-cyan-300" />
-            <span>⛶ Mở To 300 Câu</span>
+            <span className="hidden md:inline">⛶ Phóng To</span>
           </button>
 
           {/* Mobile Phone Mode for 300 Questions */}
@@ -405,29 +405,30 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
               setMobileTab('ielts300');
               setIsMobileSimulatorOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/50 hover:bg-purple-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm"
-            title="Xem kho 300 câu hỏi trên giao diện điện thoại thoại"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/50 hover:bg-purple-600 hover:text-white text-purple-200 text-xs font-bold transition shadow-sm whitespace-nowrap shrink-0"
+            title="Xem kho 300 câu hỏi trên giao diện điện thoại"
           >
             <Smartphone className="w-3.5 h-3.5 text-pink-300" />
-            <span className="hidden xl:inline">📱 Xem Mobile 300 Câu</span>
-            <span className="xl:hidden">📱 Mobile</span>
+            <span>📱 Mobile</span>
           </button>
 
           {/* Quick Sample Fill Button */}
           <button
             onClick={handleLoadFullDefault}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/30 border border-indigo-500/50 hover:bg-indigo-600 hover:text-white text-indigo-200 text-xs font-bold transition shadow-sm"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-indigo-600/30 border border-indigo-500/50 hover:bg-indigo-600 hover:text-white text-indigo-200 text-xs font-bold transition shadow-sm whitespace-nowrap shrink-0"
           >
             <Zap className="w-3.5 h-3.5 text-amber-400" />
-            <span>⚡ Nạp Dữ Liệu Mẫu (Fill Demo)</span>
+            <span>⚡ Nạp Mẫu</span>
           </button>
 
+          {/* Master Prompt / Paste JSON Button */}
           <button
             onClick={() => setIsPromptModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 text-xs font-semibold transition"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 text-xs font-semibold transition whitespace-nowrap shrink-0"
           >
             <Code className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Master Prompt / Paste JSON</span>
+            <span className="hidden lg:inline">Master Prompt / JSON</span>
+            <span className="lg:hidden">JSON</span>
           </button>
         </div>
       </div>
@@ -905,6 +906,7 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
                 question={currentLesson.question}
                 part={currentLesson.part}
                 fullAnswer={currentLesson.fullSpeakingAnswer}
+                vocabList={currentLesson.vocabList}
                 imageUrl={uploadedImage || currentLesson.imageUrl}
                 bilingualSummary={currentLesson.bilingualSummary}
               />

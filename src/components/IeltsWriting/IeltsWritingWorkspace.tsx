@@ -29,8 +29,11 @@ import { IeltsTask1ChartViewer } from './IeltsTask1ChartViewer';
 import { audioService } from '../../services/audioService';
 import { toggleNativeFullscreen } from '../../utils/fullscreen';
 import { MobileProjectSimulatorModal } from '../common/MobileProjectSimulatorModal';
+import { IeltsAnnotatedPhraseViewer } from '../common/IeltsAnnotatedPhraseViewer';
+import { annotateWritingParagraph } from '../../utils/ieltsTextAnnotator';
 
 export const IeltsWritingWorkspace: React.FC = () => {
+  const [displayMode, setDisplayMode] = useState<'annotated' | 'plain'>('annotated');
   const [activeTask, setActiveTask] = useState<'task1' | 'task2'>('task1');
   const [task1Index, setTask1Index] = useState<number>(0);
   const [task2Index, setTask2Index] = useState<number>(0);
@@ -521,26 +524,107 @@ export const IeltsWritingWorkspace: React.FC = () => {
               </div>
             </div>
 
-            {/* Model Answer Body with Paragraph Structure */}
+            {/* Model Answer Body with Paragraph Structure & Icon Annotated Breakdown */}
             <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-4">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-purple-400" />
-                <span>Nội Dung Bài Viết Mẫu (Standard Academic Structure):</span>
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Nội Dung Bài Viết Mẫu (Band 8.0+ Model Answer):</span>
+                </h3>
 
-              <div className="space-y-4 text-xs sm:text-sm text-slate-200 leading-relaxed">
-                {(activeTask === 'task1' ? currentTask1.sampleAnswerBand8 : currentTask2.sampleAnswerBand8)
-                  .split('\n\n')
-                  .filter(Boolean)
-                  .map((para, pIdx) => (
-                    <p
-                      key={pIdx}
-                      className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/60 hover:border-slate-700/80 transition"
-                    >
-                      {para}
-                    </p>
-                  ))}
+                {/* View Switcher: Deep Learning Icon Mode vs Plain Text */}
+                <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                  <button
+                    onClick={() => {
+                      audioService.playBeep('click');
+                      setDisplayMode('annotated');
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition ${
+                      displayMode === 'annotated'
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Tách Icon & Giải Thích Từng Từ (Học Sâu)</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      audioService.playBeep('click');
+                      setDisplayMode('plain');
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition ${
+                      displayMode === 'plain'
+                        ? 'bg-slate-800 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Văn Bản Hoàn Chỉnh</span>
+                  </button>
+                </div>
               </div>
+
+              {displayMode === 'annotated' ? (
+                /* Annotated Mode with Contextual Icons & Explanations */
+                <div className="space-y-6 pt-2">
+                  {(activeTask === 'task1' ? currentTask1.sampleAnswerBand8 : currentTask2.sampleAnswerBand8)
+                    .split('\n\n')
+                    .filter(Boolean)
+                    .map((para, pIdx) => {
+                      const vocabList = activeTask === 'task1' ? currentTask1.keyVocabulary : currentTask2.lexicalResource;
+                      const chunks = annotateWritingParagraph(para, vocabList);
+                      
+                      const paraTitles = activeTask === 'task1'
+                        ? [
+                            'Đoạn 1: Mở bài (Introduction & Paraphrase Đề Bài)',
+                            'Đoạn 2: Nhìn chung tổng quan (Overview Trend)',
+                            'Đoạn 3: Chi tiết nhóm 1 (Body 1 - Key Features)',
+                            'Đoạn 4: Chi tiết nhóm 2 (Body 2 - Comparative Data)'
+                          ]
+                        : [
+                            'Đoạn 1: Mở bài & Khẳng định lập trường (Introduction & Thesis Statement)',
+                            'Đoạn 2: Thân bài 1 (Body 1 - Argument & Evidence)',
+                            'Đoạn 3: Thân bài 2 (Body 2 - In-depth Counter-Analysis)',
+                            'Đoạn 4: Kết bài khẳng định lại (Conclusion & Recommendation)'
+                          ];
+
+                      return (
+                        <div key={pIdx} className="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-indigo-300 uppercase tracking-wide flex items-center gap-1.5">
+                              <Layers className="w-3.5 h-3.5 text-purple-400" />
+                              <span>{paraTitles[pIdx] || `Đoạn văn ${pIdx + 1}`}</span>
+                            </span>
+                            <span className="text-[11px] font-mono text-slate-400">
+                              {chunks.length} phân đoạn học thuật
+                            </span>
+                          </div>
+
+                          <IeltsAnnotatedPhraseViewer
+                            chunks={chunks}
+                            defaultExpandFirst={false}
+                          />
+                        </div>
+                      );
+                    })}
+                </div>
+              ) : (
+                /* Plain Text Mode */
+                <div className="space-y-4 text-xs sm:text-sm text-slate-200 leading-relaxed pt-2">
+                  {(activeTask === 'task1' ? currentTask1.sampleAnswerBand8 : currentTask2.sampleAnswerBand8)
+                    .split('\n\n')
+                    .filter(Boolean)
+                    .map((para, pIdx) => (
+                      <p
+                        key={pIdx}
+                        className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/60 hover:border-slate-700/80 transition"
+                      >
+                        {para}
+                      </p>
+                    ))}
+                </div>
+              )}
             </div>
           </div>
 

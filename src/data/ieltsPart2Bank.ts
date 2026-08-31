@@ -17,7 +17,17 @@ export const ieltsPart2Bank: IeltsPart2Item[] = [
     question: "Describe a person you admire a lot.",
     cueCardPrompt: "You should say:\n- Who this person is\n- How you know them\n- What they do\n- And explain why you admire them so much.",
     vocab: "role model - hình mẫu lý tưởng\nunwavering resilience - sự kiên cường bền bỉ\ninspire positive change - truyền cảm hứng thay đổi tích cực\nselfless dedication - sự cống hiến quên mình",
-    answer: "🌟 Today I would like to talk about → 👵 my beloved grandmother, → ❤️ who has always been my greatest role model. → 🌾 She grew up in a rural village → 💪 overcoming tremendous hardships → 📚 with unwavering resilience. → 💡 What I admire most about her → 🤝 is her boundless generosity → 🍲 and selfless dedication to our entire family."
+    answer: `🌟 Today I would love to talk about my beloved grandmother, who has always been my greatest role model and source of inspiration.
+👵 She grew up in a humble rural village during an era of significant socio-economic turmoil.
+💪 Despite overcoming tremendous hardships in her early years, she faced every adversity with unwavering resilience and grace.
+📚 Although she never had the privilege of receiving higher formal education, her wisdom and emotional intelligence are boundless.
+🌾 She spent decades working tirelessly in agriculture while single-handedly nurturing our extended family.
+🍲 What I admire most about her is her boundless generosity; she never hesitated to share meals with struggling neighbors.
+🤝 Even in her advanced age today, she remains the emotional anchor who unites all generations under our roof.
+💡 Whenever I confront setbacks in my academic pursuits or personal life, her patient words always offer profound clarity.
+❤️ She taught me that true strength is quiet and that kindness is the most enduring legacy a person can leave behind.
+🌸 Watching her live each day with contentment and gratitude has fundamentally shaped my own core values.
+🎯 To put it simply, she embodies everything I aspire to become as a compassionate and resilient human being.`
   },
   {
     id: 2,
@@ -26,7 +36,20 @@ export const ieltsPart2Bank: IeltsPart2Item[] = [
     question: "Describe an energetic person you know.",
     cueCardPrompt: "You should say:\n- Who this person is\n- How you know them\n- What makes them energetic\n- And explain how you feel about them.",
     vocab: "boundless energy - nguồn năng lượng vô tận\ninfectious enthusiasm - sự nhiệt huyết dễ lan tỏa\nmultitask effortlessly - làm nhiều việc cùng lúc dễ dàng",
-    answer: "⚡ I want to tell you about → 🏃 my university classmate Minh, → 🚀 who is renowned for his boundless energy. → 🌅 He wakes up at 5 AM to run, → 💼 manages a student club, → 📚 and maintains top academic grades. → 😊 His infectious enthusiasm → 🔥 always motivates everyone around him → 🎯 to push past their limits."
+    answer: `⚡ Today I would love to share a story about my university close friend, Minh, who is widely renowned for his boundless energy.
+🏃 We first crossed paths during our freshman orientation week at university nearly four years ago.
+🤝 From our very first interaction, his vibrant aura, radiant smile, and cheerful demeanor immediately caught my attention.
+🌅 What makes Minh exceptionally energetic is his disciplined daily routine and relentless positive drive.
+👟 He consistently wakes up at 5:00 AM every single morning to go for a brisk 10-kilometer jog around the lake.
+📚 After that, he heads straight to the campus library to review seminar materials before official morning lectures begin.
+💼 Besides maintaining top academic standing in our computer science cohort, he also actively presides over the student leadership council.
+🚀 He possesses an extraordinary capacity to multitask effortlessly between demanding software projects and charity campaigns.
+😊 I vividly recall during our grueling finals week last semester when everyone was feeling utterly drained and exhausted.
+🔥 Minh stepped forward and organized lively group study sessions, bringing healthy snacks and cheering everyone on.
+🎉 His infectious enthusiasm and optimism effortlessly lifted the collective spirits of our entire study group.
+💡 Whenever I find myself procrastinating or feeling low on motivation, observing his passionate work ethic instantly inspires me.
+🎯 He genuinely proves that high energy is not just a genetic gift, but a conscious lifestyle choice driven by purpose.
+🌟 All in all, having such an energetic companion has profoundly elevated my own personal standards and daily productivity.`
   },
   {
     id: 3,

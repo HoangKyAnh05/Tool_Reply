@@ -566,6 +566,12 @@ Turn a vocabulary list + reading text/key takeaways into a complete IELTS Speaki
 
 CRITICAL FORMAT & ICON GENERATION RULE:
 Format the full speaking answer as an ICON-ANCHORED ARROW CHAIN where sentences are split into sense clauses linked by ' → ', and EVERY clause chunk starts with a contextually precise emoji icon.
+MANDATORY SENTENCE COUNT RULES:
+- If Part 1: The answer MUST be 3 to 5 sentences long.
+- If Part 2: The answer MUST be 10 to 15 sentences long (covering all 4 cue card bullet points thoroughly for a 2-minute speech).
+- If Part 3: The answer MUST be 3 to 5 sentences long (analytical with cause, effect, and concrete real-world comparison).
+- Every phrase chunk linked by ' → ' should be short (around 3 to 6 words maximum).
+
 Example Output Format:
 🎶 Absolutely yes → ❤️ I'm a huge music lover → 🎧 For me, it's not just background noise → 🔥 it's more like a necessity → 📅 in my daily life.
 💡 I think the main reason is → 🎵 music has a powerful effect → 😊 on my mood.
