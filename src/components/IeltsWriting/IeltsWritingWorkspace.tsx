@@ -604,6 +604,7 @@ export const IeltsWritingWorkspace: React.FC = () => {
                           <IeltsAnnotatedPhraseViewer
                             chunks={chunks}
                             defaultExpandFirst={false}
+                            questionContext={activeTask === 'task1' ? currentTask1.prompt : currentTask2.prompt}
                           />
                         </div>
                       );

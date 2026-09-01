@@ -17,7 +17,7 @@ import { AnnotatedPhraseChunk } from '../../utils/ieltsTextAnnotator';
 import { audioService } from '../../services/audioService';
 import { repetitionService, RepetitionTier } from '../../utils/repetitionTracker';
 
-interface IeltsAnnotatedPhraseViewerProps {
+export interface IeltsAnnotatedPhraseViewerProps {
   chunks: AnnotatedPhraseChunk[];
   title?: string;
   defaultExpandFirst?: boolean;
@@ -25,6 +25,24 @@ interface IeltsAnnotatedPhraseViewerProps {
   questionContext?: string;
   onSendToGemini?: (prompt: string) => void;
 }
+
+export const buildAnnotatedChunkPrompt = (chunk: AnnotatedPhraseChunk, questionContext?: string): string => {
+  const meaning = chunk.vietnameseMeaning ? `"${chunk.vietnameseMeaning}"` : 'Dịch nghĩa chính xác theo ngữ cảnh câu';
+  const purpose = chunk.purpose ? `\n- Ý nghĩa & Band 8.0+ Impact: ${chunk.purpose}` : '';
+  const context = questionContext ? `\n- Ngữ cảnh câu hỏi / đề bài: "${questionContext}"` : '';
+
+  return `[${chunk.icon}] Từ / Cụm từ: "${chunk.englishText}"
+- Dịch nghĩa trong ngữ cảnh của câu: ${meaning}${purpose}${context}
+
+Hãy đóng vai là Giảng viên IELTS Band 9.0:
+1. Giải thích chi tiết ý nghĩa và cách dùng của từ/cụm từ này trong ngữ cảnh câu văn trên.
+2. Tạo các tình huống và câu hỏi thực tế trong phòng thi IELTS (Speaking & Writing) mà tôi nên dùng từ này.
+3. Trình bày dưới dạng BẢNG GIẢI THÍCH rõ ràng, có icon sinh động, bắt buộc gồm 4 CỘT:
+   - 🎯 Tình huống / Ngữ cảnh sử dụng (Context & Situation)
+   - 💬 Câu hỏi / Câu đối thoại mẫu chứa từ này (Example Sentence)
+   - 🇻🇳 Dịch nghĩa của ví dụ giải thích theo các ngữ cảnh sử dụng (Vietnamese Translation)
+   - 💡 Phân tích lý do dùng & Điểm cộng từ vựng (Vocabulary Impact & Band Boost)`;
+};
 
 export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProps> = ({
   chunks,
@@ -63,10 +81,7 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
   const handleCopyGeminiPrompt = (chunk: AnnotatedPhraseChunk, e: React.MouseEvent) => {
     e.stopPropagation();
     audioService.playBeep('click');
-    // Prompt format requested by user:
-    // [👥] attendance figures
-    // Tạo các câu hỏi, tình huống mà tôi phải dùng từ vựng này, viết có icon, chia bảng tôi dễ đọc
-    const prompt = `[${chunk.icon}] ${chunk.englishText}\n\nTạo các câu hỏi, tình huống mà tôi phải dùng từ vựng này, viết có icon, chia bảng tôi dễ đọc`;
+    const prompt = buildAnnotatedChunkPrompt(chunk, questionContext);
 
     if (onSendToGemini) {
       onSendToGemini(prompt);
@@ -92,7 +107,7 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
 
   const handleCopy = (chunk: AnnotatedPhraseChunk, e: React.MouseEvent) => {
     e.stopPropagation();
-    const prompt = `[${chunk.icon}] ${chunk.englishText}\n\nTạo các câu hỏi, tình huống mà tôi phải dùng từ vựng này, viết có icon, chia bảng tôi dễ đọc`;
+    const prompt = buildAnnotatedChunkPrompt(chunk, questionContext);
     navigator.clipboard.writeText(prompt);
     setCopiedId(chunk.id);
     audioService.playBeep('click');
@@ -240,10 +255,10 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
 
                   {/* Action buttons */}
                   <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    {/* Gemini Prompt Copy Button */}
+                    {/* Gemini Prompt Button */}
                     <button
                       onClick={(e) => handleCopyGeminiPrompt(chunk, e)}
-                      title="Sao chép Prompt Gemini hỏi tình huống và câu hỏi nên dùng cụm này"
+                      title="Mở/Gửi sang Gemini: Bảng câu hỏi & dịch nghĩa ví dụ theo ngữ cảnh"
                       className={`p-1.5 rounded-lg border text-xs flex items-center gap-1 transition shadow-sm ${
                         copiedPromptId === chunk.id
                           ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
@@ -260,6 +275,7 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
                       </span>
                     </button>
 
+                    {/* Audio Listen */}
                     <button
                       onClick={(e) => handleSpeak(chunk, e)}
                       title="Nghe phát âm cụm này"
@@ -271,9 +287,11 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
                     >
                       {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
                     </button>
+
+                    {/* Copy Standard Prompt Button (ko gửi Gemini) */}
                     <button
                       onClick={(e) => handleCopy(chunk, e)}
-                      title="Sao chép cụm và prompt"
+                      title="Sao chép Prompt thường (ko gửi Gemini): Kèm dịch nghĩa từ và cột dịch nghĩa ví dụ theo ngữ cảnh"
                       className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 text-xs transition"
                     >
                       {copiedId === chunk.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-300" />}
@@ -283,7 +301,7 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
 
                 {/* Expanded explanation box showing the reason for writing this word into the essay */}
                 {isSelected && (
-                  <div className="mt-3 pt-3 border-t border-slate-800/80 bg-slate-950/90 -mx-3.5 -mb-3.5 p-3.5 rounded-b-2xl space-y-2 animate-fadeIn">
+                  <div className="mt-3 pt-3 border-t border-slate-800/80 bg-slate-950/90 -mx-3.5 -mb-3.5 p-3.5 rounded-b-2xl space-y-2.5 animate-fadeIn">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-300">
                         <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -300,15 +318,28 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
                         <span>{tier.name}</span>
                       </button>
                     </div>
+
                     <p className="text-xs text-slate-200 leading-relaxed font-sans bg-indigo-950/20 border border-indigo-500/20 p-2.5 rounded-xl">
                       {chunk.purpose}
                     </p>
-                    {chunk.vietnameseMeaning && (
-                      <div className="text-[11px] text-slate-400 flex items-center gap-1">
-                        <span className="font-semibold text-slate-300">Bản dịch nghĩa:</span>
-                        <span className="text-amber-200">{chunk.vietnameseMeaning}</span>
+
+                    {/* Contextual & Meaning Table Drawer */}
+                    <div className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden text-xs">
+                      <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-800">
+                        <div className="p-2.5 space-y-1">
+                          <div className="text-[11px] font-bold text-amber-300 flex items-center gap-1">
+                            <span>🇻🇳 Dịch nghĩa trong ngữ cảnh:</span>
+                          </div>
+                          <p className="text-white font-medium">{chunk.vietnameseMeaning || 'Dịch theo ngữ cảnh câu'}</p>
+                        </div>
+                        <div className="p-2.5 space-y-1">
+                          <div className="text-[11px] font-bold text-cyan-300 flex items-center gap-1">
+                            <span>🎯 Ngữ cảnh áp dụng:</span>
+                          </div>
+                          <p className="text-slate-300">{questionContext || 'IELTS Speaking / Writing'}</p>
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -351,7 +382,7 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
 
           {/* Details Drawer for selected chunk in inline mode */}
           {selectedChunk && (
-            <div className="p-4 rounded-2xl bg-slate-900 border border-indigo-500/50 shadow-xl space-y-2 animate-fadeIn">
+            <div className="p-4 rounded-2xl bg-slate-900 border border-indigo-500/50 shadow-xl space-y-3 animate-fadeIn">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{selectedChunk.icon}</span>
@@ -361,9 +392,18 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
                   <button
                     onClick={(e) => handleCopyGeminiPrompt(selectedChunk, e)}
                     className="px-2.5 py-1 rounded-lg bg-blue-600/30 border border-blue-500/40 text-blue-200 hover:bg-blue-600 hover:text-white text-xs font-semibold flex items-center gap-1 transition"
+                    title="Gửi sang Gemini Prompt"
                   >
                     <Bot className="w-3.5 h-3.5" />
-                    <span>Copy Prompt Gemini</span>
+                    <span>Prompt Gemini</span>
+                  </button>
+                  <button
+                    onClick={(e) => handleCopy(selectedChunk, e)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white text-xs font-semibold flex items-center gap-1 transition"
+                    title="Sao chép prompt thường (ko gửi Gemini)"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy Prompt</span>
                   </button>
                   <button
                     onClick={(e) => handleSpeak(selectedChunk, e)}
@@ -374,15 +414,18 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
                   </button>
                 </div>
               </div>
-              <div className="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+
+              <div className="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
                 <div className="font-bold text-amber-300 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Ý NGHĨA VIẾT VÀO BÀI (MỤC ĐÍCH HỌC THUẬT):</span>
                 </div>
                 <p className="leading-relaxed text-slate-200">{selectedChunk.purpose}</p>
+
                 {selectedChunk.vietnameseMeaning && (
-                  <div className="pt-1 text-slate-400">
-                    Nghĩa dịch: <span className="text-white font-medium">{selectedChunk.vietnameseMeaning}</span>
+                  <div className="pt-2 border-t border-slate-800 flex items-center gap-1.5 text-slate-400">
+                    <span className="font-semibold text-amber-300">🇻🇳 Dịch nghĩa trong ngữ cảnh:</span>
+                    <span className="text-white font-medium">{selectedChunk.vietnameseMeaning}</span>
                   </div>
                 )}
               </div>

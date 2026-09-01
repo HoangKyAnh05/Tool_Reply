@@ -910,11 +910,15 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
                 vocabList={currentLesson.vocabList}
                 imageUrl={uploadedImage || currentLesson.imageUrl}
                 bilingualSummary={currentLesson.bilingualSummary}
+                onSendToGemini={onSendToGemini}
               />
             )}
 
             {activeSubTab === 'vocab' && (
-              <IeltsVocabTable vocabList={currentLesson.vocabList} />
+              <IeltsVocabTable 
+                vocabList={currentLesson.vocabList} 
+                onSendToGemini={onSendToGemini}
+              />
             )}
 
             {activeSubTab === 'connectors' && (

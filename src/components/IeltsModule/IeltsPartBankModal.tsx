@@ -98,11 +98,33 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
   };
 
   const getPromptForQuestion = (item: any) => {
-    return `[❓] ${item.question}\n\nTạo các câu hỏi, tình huống mà tôi phải dùng từ vựng này, viết có icon, chia bảng tôi dễ đọc`;
+    const cueCard = item.cueCardPrompt ? `\n- Gợi ý Cue Card: "${item.cueCardPrompt}"` : '';
+    const vocabHint = item.vocab ? `\n- Từ vựng gợi ý: ${item.vocab.split('\n').filter(Boolean).join(' | ')}` : '';
+    return `[❓] Đề bài IELTS: "${item.question}"${cueCard}${vocabHint}
+
+Hãy đóng vai là Chuyên gia IELTS Band 9.0:
+1. Đưa ra các ý tưởng trả lời xuất sắc kèm từ vựng band cao (7.5 - 8.5+) có dịch nghĩa tiếng Việt trong ngữ cảnh.
+2. Tạo các tình huống và câu hỏi thực tế mở rộng mà tôi nên dùng cấu trúc/từ vựng này.
+3. Trình bày dưới dạng BẢNG GIẢI THÍCH rõ ràng, có icon sinh động, bắt buộc gồm 4 CỘT:
+   - 🎯 Tình huống / Ngữ cảnh sử dụng (Context & Situation)
+   - 💬 Câu trả lời mẫu / Câu ví dụ minh họa (High-band Sample)
+   - 🇻🇳 Dịch nghĩa của ví dụ giải thích theo các ngữ cảnh sử dụng (Vietnamese Translation)
+   - 💡 Từ vựng mấu chốt & Phân tích cách dùng (Key Collocation & Band Boost)`;
   };
 
   const getPromptForVocab = (vocabText: string, questionText: string) => {
-    return `[🔑] ${vocabText.split('\n').filter(Boolean).map(v => v.trim()).join(' | ')}\n\nTạo các câu hỏi, tình huống mà tôi phải dùng từ vựng này, viết có icon, chia bảng tôi dễ đọc`;
+    const cleanVocab = vocabText.split('\n').filter(Boolean).map((v: string) => v.trim()).join(' | ');
+    const qPart = questionText ? `\n- Ngữ cảnh đề bài: "${questionText}"` : '';
+    return `[🔑] Danh sách từ vựng: ${cleanVocab}${qPart}
+
+Hãy đóng vai là Chuyên gia IELTS:
+1. Giải thích nghĩa của từng từ/cụm từ trong ngữ cảnh của câu và chủ đề trên.
+2. Tạo các câu hỏi và tình huống thực tế mà tôi phải áp dụng những từ vựng này.
+3. Trình bày dưới dạng BẢNG GIẢI THÍCH rõ ràng, có icon sinh động, bắt buộc gồm 4 CỘT:
+   - 🎯 Tình huống / Ngữ cảnh sử dụng (Context & Situation)
+   - 💬 Câu ví dụ / Câu đối thoại mẫu chứa từ vựng (Example Sentence)
+   - 🇻🇳 Dịch nghĩa của ví dụ giải thích theo các ngữ cảnh sử dụng (Vietnamese Translation)
+   - 💡 Phân tích ngữ cảnh & Cách ăn điểm từ vựng (Band 8.0+ Impact)`;
   };
 
   const handleCopyPrompt = (promptText: string, id: string, e?: React.MouseEvent) => {

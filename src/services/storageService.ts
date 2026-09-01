@@ -315,13 +315,13 @@ export const defaultIeltsLesson: IeltsSpeakingLesson = {
 
 🎯 Ultimately, a well-calibrated minimum wage is a vital catalyst that 🏃 keeps pace with inflation and uplifts society as a whole.`,
   vocabList: [
-    { id: 'v1', icon: '🪙', word: 'pinch pennies', meaning: 'tằn tiện từng đồng, thắt lưng buộc bụng', visualSentence: '🪙 When wages stagnate, families must pinch pennies to survive.', category: 'Finance' },
-    { id: 'v2', icon: '🔒💼', word: 'remain stuck in', meaning: 'kẹt cứng trong hoàn cảnh bế tắc', visualSentence: '🔒💼 Without career mobility, workers remain stuck in low-paying roles.', category: 'Work' },
-    { id: 'v3', icon: '🌊', word: 'ripple effect', meaning: 'hiệu ứng gợn sóng lan tỏa', visualSentence: '🌊 A wage increase creates a positive ripple effect across consumer markets.', category: 'Economy' },
-    { id: 'v4', icon: '🚀', word: 'spur job growth', meaning: 'thúc đẩy tăng trưởng việc làm / kinh tế', visualSentence: '🚀 Higher disposable income spurs job growth in retail and dining.', category: 'Economy' },
-    { id: 'v5', icon: '💪', word: 'purchasing power', meaning: 'sức mua của người tiêu dùng', visualSentence: '💪 A boost in purchasing power directly fuels local commerce.', category: 'Finance' },
-    { id: 'v6', icon: '🏃', word: 'keep pace with', meaning: 'bắt kịp, theo kịp đà tăng trưởng/lạm phát', visualSentence: '🏃 Base salaries must keep pace with the rising cost of living.', category: 'General' },
-    { id: 'v7', icon: '🔄', word: 'be indexed to', meaning: 'được điều chỉnh theo chỉ số (lạm phát/vùng)', visualSentence: '🔄 Minimum wage should be indexed to regional inflation metrics.', category: 'Policy' }
+    { id: 'v1', icon: '🪙', word: 'pinch pennies', meaning: 'tằn tiện từng đồng, thắt lưng buộc bụng', visualSentence: '🪙 When wages stagnate, families must pinch pennies to survive.', sentenceMeaning: 'Khi tiền lương đình trệ, các gia đình buộc phải tằn tiện từng đồng để sinh tồn.', category: 'Finance' },
+    { id: 'v2', icon: '🔒💼', word: 'remain stuck in', meaning: 'kẹt cứng trong hoàn cảnh bế tắc', visualSentence: '🔒💼 Without career mobility, workers remain stuck in low-paying roles.', sentenceMeaning: 'Nếu thiếu cơ hội thăng tiến, người lao động sẽ kẹt cứng trong các vị trí lương thấp.', category: 'Work' },
+    { id: 'v3', icon: '🌊', word: 'ripple effect', meaning: 'hiệu ứng gợn sóng lan tỏa', visualSentence: '🌊 A wage increase creates a positive ripple effect across consumer markets.', sentenceMeaning: 'Việc tăng lương tạo ra hiệu ứng lan tỏa tích cực trên toàn thị trường tiêu dùng.', category: 'Economy' },
+    { id: 'v4', icon: '🚀', word: 'spur job growth', meaning: 'thúc đẩy tăng trưởng việc làm / kinh tế', visualSentence: '🚀 Higher disposable income spurs job growth in retail and dining.', sentenceMeaning: 'Thu nhập khả dụng cao hơn thúc đẩy tăng trưởng việc làm trong ngành bán lẻ và ăn uống.', category: 'Economy' },
+    { id: 'v5', icon: '💪', word: 'purchasing power', meaning: 'sức mua của người tiêu dùng', visualSentence: '💪 A boost in purchasing power directly fuels local commerce.', sentenceMeaning: 'Sự gia tăng sức mua tiếp thêm động lực trực tiếp cho thương mại địa phương.', category: 'Finance' },
+    { id: 'v6', icon: '🏃', word: 'keep pace with', meaning: 'bắt kịp, theo kịp đà tăng trưởng/lạm phát', visualSentence: '🏃 Base salaries must keep pace with the rising cost of living.', sentenceMeaning: 'Lương cơ bản phải bắt kịp với chi phí sinh hoạt ngày càng tăng.', category: 'General' },
+    { id: 'v7', icon: '🔄', word: 'be indexed to', meaning: 'được điều chỉnh theo chỉ số (lạm phát/vùng)', visualSentence: '🔄 Minimum wage should be indexed to regional inflation metrics.', sentenceMeaning: 'Mức lương tối thiểu nên được điều chỉnh theo các chỉ số lạm phát khu vực.', category: 'Policy' }
   ],
   connectorTable: [
     { icon: '🤔', connector: 'In my opinion,', function: 'Opinion', vietnamese: 'Theo quan điểm của tôi' },

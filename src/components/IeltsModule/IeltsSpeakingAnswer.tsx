@@ -29,6 +29,7 @@ interface IeltsSpeakingAnswerProps {
     english: string;
     vietnamese: string;
   };
+  onSendToGemini?: (prompt: string) => void;
 }
 
 export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
@@ -38,7 +39,8 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
   fullAnswer,
   vocabList,
   imageUrl,
-  bilingualSummary
+  bilingualSummary,
+  onSendToGemini
 }) => {
   const [viewMode, setViewMode] = useState<'annotated' | 'plain'>('annotated');
   const [copied, setCopied] = useState(false);
@@ -198,6 +200,8 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
                 <IeltsAnnotatedPhraseViewer
                   chunks={chunks}
                   defaultExpandFirst={false}
+                  questionContext={question}
+                  onSendToGemini={onSendToGemini}
                 />
               );
             })()}

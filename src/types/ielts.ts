@@ -6,6 +6,7 @@ export interface IeltsVocabItem {
   word: string;
   meaning: string;
   visualSentence: string;
+  sentenceMeaning?: string; // Dịch nghĩa của câu ví dụ theo ngữ cảnh
   category?: string;
 }
 
