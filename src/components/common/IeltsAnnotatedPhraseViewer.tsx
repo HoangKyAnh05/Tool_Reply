@@ -44,6 +44,47 @@ Hãy đóng vai là Giảng viên IELTS Band 9.0:
    - 💡 Phân tích lý do dùng & Điểm cộng từ vựng (Vocabulary Impact & Band Boost)`;
 };
 
+/**
+ * Ghép toàn bộ các prompt nhỏ của từng từ/cụm từ trong cả câu thành 1 prompt hoàn chỉnh
+ * để gửi cho AI giải thích chi tiết toàn bộ từng từ cùng lúc.
+ */
+export const buildAllAnnotatedChunksPrompt = (
+  chunks: AnnotatedPhraseChunk[],
+  questionContext?: string
+): string => {
+  const fullSentence = chunks.map((c) => c.englishText).join(' ');
+  const contextStr = questionContext ? `\n- Ngữ cảnh đề bài / câu hỏi: "${questionContext}"` : '';
+
+  const chunksListFormatted = chunks
+    .map((chunk, idx) => {
+      const meaning = chunk.vietnameseMeaning ? `"${chunk.vietnameseMeaning}"` : 'Dịch nghĩa chính xác theo ngữ cảnh';
+      const purpose = chunk.purpose ? `\n  * Ý nghĩa & Band 8.0+ Impact: ${chunk.purpose}` : '';
+      return `### [CỤM #${idx + 1}] ${chunk.icon} "${chunk.englishText}"
+- Nghĩa trong câu: ${meaning}${purpose}`;
+    })
+    .join('\n\n');
+
+  return `[📚 TỔNG HỢP PROMPT PHÂN TÍCH TỪNG TỪ TRONG CÂU]
+- Câu văn gốc hoàn chỉnh: "${fullSentence}"${contextStr}
+- Tổng số từ / cụm từ được tách: ${chunks.length} cụm
+
+DANH SÁCH CHI TIẾT CÁC TỪ & CỤM TỪ TRONG CÂU CẦN PHÂN TÍCH:
+${chunksListFormatted}
+
+================================================================================
+YÊU CẦU ĐỐI VỚI GIẢNG VIÊN IELTS BAND 9.0:
+Hãy phân tích CHI TIẾT TỪNG TỪ / CỤM TỪ trong danh sách trên theo ngữ cảnh của câu văn:
+1. Giải thích cặn kẽ ý nghĩa và vai trò ngữ pháp / từ vựng của từng cụm trong câu.
+2. Tạo các tình huống và câu hỏi thực tế trong phòng thi IELTS (Speaking & Writing) mà tôi nên dùng cụm này.
+3. Trình bày BẢNG GIẢI THÍCH cho từng cụm hoặc bảng tổng hợp rõ ràng, có icon sinh động, bắt buộc gồm 4 CỘT:
+   - 🎯 Tình huống / Ngữ cảnh sử dụng (Context & Situation)
+   - 💬 Câu hỏi / Câu đối thoại mẫu chứa từ này (Example Sentence)
+   - 🇻🇳 Dịch nghĩa của ví dụ giải thích theo các ngữ cảnh sử dụng (Vietnamese Translation)
+   - 💡 Phân tích lý do dùng & Điểm cộng từ vựng (Vocabulary Impact & Band Boost)
+
+Hãy giải thích lần lượt từng từ/cụm từ thật chi tiết, trực quan và dễ học!`;
+};
+
 export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProps> = ({
   chunks,
   title,
@@ -58,6 +99,8 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
   const [speakingChunkId, setSpeakingChunkId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
+  const [copiedAllPrompt, setCopiedAllPrompt] = useState(false);
+  const [copiedAllGemini, setCopiedAllGemini] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'inline'>('cards');
   const [repetitionCounts, setRepetitionCounts] = useState<Record<string, number>>({});
 
@@ -90,6 +133,30 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
     }
     setCopiedPromptId(chunk.id);
     setTimeout(() => setCopiedPromptId(null), 2500);
+  };
+
+  const handleCopyAllChunksPrompt = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!chunks || chunks.length === 0) return;
+    audioService.playBeep('click');
+    const combinedPrompt = buildAllAnnotatedChunksPrompt(chunks, questionContext);
+    navigator.clipboard.writeText(combinedPrompt);
+    setCopiedAllPrompt(true);
+    setTimeout(() => setCopiedAllPrompt(false), 2500);
+  };
+
+  const handleSendAllChunksToGemini = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!chunks || chunks.length === 0) return;
+    audioService.playBeep('decision');
+    const combinedPrompt = buildAllAnnotatedChunksPrompt(chunks, questionContext);
+    if (onSendToGemini) {
+      onSendToGemini(combinedPrompt);
+    } else {
+      navigator.clipboard.writeText(combinedPrompt);
+    }
+    setCopiedAllGemini(true);
+    setTimeout(() => setCopiedAllGemini(false), 2500);
   };
 
   const handleSpeak = (chunk: AnnotatedPhraseChunk, e: React.MouseEvent) => {
@@ -137,13 +204,69 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
 
   return (
     <div className={`space-y-3 ${className}`}>
-      {/* Header controls if title provided */}
-      {title && (
-        <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
-          <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-            <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
-            <span>{title}</span>
+      {/* Top Toolbar with Copy All Chunks Prompt buttons */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+          <span className="text-xs font-bold text-slate-300">
+            {title || `Tách Từng Từ & Cụm Từ (${chunks.length} cụm)`}
           </span>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hidden sm:inline">
+            {chunks.length} cụm từ
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* NÚT COPY PROMPT TẤT CẢ CÁC TỪ TRONG CÂU (GHÉP CÁC PROMPT NHỎ VỚI NHAU) */}
+          <button
+            type="button"
+            onClick={handleCopyAllChunksPrompt}
+            title="Sao chép prompt của TẤT CẢ các từ/cụm từ trong cả câu này (ghép các prompt nhỏ lại với nhau)"
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition shadow-sm ${
+              copiedAllPrompt
+                ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
+                : 'bg-gradient-to-r from-indigo-600/40 to-purple-600/40 border-indigo-500/50 text-indigo-200 hover:from-indigo-600 hover:to-purple-600 hover:text-white'
+            }`}
+          >
+            {copiedAllPrompt ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Đã Copy Prompt Cả Câu!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5 text-indigo-300" />
+                <span>Copy Prompt Từng Từ Cả Câu ({chunks.length})</span>
+              </>
+            )}
+          </button>
+
+          {/* NÚT GỬI PROMPT TẤT CẢ CÁC TỪ SANG GEMINI */}
+          <button
+            type="button"
+            onClick={handleSendAllChunksToGemini}
+            title="Gửi prompt phân tích TẤT CẢ từ trong cả câu sang Gemini MiniWeb"
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition shadow-sm ${
+              copiedAllGemini
+                ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
+                : 'bg-blue-600/30 border-blue-500/40 text-blue-200 hover:bg-blue-600 hover:text-white'
+            }`}
+          >
+            {copiedAllGemini ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Đã gửi Gemini!</span>
+              </>
+            ) : (
+              <>
+                <Bot className="w-3.5 h-3.5 text-cyan-300" />
+                <span className="hidden sm:inline">Gửi Cả Câu Sang Gemini</span>
+                <span className="sm:hidden">Gemini</span>
+              </>
+            )}
+          </button>
+
+          {/* Mode Switcher */}
           <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[11px]">
             <button
               onClick={() => setViewMode('cards')}
@@ -151,7 +274,7 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
                 viewMode === 'cards' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Dạng Thẻ Học (Cards)
+              Thẻ Học (Cards)
             </button>
             <button
               onClick={() => setViewMode('inline')}
@@ -159,11 +282,11 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
                 viewMode === 'inline' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Dạng Nối Dòng (Flow)
+              Nối Dòng (Flow)
             </button>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Mode 1: Cards View */}
       {viewMode === 'cards' ? (

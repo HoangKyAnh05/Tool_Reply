@@ -8,9 +8,42 @@ interface IeltsVocabTableProps {
   onSendToGemini?: (prompt: string) => void;
 }
 
+export const buildAllVocabListPrompt = (vocabList: IeltsVocabItem[]): string => {
+  const itemsFormatted = vocabList
+    .map((item, idx) => {
+      const meaning = item.meaning ? `"${item.meaning}"` : 'Dịch nghĩa chính xác theo ngữ cảnh';
+      const sentence = item.visualSentence ? `\n  - Câu ví dụ: "${item.visualSentence}"` : '';
+      const sentenceTrans = item.sentenceMeaning ? `\n  - Dịch nghĩa ví dụ: "${item.sentenceMeaning}"` : '';
+      return `### [TỪ VỰNG #${idx + 1}] ${item.icon} "${item.word}"
+- Nghĩa trong ngữ cảnh: ${meaning}${sentence}${sentenceTrans}`;
+    })
+    .join('\n\n');
+
+  return `[📖 TỔNG HỢP PROMPT PHÂN TÍCH TOÀN BỘ BẢNG TỪ VỰNG]
+- Tổng số từ vựng: ${vocabList.length} từ
+
+DANH SÁCH CHI TIẾT TỪ VỰNG CẦN PHÂN TÍCH:
+${itemsFormatted}
+
+================================================================================
+YÊU CẦU ĐỐI VỚI GIẢNG VIÊN IELTS BAND 9.0:
+Đối với TỪNG từ / cụm từ trong danh sách trên:
+1. Giải thích chi tiết ý nghĩa và cách dùng trong ngữ cảnh câu văn / ví dụ.
+2. Tạo các tình huống và câu hỏi thực tế trong phòng thi IELTS (Speaking & Writing) mà tôi nên dùng từ này.
+3. Trình bày dưới dạng BẢNG GIẢI THÍCH rõ ràng, có icon sinh động, bắt buộc gồm 4 CỘT:
+   - 🎯 Tình huống / Ngữ cảnh sử dụng (Context & Situation)
+   - 💬 Câu hỏi / Câu đối thoại mẫu chứa từ này (Example Sentence)
+   - 🇻🇳 Dịch nghĩa của ví dụ giải thích theo các ngữ cảnh sử dụng (Vietnamese Translation)
+   - 💡 Phân tích lý do dùng & Điểm cộng từ vựng (Vocabulary Impact & Band Boost)
+
+Hãy giải thích lần lượt từng từ/cụm từ thật chi tiết, trực quan và đầy đủ!`;
+};
+
 export const IeltsVocabTable: React.FC<IeltsVocabTableProps> = ({ vocabList, onSendToGemini }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
+  const [copiedAllPrompt, setCopiedAllPrompt] = useState(false);
+  const [copiedAllGemini, setCopiedAllGemini] = useState(false);
 
   const buildVocabRowPrompt = (item: IeltsVocabItem): string => {
     const meaning = item.meaning ? `"${item.meaning}"` : 'Dịch nghĩa chính xác theo ngữ cảnh';
@@ -50,22 +83,95 @@ Hãy đóng vai là Giảng viên IELTS Band 9.0:
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleCopyAllVocabPrompt = () => {
+    if (!vocabList || vocabList.length === 0) return;
+    audioService.playBeep('click');
+    const combinedPrompt = buildAllVocabListPrompt(vocabList);
+    navigator.clipboard.writeText(combinedPrompt);
+    setCopiedAllPrompt(true);
+    setTimeout(() => setCopiedAllPrompt(false), 2500);
+  };
+
+  const handleSendAllVocabToGemini = () => {
+    if (!vocabList || vocabList.length === 0) return;
+    audioService.playBeep('decision');
+    const combinedPrompt = buildAllVocabListPrompt(vocabList);
+    if (onSendToGemini) {
+      onSendToGemini(combinedPrompt);
+    } else {
+      navigator.clipboard.writeText(combinedPrompt);
+    }
+    setCopiedAllGemini(true);
+    setTimeout(() => setCopiedAllGemini(false), 2500);
+  };
+
   return (
     <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-      <div className="flex items-center gap-2.5">
-        <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
-          <BookMarked className="w-5 h-5" />
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
+            <BookMarked className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              Vocabulary Integration (Bảng Giải Thích Từ Vựng & Dịch Nghĩa Ngữ Cảnh)
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono">
+                {vocabList.length} từ
+              </span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              Từ vựng Band 7.5 - 8.5+ kèm câu ví dụ trực quan và cột dịch nghĩa theo từng ngữ cảnh sử dụng
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            Vocabulary Integration (Bảng Giải Thích Từ Vựng & Dịch Nghĩa Ngữ Cảnh)
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono">
-              ICON → TỪ VỰNG → NGHĨA TỪ → CÂU VÍ DỤ → DỊCH NGHĨA VÍ DỤ
-            </span>
-          </h3>
-          <p className="text-xs text-slate-400">
-            Từ vựng Band 7.5 - 8.5+ kèm câu ví dụ trực quan và cột dịch nghĩa theo từng ngữ cảnh sử dụng
-          </p>
+
+        {/* Nút Copy tất cả từ vựng & Gửi sang Gemini */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={handleCopyAllVocabPrompt}
+            title="Sao chép prompt của TẤT CẢ từ vựng trong bảng này (ghép các prompt nhỏ lại)"
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition shadow-sm ${
+              copiedAllPrompt
+                ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
+                : 'bg-gradient-to-r from-purple-600/40 to-indigo-600/40 border-purple-500/50 text-purple-200 hover:from-purple-600 hover:to-indigo-600 hover:text-white'
+            }`}
+          >
+            {copiedAllPrompt ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Đã Copy Prompt Tất Cả Từ!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5 text-purple-300" />
+                <span>Copy Prompt Toàn Bộ Từ Vựng ({vocabList.length})</span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSendAllVocabToGemini}
+            title="Gửi prompt phân tích TẤT CẢ từ vựng sang Gemini MiniWeb"
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition shadow-sm ${
+              copiedAllGemini
+                ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
+                : 'bg-blue-600/30 border-blue-500/40 text-blue-200 hover:bg-blue-600 hover:text-white'
+            }`}
+          >
+            {copiedAllGemini ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Đã gửi Gemini!</span>
+              </>
+            ) : (
+              <>
+                <Bot className="w-3.5 h-3.5 text-cyan-300" />
+                <span>Gửi Toàn Bộ Sang Gemini</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
