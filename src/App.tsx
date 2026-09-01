@@ -23,7 +23,9 @@ import { AppSettings } from './types/settings';
 import { MobileProjectSimulatorModal, MobileProjectTab } from './components/common/MobileProjectSimulatorModal';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('miniweb');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('ielts');
+  const [isSplitMode, setIsSplitMode] = useState<boolean>(false);
+  const [splitPrompt, setSplitPrompt] = useState<string | undefined>(undefined);
   const [activeMiniWebServiceId, setActiveMiniWebServiceId] = useState<string>('gemini');
   const [activeMiniWebUrl, setActiveMiniWebUrl] = useState<string | undefined>(undefined);
   const [miniWebSwitchToken, setMiniWebSwitchToken] = useState<number>(0);
@@ -44,6 +46,17 @@ export const App: React.FC = () => {
     if (link) setActiveMiniWebUrl(link);
     setMiniWebSwitchToken(Date.now());
     setActiveTab('miniweb');
+  };
+
+  const handleSplitSendToGemini = (prompt: string) => {
+    audioService.playBeep('decision');
+    setActiveMiniWebServiceId('gemini');
+    setSplitPrompt(prompt);
+    setMiniWebSwitchToken(Date.now());
+    setIsSplitMode(true);
+    if (activeTab === 'miniweb') {
+      setActiveTab('ielts');
+    }
   };
 
   // Listen for real-time social notifications from Facebook, Instagram, and Zalo webviews
@@ -74,10 +87,22 @@ export const App: React.FC = () => {
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab)}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          if (tab === 'miniweb') {
+            setIsSplitMode(false);
+          }
+        }}
         onNavigateToMiniWeb={(serviceId) => handleNavigateToMiniWebService(serviceId)}
         onOpen300Questions={() => setIsGlobalPartBankOpen(true)}
         onOpenWritingBank={() => setIsWritingBankOpen(true)}
+        isSplitMode={isSplitMode}
+        onToggleSplitMode={() => {
+          setIsSplitMode(!isSplitMode);
+          if (!isSplitMode && activeTab === 'miniweb') {
+            setActiveTab('ielts');
+          }
+        }}
         onOpenMobileSimulator={() => {
           const tab: MobileProjectTab =
             activeTab === 'fishbone'
@@ -95,25 +120,43 @@ export const App: React.FC = () => {
         openNotificationHub={() => setIsNotificationHubOpen(true)}
       />
 
-      {/* Main Workspace Container */}
+      {/* Main Workspace Container with True Dual Split Screen (Left Learning, Right MiniWeb) */}
       <main className="flex-1 flex overflow-hidden relative">
-        <div className={`w-full h-full ${activeTab === 'miniweb' ? 'flex' : 'hidden'}`}>
+        {/* Left Side: Learning Workspaces (IELTS, Writing, GenZ, Universe, Fishbone) */}
+        <div className={`h-full overflow-hidden transition-all duration-200 ${
+          isSplitMode
+            ? 'w-[52%] shrink-0 border-r border-slate-800 flex flex-col'
+            : activeTab === 'miniweb'
+            ? 'hidden'
+            : 'w-full flex-1 flex flex-col'
+        }`}>
+          {activeTab === 'ielts' && <IeltsWorkspace onSendToGemini={handleSplitSendToGemini} />}
+          {activeTab === 'writing' && <IeltsWritingWorkspace />}
+          {activeTab === 'genz' && <GenzWorkspace />}
+          {activeTab === 'universe' && <UniverseWorkspace />}
+          {activeTab === 'action' && <DailyNewsCalendarWorkspace />}
+          {activeTab === 'fishbone' && <FishboneWorkspace />}
+          {activeTab === 'library' && (
+            <GenzSavedLibrary onOpenImageModal={(idea) => setActiveMemeModalIdea(idea)} />
+          )}
+        </div>
+
+        {/* Right Side: MiniWeb Workspace (Always single persistent instance, zero black screen) */}
+        <div className={`h-full transition-all duration-200 ${
+          isSplitMode
+            ? 'w-[48%] shrink-0 flex flex-col bg-slate-950'
+            : activeTab === 'miniweb'
+            ? 'w-full h-full flex flex-col'
+            : 'hidden'
+        }`}>
           <MiniWebWorkspace
             activeServiceId={activeMiniWebServiceId}
             onServiceChange={(id) => setActiveMiniWebServiceId(id)}
             targetUrl={activeMiniWebUrl}
             switchToken={miniWebSwitchToken}
+            autoInjectPrompt={splitPrompt}
           />
         </div>
-        {activeTab === 'ielts' && <IeltsWorkspace />}
-        {activeTab === 'writing' && <IeltsWritingWorkspace />}
-        {activeTab === 'genz' && <GenzWorkspace />}
-        {activeTab === 'universe' && <UniverseWorkspace />}
-        {activeTab === 'action' && <DailyNewsCalendarWorkspace />}
-        {activeTab === 'fishbone' && <FishboneWorkspace />}
-        {activeTab === 'library' && (
-          <GenzSavedLibrary onOpenImageModal={(idea) => setActiveMemeModalIdea(idea)} />
-        )}
       </main>
 
       {/* Social Notification Hub Modal */}
@@ -153,11 +196,14 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* Global 300 Questions Bank Modal (Full Screen by default when triggered from Navbar) */}
+      {/* Global 300 Questions Bank Modal */}
       <IeltsPartBankModal
         isOpen={isGlobalPartBankOpen}
         onClose={() => setIsGlobalPartBankOpen(false)}
         defaultFullscreen={true}
+        onOpenSplitGemini={(prompt) => {
+          handleSplitSendToGemini(prompt);
+        }}
         onSelectQuestion={async (payload) => {
           try {
             audioService.playBeep('success');

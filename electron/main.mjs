@@ -726,22 +726,88 @@ ipcMain.handle('app:inject-image-to-webview', async (_, { webContentsId, filePat
             await targetWc.executeJavaScript(`
               (function() {
                 const text = ${escapedPrompt};
-                const input = document.querySelector('rich-textarea p, rich-textarea [contenteditable="true"], #prompt-textarea, [contenteditable="true"], textarea, div[role="textbox"]');
+                const input = document.querySelector('rich-textarea p, rich-textarea [contenteditable="true"], div.ql-editor, #prompt-textarea, [contenteditable="true"], textarea, div[role="textbox"]') || document.activeElement;
                 if (input) {
                   input.focus();
                   document.execCommand('insertText', false, text);
-                  input.dispatchEvent(new Event('input', { bubbles: true }));
+                  input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+                  input.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+
                   ${autoSend ? `
+                    function simulateClick(el) {
+                      if (!el) return;
+                      el.focus();
+                      ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(evt => {
+                        el.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true, view: window, buttons: 1 }));
+                      });
+                      if (typeof el.click === 'function') el.click();
+                    }
+
+                    function findSendButton() {
+                      const allButtons = Array.from(document.querySelectorAll('button, div[role="button"]'));
+                      return allButtons.find(b => {
+                        const aria = (b.getAttribute('aria-label') || '').toLowerCase();
+                        const title = (b.getAttribute('title') || '').toLowerCase();
+                        const testId = (b.getAttribute('data-test-id') || b.getAttribute('data-testid') || '').toLowerCase();
+                        const cls = (b.className || '').toString().toLowerCase();
+
+                        // Exclude voice/mic, add/upload buttons
+                        if (aria.includes('mic') || aria.includes('âm thanh') || aria.includes('giọng nói') || 
+                            aria.includes('đính kèm') || aria.includes('thêm') || aria.includes('upload') ||
+                            title.includes('mic') || title.includes('upload')) {
+                          return false;
+                        }
+
+                        const isSend = aria.includes('gửi') || aria.includes('send') || 
+                                       title.includes('gửi') || title.includes('send') || 
+                                       testId.includes('send') || cls.includes('send-button') ||
+                                       b.closest('.send-button-container') ||
+                                       (cls.includes('mat-mdc-icon-button') && (aria.includes('gửi') || aria.includes('send')));
+
+                        return isSend && !b.disabled && b.getAttribute('aria-disabled') !== 'true';
+                      });
+                    }
+
+                    let attempts = 0;
+                    const triggerSend = () => {
+                      attempts++;
+                      const sendBtn = findSendButton();
+                      if (sendBtn) {
+                        simulateClick(sendBtn);
+                        return true;
+                      } else {
+                        // Fallback: Trigger Enter key event on input
+                        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true, composed: true }));
+                        input.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true, composed: true }));
+                      }
+                      return false;
+                    };
+
                     setTimeout(() => {
-                      const sendBtn = document.querySelector('button[aria-label*="Gửi"], button[aria-label*="Send"], button.send-button, [data-test-id="send-button"], button[data-testid="send-button"], button.mat-mdc-icon-button');
-                      if (sendBtn && !sendBtn.disabled) sendBtn.click();
-                    }, 250);
+                      if (!triggerSend() && attempts < 10) {
+                        const iv = setInterval(() => {
+                          if (triggerSend() || attempts >= 10) {
+                            clearInterval(iv);
+                          }
+                        }, 120);
+                      }
+                    }, 150);
                   ` : ''}
                 }
               })();
             `).catch(() => {});
+
+            if (autoSend) {
+              setTimeout(() => {
+                if (!targetWc.isDestroyed()) {
+                  targetWc.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
+                  targetWc.sendInputEvent({ type: 'char', keyCode: 'Return' });
+                  targetWc.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
+                }
+              }, 400);
+            }
           }
-        }, 150);
+        }, 100);
       }
 
       return true;

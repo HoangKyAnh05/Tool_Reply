@@ -35,6 +35,8 @@ interface NavbarProps {
   onOpen300Questions?: () => void;
   onOpenWritingBank?: () => void;
   onOpenMobileSimulator?: () => void;
+  isSplitMode?: boolean;
+  onToggleSplitMode?: () => void;
   settings: AppSettings;
   onToggleSound: () => void;
   openSettingsModal: () => void;
@@ -49,6 +51,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpen300Questions,
   onOpenWritingBank,
   onOpenMobileSimulator,
+  isSplitMode = false,
+  onToggleSplitMode,
   settings,
   onToggleSound,
   openSettingsModal,
@@ -255,6 +259,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Mobile</span>
           </button>
         )}
+
+        {/* Toggle Split Mode: Left Learning Workspace, Right MiniWeb Gemini */}
+        <button
+          onClick={() => {
+            audioService.playBeep('decision');
+            onToggleSplitMode?.();
+          }}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm whitespace-nowrap shrink-0 cursor-pointer ${
+            isSplitMode
+              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-400 text-white shadow-lg shadow-blue-500/25 ring-1 ring-white/30'
+              : 'bg-blue-950/60 border-blue-500/40 text-blue-300 hover:text-white hover:bg-blue-600'
+          }`}
+          title="Chia đôi màn hình: 1 bên Học từ vựng / Đề bài, 1 bên MiniWeb Gemini"
+        >
+          <Bot className="w-3.5 h-3.5 text-cyan-300" />
+          <span>{isSplitMode ? '🌐 Đang Chia Đôi' : '🌐 Chia Đôi Gemini'}</span>
+        </button>
 
         {/* Tool Imagine GitHub Web Page Button */}
         <button

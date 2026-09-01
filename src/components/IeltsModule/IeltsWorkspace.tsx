@@ -46,9 +46,10 @@ import { toggleNativeFullscreen } from '../../utils/fullscreen';
 
 interface IeltsWorkspaceProps {
   openPartBankSignal?: number;
+  onSendToGemini?: (prompt: string) => void;
 }
 
-export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSignal }) => {
+export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSignal, onSendToGemini }) => {
   const [currentLesson, setCurrentLesson] = useState<IeltsSpeakingLesson>(() =>
     storageService.getCurrentIeltsLesson()
   );
@@ -949,6 +950,7 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
         defaultPart={partPreference}
         defaultFullscreen={isPartBankFullscreen}
         onSelectQuestion={handleSelectFromModal}
+        onOpenSplitGemini={onSendToGemini}
       />
 
       {/* Custom Question Creator Modal */}

@@ -17,7 +17,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Smartphone,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Bot,
+  Columns2,
+  Zap,
+  RotateCcw
 } from 'lucide-react';
 import { ieltsPart1Bank, IeltsPart1Item } from '../../data/ieltsPart1Bank';
 import { ieltsPart2Bank, IeltsPart2Item } from '../../data/ieltsPart2Bank';
@@ -33,6 +37,8 @@ import { toggleNativeFullscreen } from '../../utils/fullscreen';
 import { IeltsAnnotatedPhraseViewer } from '../common/IeltsAnnotatedPhraseViewer';
 import { annotateSpeakingAnswer, annotateWritingParagraph } from '../../utils/ieltsTextAnnotator';
 import { getStandardizedSpeakingAnswer } from '../../utils/ieltsSpeakingExpander';
+import { GeminiMiniWebPanel } from './GeminiMiniWebPanel';
+import { repetitionService, RepetitionTier } from '../../utils/repetitionTracker';
 
 export interface SelectedQuestionPayload {
   part: IeltsQuestionPartType | string;
@@ -50,6 +56,7 @@ interface IeltsPartBankModalProps {
   defaultPart?: IeltsQuestionPartType | string;
   defaultFullscreen?: boolean;
   onSelectQuestion: (payload: SelectedQuestionPayload) => void;
+  onOpenSplitGemini?: (prompt: string) => void;
 }
 
 export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
@@ -58,19 +65,63 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
   defaultPart = 'Part 1',
   defaultFullscreen = false,
   onSelectQuestion,
+  onOpenSplitGemini,
 }) => {
   const [activePart, setActivePart] = useState<IeltsQuestionPartType | string>(defaultPart);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
   const [customVersion, setCustomVersion] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(defaultFullscreen);
+  const [isSplitWithGemini, setIsSplitWithGemini] = useState(false);
+  const [activeGeminiPrompt, setActiveGeminiPrompt] = useState<string>('');
   const [focusItem, setFocusItem] = useState<any | null>(null);
   const [focusViewMode, setFocusViewMode] = useState<'annotated' | 'plain'>('annotated');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
+  const [repetitionCounts, setRepetitionCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (isOpen) {
+      setRepetitionCounts(repetitionService.getAllCounts());
+    }
+  }, [isOpen]);
+
+  const handleIncrementRepetition = (key: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    audioService.playBeep('click');
+    const newCount = repetitionService.incrementCount(key);
+    setRepetitionCounts((prev) => ({ ...prev, [key]: newCount }));
+  };
+
+  const getPromptForQuestion = (item: any) => {
+    return `[❓] ${item.question}\n\nTạo các câu hỏi, tình huống mà tôi phải dùng từ vựng này, viết có icon, chia bảng tôi dễ đọc`;
+  };
+
+  const getPromptForVocab = (vocabText: string, questionText: string) => {
+    return `[🔑] ${vocabText.split('\n').filter(Boolean).map(v => v.trim()).join(' | ')}\n\nTạo các câu hỏi, tình huống mà tôi phải dùng từ vựng này, viết có icon, chia bảng tôi dễ đọc`;
+  };
+
+  const handleCopyPrompt = (promptText: string, id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    audioService.playBeep('click');
+    navigator.clipboard.writeText(promptText);
+    setCopiedPromptId(id);
+    setTimeout(() => setCopiedPromptId(null), 2500);
+  };
+
+  const handleSendPromptToGemini = (promptText: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    audioService.playBeep('decision');
+    setActiveGeminiPrompt(promptText);
+    setIsSplitWithGemini(true);
+    if (onOpenSplitGemini) {
+      onOpenSplitGemini(promptText);
+    }
+  };
 
   // Sync activePart with defaultPart when opened
   useEffect(() => {
@@ -296,6 +347,24 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Gemini MiniWeb Split Screen Toggle Button */}
+            <button
+              onClick={() => {
+                audioService.playBeep('click');
+                setIsSplitWithGemini(!isSplitWithGemini);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm ${
+                isSplitWithGemini
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-400 text-white shadow-lg shadow-blue-500/20'
+                  : 'bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border-blue-500/40 text-blue-300 hover:text-white hover:from-blue-600 hover:to-indigo-600'
+              }`}
+              title="Chia đôi màn hình với Gemini Web để vừa xem đề vừa hỏi AI"
+            >
+              <Bot className="w-3.5 h-3.5 text-cyan-300" />
+              <span className="hidden sm:inline">{isSplitWithGemini ? '🌐 Đang Chia Đôi' : '🌐 Gemini MiniWeb (Chia đôi)'}</span>
+              <span className="sm:hidden">🌐 Gemini</span>
+            </button>
+
             {/* Create Custom Question Button */}
             <button
               onClick={() => setIsAddModalOpen(true)}
@@ -432,49 +501,53 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
         </div>
 
         {/* Categories Bar & Main Content */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left Category List */}
-          <aside className="w-56 border-r border-slate-800 bg-slate-950/40 p-3 overflow-y-auto hidden md:block shrink-0">
-            <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider block mb-2 px-2">
-              Chủ đề ({categories.length - 1})
-            </span>
-            <div className="space-y-1">
-              {categories.map((cat) => {
-                let count = 0;
-                if (cat === 'All') count = currentDataset.length;
-                else if (cat === '⭐ Câu hỏi tự tạo (Custom)') count = customQuestions.length;
-                else count = defaultDataset.filter((i) => i.category === cat).length;
+        <div className="flex-1 flex overflow-hidden w-full h-full min-h-0">
+          {/* Left Questions & Vocabulary Library */}
+          <div className={`flex h-full overflow-hidden transition-all duration-200 ${
+            isSplitWithGemini ? 'w-[52%] shrink-0 border-r border-slate-800' : 'w-full flex-1'
+          }`}>
+            {/* Left Category List */}
+            <aside className={`${isSplitWithGemini ? 'w-44' : 'w-56'} border-r border-slate-800 bg-slate-950/40 p-3 overflow-y-auto hidden md:block shrink-0`}>
+              <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider block mb-2 px-2">
+                Chủ đề ({categories.length - 1})
+              </span>
+              <div className="space-y-1">
+                {categories.map((cat) => {
+                  let count = 0;
+                  if (cat === 'All') count = currentDataset.length;
+                  else if (cat === '⭐ Câu hỏi tự tạo (Custom)') count = customQuestions.length;
+                  else count = defaultDataset.filter((i) => i.category === cat).length;
 
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition ${
-                      selectedCategory === cat
-                        ? 'bg-indigo-600 text-white shadow-md'
-                        : cat.includes('Custom')
-                        ? 'text-amber-300 hover:bg-amber-950/30'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <span className="truncate">{cat}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-md ${
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition ${
                         selectedCategory === cat
-                          ? 'bg-indigo-800 text-white'
-                          : 'bg-slate-800 text-slate-400'
+                          ? 'bg-indigo-600 text-white shadow-md'
+                          : cat.includes('Custom')
+                          ? 'text-amber-300 hover:bg-amber-950/30'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                       }`}
                     >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </aside>
+                      <span className="truncate">{cat}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-md ${
+                          selectedCategory === cat
+                            ? 'bg-indigo-800 text-white'
+                            : 'bg-slate-800 text-slate-400'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
 
-          {/* Right Question Cards List */}
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+          {/* Center Question Cards List */}
+          <main className={`flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 ${isSplitWithGemini ? 'border-r border-slate-800' : ''}`}>
             {/* Active Category Info Banner */}
             <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
               <div className="flex items-center gap-2">
@@ -482,8 +555,17 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                 <span className="text-xs font-bold text-indigo-300">{selectedCategory}</span>
                 <span className="text-xs text-slate-500">({filteredItems.length} câu)</span>
               </div>
-              <div className="text-[11px] text-slate-500">
-                💡 Bấm <b>"Phóng to câu này"</b> để mở to chỉ xem câu hỏi & bài mẫu
+              <div className="text-[11px] text-slate-500 flex items-center gap-2">
+                {!isSplitWithGemini && (
+                  <button
+                    onClick={() => setIsSplitWithGemini(true)}
+                    className="text-blue-400 hover:text-blue-300 flex items-center gap-1 font-semibold"
+                  >
+                    <Bot className="w-3.5 h-3.5" />
+                    <span>Mở Gemini song song</span>
+                  </button>
+                )}
+                <span>💡 Bấm <b>"Phóng to"</b> để học chuyên sâu</span>
               </div>
             </div>
 
@@ -501,9 +583,20 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                 )}
               </div>
             ) : (
-              <div className={`grid gap-4 ${isFullscreen ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'}`}>
+              <div className={`grid gap-4 ${isFullscreen && !isSplitWithGemini ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'}`}>
                 {filteredItems.map((item) => {
                   const uniqueKey = `${activePart}_${item.id}`;
+                  const qRepCount = repetitionCounts[`q_${item.id}`] || 0;
+                  const qTier = repetitionService.getTier(qRepCount);
+
+                  const vocabRepCount = repetitionCounts[`vocab_${item.id}`] || 0;
+                  const vocabTier = repetitionService.getTier(vocabRepCount);
+
+                  const chainRepCount = repetitionCounts[`chain_${item.id}`] || 0;
+                  const chainTier = repetitionService.getTier(chainRepCount);
+
+                  const questionPrompt = getPromptForQuestion(item);
+                  const vocabPrompt = item.vocab ? getPromptForVocab(item.vocab, item.question) : '';
 
                   return (
                     <div
@@ -536,6 +629,16 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                         </div>
 
                         <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                          {/* 1-Click Open Gemini MiniWeb for this Question */}
+                          <button
+                            onClick={() => handleSendPromptToGemini(questionPrompt)}
+                            className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-blue-600/30 to-indigo-600/30 border border-blue-500/50 text-blue-200 hover:from-blue-600 hover:to-indigo-600 hover:text-white text-[11px] font-bold flex items-center gap-1 transition shadow-sm"
+                            title="Mở Gemini MiniWeb chia đôi màn hình và nạp sẵn prompt câu hỏi này"
+                          >
+                            <Bot className="w-3.5 h-3.5 text-cyan-300" />
+                            <span>🌐 Gemini MiniWeb</span>
+                          </button>
+
                           {/* Zen Focus Single Question Button */}
                           <button
                             onClick={() => {
@@ -546,7 +649,7 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                             title="Phóng to mở to chỉ xem riêng câu này"
                           >
                             <Eye className="w-3 h-3 text-cyan-300" />
-                            <span>Phóng to câu này</span>
+                            <span>Phóng to</span>
                           </button>
 
                           {item.isCustom && (
@@ -568,7 +671,7 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                             ) : (
                               <Layers className="w-3 h-3 text-slate-400" />
                             )}
-                            <span>{copiedId === uniqueKey ? 'Đã sao chép' : 'Sao chép'}</span>
+                            <span>{copiedId === uniqueKey ? 'Đã chép' : 'Sao chép'}</span>
                           </button>
 
                           <button
@@ -576,7 +679,7 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                             className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold flex items-center gap-1 transition shadow-md"
                           >
                             <Sparkles className="w-3 h-3 text-amber-300" />
-                            <span>Học câu này (Load)</span>
+                            <span>Học (Load)</span>
                           </button>
                         </div>
                       </div>
@@ -604,11 +707,72 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                         </div>
                       )}
 
-                      {/* Question / Cue Card Prompt */}
-                      <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80">
-                        <span className="text-[11px] font-bold text-amber-300 block mb-1">
-                          {activePart === 'Part 2' ? '📋 Đề bài Cue Card (Part 2):' : `❓ Đề bài (${activePart}):`}
-                        </span>
+                      {/* 1. QUESTION / CUE CARD PROMPT BOX (With 5-Level Color Repetition & Gemini Prompt) */}
+                      <div
+                        className={`p-3.5 rounded-xl border transition-all duration-200 ${
+                          qRepCount > 0
+                            ? `${qTier.bgClass} ${qTier.borderClass} ${qTier.glowClass}`
+                            : 'bg-slate-950/80 border-slate-800/80'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={(e) => handleIncrementRepetition(`q_${item.id}`, e)}
+                            className={`text-[11px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md border transition hover:scale-105 active:scale-95 ${
+                              qRepCount > 0
+                                ? qTier.badgeClass
+                                : 'bg-slate-900 text-amber-300 border-slate-700 hover:border-amber-500/50'
+                            }`}
+                            title="Bấm để đổi mức màu ghi nhớ lần học cho đề bài này (Xanh biển -> Vàng -> Đỏ -> Tím -> Xanh lá -> ...)"
+                          >
+                            <span>{qTier.emoji}</span>
+                            <span>{activePart === 'Part 2' ? '📋 Đề bài Cue Card (Part 2)' : `❓ Đề bài (${activePart})`}</span>
+                            {qRepCount > 0 && <span className="underline font-black">({qTier.name.split(':')[0]})</span>}
+                          </button>
+
+                          <div className="flex items-center gap-1.5">
+                            {/* Color Repetition Level Button for Question */}
+                            <button
+                              type="button"
+                              onClick={(e) => handleIncrementRepetition(`q_${item.id}`, e)}
+                              title="Bấm để ghi nhận 1 lần học đề bài (Xanh biển -> Vàng -> Đỏ -> Tím -> Xanh lá -> ...)"
+                              className={`text-[10px] px-2.5 py-0.5 rounded-md border flex items-center gap-1 font-bold transition hover:scale-105 active:scale-95 shadow-sm ${
+                                qRepCount > 0 ? qTier.badgeClass : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-slate-200'
+                              }`}
+                            >
+                              <span>{qTier.emoji}</span>
+                              <span>{qRepCount > 0 ? `Lần ${qRepCount}` : 'Đổi mức màu'}</span>
+                            </button>
+
+                            {/* Prompt Gemini for Question */}
+                            <button
+                              type="button"
+                              onClick={(e) => handleCopyPrompt(questionPrompt, `q_prompt_${item.id}`, e)}
+                              title="Sao chép prompt hỏi Gemini về các tình huống và câu hỏi nên dùng từ đề bài này"
+                              className={`text-[10px] px-2 py-0.5 rounded-md border flex items-center gap-1 font-bold transition ${
+                                copiedPromptId === `q_prompt_${item.id}`
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                  : 'bg-blue-600/20 text-blue-300 border-blue-500/30 hover:bg-blue-600 hover:text-white'
+                              }`}
+                            >
+                              {copiedPromptId === `q_prompt_${item.id}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Bot className="w-3 h-3" />}
+                              <span>{copiedPromptId === `q_prompt_${item.id}` ? 'Đã copy' : 'Copy Prompt'}</span>
+                            </button>
+
+                            {/* Send to Gemini Split View */}
+                            <button
+                              type="button"
+                              onClick={(e) => handleSendPromptToGemini(questionPrompt, e)}
+                              title="Mở Gemini chia đôi màn hình và nạp sẵn prompt này"
+                              className="text-[10px] px-2 py-0.5 rounded-md border bg-indigo-600/30 text-indigo-200 border-indigo-500/40 hover:bg-indigo-600 hover:text-white flex items-center gap-1 font-bold transition"
+                            >
+                              <Zap className="w-3 h-3 text-amber-300" />
+                              <span>Gửi sang Gemini</span>
+                            </button>
+                          </div>
+                        </div>
+
                         <p className="text-sm font-bold text-slate-100 mb-1">{item.question}</p>
                         {item.cueCardPrompt && (
                           <div className="text-xs text-slate-300 font-sans whitespace-pre-line leading-relaxed mt-2 pt-2 border-t border-slate-800/60">
@@ -617,25 +781,113 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                         )}
                       </div>
 
-                      {/* Vocabulary List */}
+                      {/* 2. VOCABULARY LIST BOX (With 5-Level Color Repetition & Gemini Prompt) */}
                       {item.vocab && (
-                        <div className="p-3 rounded-xl bg-indigo-950/20 border border-indigo-500/20">
-                          <span className="text-[11px] font-bold text-indigo-300 block mb-1">
-                            🔑 Từ vựng mấu chốt (Band 7.5 - 8.5 Vocab):
-                          </span>
+                        <div
+                          className={`p-3 rounded-xl border transition-all duration-200 ${
+                            vocabRepCount > 0
+                              ? `${vocabTier.bgClass} ${vocabTier.borderClass} ${vocabTier.glowClass}`
+                              : 'bg-indigo-950/20 border-indigo-500/20'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={(e) => handleIncrementRepetition(`vocab_${item.id}`, e)}
+                              className={`text-[11px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md border transition hover:scale-105 active:scale-95 ${
+                                vocabRepCount > 0
+                                  ? vocabTier.badgeClass
+                                  : 'bg-indigo-950/60 text-indigo-300 border-indigo-500/30 hover:border-indigo-400'
+                              }`}
+                              title="Bấm để đổi mức màu ghi nhớ từ vựng (Xanh biển -> Vàng -> Đỏ -> Tím -> Xanh lá -> ...)"
+                            >
+                              <span>{vocabTier.emoji}</span>
+                              <span>🔑 Từ vựng mấu chốt (Band 7.5 - 8.5 Vocab)</span>
+                              {vocabRepCount > 0 && <span className="underline font-black">({vocabTier.name.split(':')[0]})</span>}
+                            </button>
+
+                            <div className="flex items-center gap-1.5">
+                              {/* Color Repetition Level Button for Vocab */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleIncrementRepetition(`vocab_${item.id}`, e)}
+                                title="Bấm để ghi nhận 1 lần học từ vựng (Xanh biển -> Vàng -> Đỏ -> Tím -> Xanh lá -> ...)"
+                                className={`text-[10px] px-2.5 py-0.5 rounded-md border flex items-center gap-1 font-bold transition hover:scale-105 active:scale-95 shadow-sm ${
+                                  vocabRepCount > 0 ? vocabTier.badgeClass : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-slate-200'
+                                }`}
+                              >
+                                <span>{vocabTier.emoji}</span>
+                                <span>{vocabRepCount > 0 ? `Lần ${vocabRepCount}` : 'Đổi mức màu'}</span>
+                              </button>
+
+                              {/* Prompt Gemini for Vocab */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleCopyPrompt(vocabPrompt, `v_prompt_${item.id}`, e)}
+                                title="Sao chép prompt hỏi Gemini cách dùng những từ vựng này trong thực tế"
+                                className={`text-[10px] px-2 py-0.5 rounded-md border flex items-center gap-1 font-bold transition ${
+                                  copiedPromptId === `v_prompt_${item.id}`
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                    : 'bg-blue-600/20 text-blue-300 border-blue-500/30 hover:bg-blue-600 hover:text-white'
+                                }`}
+                              >
+                                {copiedPromptId === `v_prompt_${item.id}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Bot className="w-3 h-3" />}
+                                <span>Prompt Từ Vựng</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => handleSendPromptToGemini(vocabPrompt, e)}
+                                title="Mở Gemini và nạp prompt từ vựng"
+                                className="text-[10px] px-2 py-0.5 rounded-md border bg-indigo-600/30 text-indigo-200 border-indigo-500/40 hover:bg-indigo-600 hover:text-white flex items-center gap-1 font-bold transition"
+                              >
+                                <Zap className="w-3 h-3 text-amber-300" />
+                                <span>Gửi Gemini</span>
+                              </button>
+                            </div>
+                          </div>
+
                           <div className="text-xs text-indigo-200 font-mono whitespace-pre-line leading-relaxed">
                             {item.vocab}
                           </div>
                         </div>
                       )}
 
-                      {/* Answer Icon Chain with Deep Learning Annotations */}
-                      <div className="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5">
-                            <Sparkles className="w-3 h-3 text-amber-300" />
-                            <span>💬 Chuỗi Icon & Ý Nghĩa Từng Cụm Từ (Học Sâu):</span>
-                          </span>
+                      {/* 3. ANSWER ICON CHAIN (With 5-Level Color Repetition & Gemini Actions) */}
+                      <div
+                        className={`p-3.5 rounded-xl border space-y-2 transition-all duration-200 ${
+                          chainRepCount > 0
+                            ? `${chainTier.bgClass} ${chainTier.borderClass} ${chainTier.glowClass}`
+                            : 'bg-slate-950/90 border-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={(e) => handleIncrementRepetition(`chain_${item.id}`, e)}
+                            className={`text-[11px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md border transition hover:scale-105 active:scale-95 ${
+                              chainRepCount > 0
+                                ? chainTier.badgeClass
+                                : 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30 hover:border-emerald-400'
+                            }`}
+                            title="Bấm để đổi mức màu ghi nhớ cho cả chuỗi icon bài học này"
+                          >
+                            <span>{chainTier.emoji}</span>
+                            <span>💬 Chuỗi Icon & Ý Nghĩa Từng Cụm Từ (Học Sâu)</span>
+                            {chainRepCount > 0 && <span className="underline font-black">({chainTier.name.split(':')[0]})</span>}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleIncrementRepetition(`chain_${item.id}`, e)}
+                            title="Bấm để ghi nhận 1 lần học chuỗi icon (Xanh biển -> Vàng -> Đỏ -> Tím -> Xanh lá -> ...)"
+                            className={`text-[10px] px-2.5 py-0.5 rounded-md border flex items-center gap-1 font-bold transition hover:scale-105 active:scale-95 shadow-sm ${
+                              chainRepCount > 0 ? chainTier.badgeClass : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-slate-200'
+                            }`}
+                          >
+                            <span>{chainTier.emoji}</span>
+                            <span>{chainRepCount > 0 ? `Lần ${chainRepCount}` : 'Đổi mức màu'}</span>
+                          </button>
                         </div>
                         {(() => {
                           const isWriting = activePart.includes('Writing');
@@ -649,6 +901,8 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
                             <IeltsAnnotatedPhraseViewer
                               chunks={chunks}
                               defaultExpandFirst={false}
+                              questionContext={item.question}
+                              onSendToGemini={handleSendPromptToGemini}
                             />
                           );
                         })()}
@@ -660,6 +914,18 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
             )}
           </main>
         </div>
+
+        {/* Right Gemini MiniWeb Split Screen Panel */}
+        {isSplitWithGemini && (
+          <div className="w-[48%] h-full shrink-0 flex flex-col bg-slate-950 animate-fadeIn min-w-[340px] overflow-hidden">
+            <GeminiMiniWebPanel
+              externalPrompt={activeGeminiPrompt}
+              onClose={() => setIsSplitWithGemini(false)}
+              className="w-full h-full"
+            />
+          </div>
+        )}
+      </div>
 
         {/* Modal Footer */}
         <div className="px-5 py-2.5 border-t border-slate-800 bg-slate-950 flex items-center justify-between text-xs text-slate-400 shrink-0">
@@ -684,266 +950,421 @@ export const IeltsPartBankModal: React.FC<IeltsPartBankModalProps> = ({
       </div>
 
       {/* ZEN FOCUS SINGLE QUESTION READER (Chế độ phóng to chỉ xem mỗi câu hỏi này) */}
-      {focusItem && (
-        <div className="fixed inset-0 z-[60] bg-slate-950 flex flex-col animate-fadeIn overflow-hidden select-text">
-          {/* Zen Top Header */}
-          <div className="px-6 py-3.5 border-b border-slate-800 bg-slate-900/90 backdrop-blur-xl flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-3">
-              <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md">
-                {activePart}
-              </span>
-              <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">
-                {focusItem.category}
-              </span>
-              {currentFocusIndex >= 0 && (
-                <span className="text-xs font-mono text-slate-400">
-                  Câu {currentFocusIndex + 1} / {filteredItems.length}
+      {focusItem && (() => {
+        const focusQRepCount = repetitionCounts[`q_${focusItem.id}`] || 0;
+        const focusQTier = repetitionService.getTier(focusQRepCount);
+
+        const focusVocabRepCount = repetitionCounts[`vocab_${focusItem.id}`] || 0;
+        const focusVocabTier = repetitionService.getTier(focusVocabRepCount);
+
+        const focusChainRepCount = repetitionCounts[`chain_${focusItem.id}`] || 0;
+        const focusChainTier = repetitionService.getTier(focusChainRepCount);
+
+        const focusQuestionPrompt = getPromptForQuestion(focusItem);
+        const focusVocabPrompt = focusItem.vocab ? getPromptForVocab(focusItem.vocab, focusItem.question) : '';
+
+        return (
+          <div className="fixed inset-0 z-[60] bg-slate-950 flex flex-col animate-fadeIn overflow-hidden select-text">
+            {/* Zen Top Header */}
+            <div className="px-6 py-3.5 border-b border-slate-800 bg-slate-900/90 backdrop-blur-xl flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md">
+                  {activePart}
                 </span>
-              )}
-            </div>
-
-            {/* Navigation & Action Controls */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handlePrevFocus}
-                disabled={currentFocusIndex <= 0}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-semibold transition"
-                title="Câu trước đó"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Câu trước</span>
-              </button>
-
-              <button
-                onClick={handleNextFocus}
-                disabled={currentFocusIndex >= filteredItems.length - 1}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-semibold transition"
-                title="Câu tiếp theo"
-              >
-                <span className="hidden sm:inline">Câu tiếp</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => {
-                  const isWriting = activePart.includes('Writing');
-                  const ans = isWriting
-                    ? focusItem.answer
-                    : getStandardizedSpeakingAnswer(activePart, focusItem.question, focusItem.answer, focusItem.vocab, focusItem.cueCardPrompt, focusItem.id);
-                  handleSpeakText(`${focusItem.question}. ${ans}`);
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm ${
-                  isSpeaking
-                    ? 'bg-rose-600 text-white animate-pulse'
-                    : 'bg-indigo-600/30 border border-indigo-500/40 text-indigo-200 hover:bg-indigo-600 hover:text-white'
-                }`}
-                title="Nghe đọc tiếng Anh mẫu (Web Audio TTS)"
-              >
-                <Volume2 className="w-4 h-4" />
-                <span>{isSpeaking ? 'Dừng đọc' : 'Nghe phát âm'}</span>
-              </button>
-
-              <button
-                onClick={() => handleSelect(focusItem)}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition hover:scale-105 active:scale-95"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Học câu này (Load)</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  if (isSpeaking && 'speechSynthesis' in window) window.speechSynthesis.cancel();
-                  setIsSpeaking(false);
-                  setFocusItem(null);
-                }}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-xs font-bold transition ml-2"
-                title="Thoát chế độ phóng to (Esc)"
-              >
-                <X className="w-4 h-4" />
-                <span>Đóng (Esc)</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Zen Main Reading Body */}
-          <div className="flex-1 overflow-y-auto px-6 sm:px-16 py-8 max-w-5xl mx-auto w-full space-y-8">
-            {/* Big Question Prompt Header */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-indigo-500/30 shadow-xl space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-md text-xs font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wide">
-                  {activePart === 'Part 2' ? '📋 Đề bài Cue Card Part 2' : `❓ Đề bài câu hỏi (${activePart})`}
+                <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                  {focusItem.category}
                 </span>
-                {focusItem.isCustom && (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400">
-                    ⭐ Câu hỏi tự tạo
+                {currentFocusIndex >= 0 && (
+                  <span className="text-xs font-mono text-slate-400">
+                    Câu {currentFocusIndex + 1} / {filteredItems.length}
                   </span>
                 )}
               </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white leading-relaxed tracking-wide">
-                {focusItem.question}
-              </h1>
-              {focusItem.cueCardPrompt && (
-                <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-sm text-slate-200 whitespace-pre-line leading-relaxed font-mono">
-                  {focusItem.cueCardPrompt}
-                </div>
-              )}
+
+              {/* Navigation & Action Controls */}
+              <div className="flex items-center gap-2">
+                {/* Toggle Gemini Split inside Zen view */}
+                <button
+                  onClick={() => {
+                    audioService.playBeep('click');
+                    setIsSplitWithGemini(!isSplitWithGemini);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm ${
+                    isSplitWithGemini
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-400 text-white shadow-md'
+                      : 'bg-blue-950/40 border-blue-500/40 text-blue-300 hover:bg-blue-600 hover:text-white'
+                  }`}
+                  title="Mở Gemini MiniWeb song song để vừa học vừa hỏi đáp"
+                >
+                  <Bot className="w-3.5 h-3.5 text-cyan-300" />
+                  <span>{isSplitWithGemini ? 'Đang mở Gemini' : '🌐 Mở Gemini song song'}</span>
+                </button>
+
+                <button
+                  onClick={handlePrevFocus}
+                  disabled={currentFocusIndex <= 0}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-semibold transition"
+                  title="Câu trước đó"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Câu trước</span>
+                </button>
+
+                <button
+                  onClick={handleNextFocus}
+                  disabled={currentFocusIndex >= filteredItems.length - 1}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-semibold transition"
+                  title="Câu tiếp theo"
+                >
+                  <span className="hidden sm:inline">Câu tiếp</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    const isWriting = activePart.includes('Writing');
+                    const ans = isWriting
+                      ? focusItem.answer
+                      : getStandardizedSpeakingAnswer(activePart, focusItem.question, focusItem.answer, focusItem.vocab, focusItem.cueCardPrompt, focusItem.id);
+                    handleSpeakText(`${focusItem.question}. ${ans}`);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm ${
+                    isSpeaking
+                      ? 'bg-rose-600 text-white animate-pulse'
+                      : 'bg-indigo-600/30 border border-indigo-500/40 text-indigo-200 hover:bg-indigo-600 hover:text-white'
+                  }`}
+                  title="Nghe đọc tiếng Anh mẫu (Web Audio TTS)"
+                >
+                  <Volume2 className="w-4 h-4" />
+                  <span>{isSpeaking ? 'Dừng đọc' : 'Nghe phát âm'}</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelect(focusItem)}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition hover:scale-105 active:scale-95"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Học câu này (Load)</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (isSpeaking && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+                    setIsSpeaking(false);
+                    setFocusItem(null);
+                  }}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-xs font-bold transition ml-2"
+                  title="Thoát chế độ phóng to (Esc)"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Đóng (Esc)</span>
+                </button>
+              </div>
             </div>
 
-            {/* Task 1 Attached Chart in Zen View */}
-            {focusItem.imageUrl && (
-              <div className="p-4 rounded-2xl bg-slate-900/90 border border-purple-500/30 shadow-xl space-y-3">
-                <div className="flex items-center justify-between border-b border-purple-500/20 pb-2">
-                  <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-purple-400" />
-                    <span>📊 Biểu đồ đề bài Task 1</span>
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setZoomImageUrl(focusItem.imageUrl)}
-                    className="text-xs text-purple-300 hover:text-white px-2.5 py-1 rounded-lg bg-purple-950/60 border border-purple-500/40 flex items-center gap-1 font-semibold"
-                  >
-                    <Maximize2 className="w-3.5 h-3.5" />
-                    <span>Xem phóng to</span>
-                  </button>
-                </div>
-                <div className="flex justify-center bg-slate-950/60 rounded-xl p-4 overflow-hidden">
-                  <img
-                    src={focusItem.imageUrl}
-                    alt="Biểu đồ Task 1"
-                    onClick={() => setZoomImageUrl(focusItem.imageUrl)}
-                    className="max-h-96 w-auto object-contain rounded-lg cursor-pointer hover:opacity-95 transition"
-                  />
-                </div>
-              </div>
-            )}
+            {/* Zen Body Container with Optional Gemini Split Screen */}
+            <div className="flex-1 flex overflow-hidden w-full h-full min-h-0">
+              {/* Left Zen Main Reading Body */}
+              <div className={`overflow-y-auto px-4 sm:px-8 py-6 space-y-6 ${
+                isSplitWithGemini ? 'w-[52%] shrink-0 border-r border-slate-800' : 'w-full max-w-5xl mx-auto'
+              }`}>
+                {/* Big Question Prompt Header (With 5-Level Color Repetition & Gemini Prompt) */}
+                <div
+                  className={`p-6 rounded-2xl border shadow-xl space-y-3 transition-all duration-200 ${
+                    focusQRepCount > 0
+                      ? `${focusQTier.bgClass} ${focusQTier.borderClass} ${focusQTier.glowClass}`
+                      : 'bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border-indigo-500/30'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-md text-xs font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wide">
+                        {activePart === 'Part 2' ? '📋 Đề bài Cue Card Part 2' : `❓ Đề bài câu hỏi (${activePart})`}
+                      </span>
+                      {focusItem.isCustom && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400">
+                          ⭐ Câu hỏi tự tạo
+                        </span>
+                      )}
+                    </div>
 
-            {/* Key Vocabulary Highlights */}
-            {focusItem.vocab && (
-              <div className="p-6 rounded-2xl bg-slate-900/90 border border-indigo-500/30 shadow-lg space-y-3">
-                <div className="flex items-center justify-between border-b border-indigo-500/20 pb-2">
-                  <h3 className="text-sm font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-2">
-                    <span>🔑 Từ vựng đắt giá (Band 7.5 - 8.5 Vocab List)</span>
-                  </h3>
-                  <span className="text-xs text-indigo-400 font-mono">
-                    {focusItem.vocab.split('\n').filter(Boolean).length} từ vựng
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                  {focusItem.vocab
-                    .split('\n')
-                    .filter(Boolean)
-                    .map((line: string, i: number) => {
-                      const parts = line.split(' - ');
-                      const word = parts[0] || line;
-                      const meaning = parts.slice(1).join(' - ');
-                      return (
-                        <div
-                          key={i}
-                          className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-indigo-500/40 transition flex flex-col gap-1"
-                        >
-                          <span className="text-sm font-bold text-indigo-300 font-mono">{word}</span>
-                          {meaning && <span className="text-xs text-slate-400 font-sans">{meaning}</span>}
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            )}
+                    <div className="flex items-center gap-2">
+                      {/* Repetition Level Button for Question */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleIncrementRepetition(`q_${focusItem.id}`, e)}
+                        className={`text-xs px-3 py-1 rounded-xl border flex items-center gap-1.5 font-bold transition hover:scale-105 active:scale-95 shadow-sm ${
+                          focusQRepCount > 0 ? focusQTier.badgeClass : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                        }`}
+                      >
+                        <span>{focusQTier.emoji}</span>
+                        <span>{focusQRepCount > 0 ? `Lần học: ${focusQRepCount}` : 'Ghi nhớ lần học'}</span>
+                      </button>
 
-            {/* Complete Model Speaking Answer with Icons & Annotated Breakdown */}
-            <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-                <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-                  <span>💬 Bài Nói / Viết Mẫu Chuẩn IELTS (Icon-Anchored Model Answer)</span>
-                </h3>
+                      {/* Prompt Gemini for Question */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopyPrompt(focusQuestionPrompt, `zen_q_${focusItem.id}`, e)}
+                        className={`text-xs px-3 py-1 rounded-xl border flex items-center gap-1.5 font-bold transition ${
+                          copiedPromptId === `zen_q_${focusItem.id}`
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                            : 'bg-blue-600/20 text-blue-300 border-blue-500/30 hover:bg-blue-600 hover:text-white'
+                        }`}
+                      >
+                        {copiedPromptId === `zen_q_${focusItem.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Bot className="w-3.5 h-3.5" />}
+                        <span>{copiedPromptId === `zen_q_${focusItem.id}` ? 'Đã copy Prompt' : 'Copy Prompt Gemini'}</span>
+                      </button>
 
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-                    <button
-                      onClick={() => {
-                        audioService.playBeep('click');
-                        setFocusViewMode('annotated');
-                      }}
-                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition ${
-                        focusViewMode === 'annotated'
-                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Tách Icon & Giải Thích Ý Nghĩa</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        audioService.playBeep('click');
-                        setFocusViewMode('plain');
-                      }}
-                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition ${
-                        focusViewMode === 'plain'
-                          ? 'bg-slate-800 text-white'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      <span>Văn Bản Liền</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleSendPromptToGemini(focusQuestionPrompt, e)}
+                        className="text-xs px-3 py-1 rounded-xl border bg-indigo-600/30 text-indigo-200 border-indigo-500/40 hover:bg-indigo-600 hover:text-white flex items-center gap-1.5 font-bold transition"
+                      >
+                        <Zap className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Gửi sang Gemini</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <button
-                    onClick={() => handleCopy(focusItem)}
-                    className="text-xs text-slate-400 hover:text-white flex items-center gap-1 font-semibold px-2 py-1 bg-slate-800 rounded-lg transition"
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-white leading-relaxed tracking-wide">
+                    {focusItem.question}
+                  </h1>
+                  {focusItem.cueCardPrompt && (
+                    <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-sm text-slate-200 whitespace-pre-line leading-relaxed font-mono">
+                      {focusItem.cueCardPrompt}
+                    </div>
+                  )}
+                </div>
+
+                {/* Task 1 Attached Chart in Zen View */}
+                {focusItem.imageUrl && (
+                  <div className="p-4 rounded-2xl bg-slate-900/90 border border-purple-500/30 shadow-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-purple-500/20 pb-2">
+                      <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4 text-purple-400" />
+                        <span>📊 Biểu đồ đề bài Task 1</span>
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setZoomImageUrl(focusItem.imageUrl)}
+                        className="text-xs text-purple-300 hover:text-white px-2.5 py-1 rounded-lg bg-purple-950/60 border border-purple-500/40 flex items-center gap-1 font-semibold"
+                      >
+                        <Maximize2 className="w-3.5 h-3.5" />
+                        <span>Xem phóng to</span>
+                      </button>
+                    </div>
+                    <div className="flex justify-center bg-slate-950/60 rounded-xl p-4 overflow-hidden">
+                      <img
+                        src={focusItem.imageUrl}
+                        alt="Biểu đồ Task 1"
+                        onClick={() => setZoomImageUrl(focusItem.imageUrl)}
+                        className="max-h-96 w-auto object-contain rounded-lg cursor-pointer hover:opacity-95 transition"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Key Vocabulary Highlights (With 5-Level Color Repetition & Gemini Prompt) */}
+                {focusItem.vocab && (
+                  <div
+                    className={`p-6 rounded-2xl border shadow-lg space-y-3 transition-all duration-200 ${
+                      focusVocabRepCount > 0
+                        ? `${focusVocabTier.bgClass} ${focusVocabTier.borderClass} ${focusVocabTier.glowClass}`
+                        : 'bg-slate-900/90 border-indigo-500/30'
+                    }`}
                   >
-                    <Layers className="w-3.5 h-3.5" />
-                    <span>Sao chép</span>
-                  </button>
+                    <div className="flex items-center justify-between border-b border-indigo-500/20 pb-2 flex-wrap gap-2">
+                      <h3 className="text-sm font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-2">
+                        <span>🔑 Từ vựng đắt giá (Band 7.5 - 8.5 Vocab List)</span>
+                        <span className="text-xs text-indigo-400 font-mono">
+                          ({focusItem.vocab.split('\n').filter(Boolean).length} từ)
+                        </span>
+                      </h3>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => handleIncrementRepetition(`vocab_${focusItem.id}`, e)}
+                          className={`text-xs px-3 py-1 rounded-xl border flex items-center gap-1.5 font-bold transition hover:scale-105 active:scale-95 shadow-sm ${
+                            focusVocabRepCount > 0 ? focusVocabTier.badgeClass : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                          }`}
+                        >
+                          <span>{focusVocabTier.emoji}</span>
+                          <span>{focusVocabRepCount > 0 ? `Lần học: ${focusVocabRepCount}` : 'Ghi nhớ lần học'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopyPrompt(focusVocabPrompt, `zen_v_${focusItem.id}`, e)}
+                          className={`text-xs px-3 py-1 rounded-xl border flex items-center gap-1.5 font-bold transition ${
+                            copiedPromptId === `zen_v_${focusItem.id}`
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                              : 'bg-blue-600/20 text-blue-300 border-blue-500/30 hover:bg-blue-600 hover:text-white'
+                          }`}
+                        >
+                          {copiedPromptId === `zen_v_${focusItem.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Bot className="w-3.5 h-3.5" />}
+                          <span>Prompt Từ Vựng</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleSendPromptToGemini(focusVocabPrompt, e)}
+                          className="text-xs px-3 py-1 rounded-xl border bg-indigo-600/30 text-indigo-200 border-indigo-500/40 hover:bg-indigo-600 hover:text-white flex items-center gap-1.5 font-bold transition"
+                        >
+                          <Zap className="w-3.5 h-3.5 text-amber-300" />
+                          <span>Gửi Gemini</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                      {focusItem.vocab
+                        .split('\n')
+                        .filter(Boolean)
+                        .map((line: string, i: number) => {
+                          const parts = line.split(' - ');
+                          const word = parts[0] || line;
+                          const meaning = parts.slice(1).join(' - ');
+                          return (
+                            <div
+                              key={i}
+                              className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-indigo-500/40 transition flex flex-col gap-1"
+                            >
+                              <span className="text-sm font-bold text-indigo-300 font-mono">{word}</span>
+                              {meaning && <span className="text-xs text-slate-400 font-sans">{meaning}</span>}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Complete Model Speaking Answer with Icons & Annotated Breakdown */}
+                <div
+                  className={`p-6 rounded-2xl border shadow-xl space-y-4 transition-all duration-200 ${
+                    focusChainRepCount > 0
+                      ? `${focusChainTier.bgClass} ${focusChainTier.borderClass} ${focusChainTier.glowClass}`
+                      : 'bg-slate-900/90 border-slate-800'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                        <span>💬 Bài Nói / Viết Mẫu Chuẩn IELTS (Icon-Anchored Model Answer)</span>
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={(e) => handleIncrementRepetition(`chain_${focusItem.id}`, e)}
+                        className={`text-xs px-3 py-1 rounded-xl border flex items-center gap-1.5 font-bold transition hover:scale-105 active:scale-95 shadow-sm ${
+                          focusChainRepCount > 0 ? focusChainTier.badgeClass : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                        }`}
+                      >
+                        <span>{focusChainTier.emoji}</span>
+                        <span>{focusChainRepCount > 0 ? `Lần học: ${focusChainRepCount}` : 'Ghi nhớ lần học'}</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                        <button
+                          onClick={() => {
+                            audioService.playBeep('click');
+                            setFocusViewMode('annotated');
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition ${
+                            focusViewMode === 'annotated'
+                              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                          <span>Tách Icon & Giải Thích Ý Nghĩa</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            audioService.playBeep('click');
+                            setFocusViewMode('plain');
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition ${
+                            focusViewMode === 'plain'
+                              ? 'bg-slate-800 text-white'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          <span>Văn Bản Liền</span>
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => handleCopy(focusItem)}
+                        className="text-xs text-slate-400 hover:text-white flex items-center gap-1 font-semibold px-2 py-1 bg-slate-800 rounded-lg transition"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>Sao chép</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {focusViewMode === 'annotated' ? (
+                    <div className="space-y-4 pt-1">
+                      {(() => {
+                        const isWriting = activePart.includes('Writing');
+                        const standardAnswer = isWriting
+                          ? focusItem.answer
+                          : getStandardizedSpeakingAnswer(activePart, focusItem.question, focusItem.answer, focusItem.vocab, focusItem.cueCardPrompt, focusItem.id);
+                        const chunks = isWriting
+                          ? annotateWritingParagraph(standardAnswer)
+                          : annotateSpeakingAnswer(standardAnswer, focusItem.vocab);
+                        return (
+                          <IeltsAnnotatedPhraseViewer
+                            chunks={chunks}
+                            defaultExpandFirst={false}
+                            questionContext={focusItem.question}
+                            onSendToGemini={handleSendPromptToGemini}
+                          />
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <div className="text-base font-normal text-slate-100 leading-loose space-y-4 pt-1">
+                      {(() => {
+                        const isWriting = activePart.includes('Writing');
+                        const standardAnswer = isWriting
+                          ? focusItem.answer
+                          : getStandardizedSpeakingAnswer(activePart, focusItem.question, focusItem.answer, focusItem.vocab, focusItem.cueCardPrompt, focusItem.id);
+                        return standardAnswer.split('\n\n').map((paragraph: string, idx: number) => (
+                          <p
+                            key={idx}
+                            className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition"
+                          >
+                            {paragraph}
+                          </p>
+                        ));
+                      })()}
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom floating helper inside focus */}
+                <div className="py-6 text-center text-xs text-slate-500">
+                  💡 Phím tắt: Dùng <b>←</b> hoặc <b>→</b> trên bàn phím để chuyển câu, bấm <b>Esc</b> để thoát phóng to.
                 </div>
               </div>
 
-              {focusViewMode === 'annotated' ? (
-                <div className="space-y-4 pt-1">
-                  {(() => {
-                    const isWriting = activePart.includes('Writing');
-                    const standardAnswer = isWriting
-                      ? focusItem.answer
-                      : getStandardizedSpeakingAnswer(activePart, focusItem.question, focusItem.answer, focusItem.vocab, focusItem.cueCardPrompt, focusItem.id);
-                    const chunks = isWriting
-                      ? annotateWritingParagraph(standardAnswer)
-                      : annotateSpeakingAnswer(standardAnswer, focusItem.vocab);
-                    return (
-                      <IeltsAnnotatedPhraseViewer
-                        chunks={chunks}
-                        defaultExpandFirst={false}
-                      />
-                    );
-                  })()}
-                </div>
-              ) : (
-                <div className="text-base font-normal text-slate-100 leading-loose space-y-4 pt-1">
-                  {(() => {
-                    const isWriting = activePart.includes('Writing');
-                    const standardAnswer = isWriting
-                      ? focusItem.answer
-                      : getStandardizedSpeakingAnswer(activePart, focusItem.question, focusItem.answer, focusItem.vocab, focusItem.cueCardPrompt, focusItem.id);
-                    return standardAnswer.split('\n\n').map((paragraph: string, idx: number) => (
-                      <p
-                        key={idx}
-                        className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition"
-                      >
-                        {paragraph}
-                      </p>
-                    ));
-                  })()}
+              {/* Right Zen Gemini Split View Panel */}
+              {isSplitWithGemini && (
+                <div className="w-[48%] h-full shrink-0 flex flex-col bg-slate-950 animate-fadeIn min-w-[340px] overflow-hidden">
+                  <GeminiMiniWebPanel
+                    externalPrompt={activeGeminiPrompt}
+                    onClose={() => setIsSplitWithGemini(false)}
+                    className="w-full h-full"
+                  />
                 </div>
               )}
             </div>
-
-            {/* Bottom floating helper inside focus */}
-            <div className="py-6 text-center text-xs text-slate-500">
-              💡 Phím tắt: Dùng <b>←</b> hoặc <b>→</b> trên bàn phím để chuyển câu, bấm <b>Esc</b> để thoát phóng to.
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Lightbox Zoom Image Modal */}
       {zoomImageUrl && (

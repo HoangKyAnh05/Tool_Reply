@@ -425,11 +425,12 @@ export const MiniWebWorkspace: React.FC<MiniWebWorkspaceProps> = ({
 
   useEffect(() => {
     if (autoInjectPrompt) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         handleInjectAndSend(autoInjectPrompt, undefined, true);
-      }, 2500);
+      }, 300);
+      return () => clearTimeout(timer);
     }
-  }, [autoInjectPrompt]);
+  }, [autoInjectPrompt, switchToken]);
 
   const handleSelectService = (serviceId: string) => {
     audioService.playBeep('click');
