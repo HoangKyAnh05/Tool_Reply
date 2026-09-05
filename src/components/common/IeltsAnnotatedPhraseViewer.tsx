@@ -11,11 +11,20 @@ import {
   BookOpen,
   Info,
   RotateCcw,
-  Bot
+  Bot,
+  MessageSquare,
+  MessagesSquare,
+  Users
 } from 'lucide-react';
 import { AnnotatedPhraseChunk } from '../../utils/ieltsTextAnnotator';
 import { audioService } from '../../services/audioService';
 import { repetitionService, RepetitionTier } from '../../utils/repetitionTracker';
+import {
+  buildExplanationPromptForChunk,
+  buildAllExplanationPromptForChunks,
+  buildDialoguePromptForChunk,
+  buildDialoguePromptForChunks
+} from '../../utils/ieltsConversationPrompts';
 
 export interface IeltsAnnotatedPhraseViewerProps {
   chunks: AnnotatedPhraseChunk[];
@@ -26,64 +35,9 @@ export interface IeltsAnnotatedPhraseViewerProps {
   onSendToGemini?: (prompt: string) => void;
 }
 
-export const buildAnnotatedChunkPrompt = (chunk: AnnotatedPhraseChunk, questionContext?: string): string => {
-  const meaning = chunk.vietnameseMeaning ? `"${chunk.vietnameseMeaning}"` : 'Dịch nghĩa chính xác theo ngữ cảnh câu';
-  const purpose = chunk.purpose ? `\n- Ý nghĩa & Band 8.0+ Impact: ${chunk.purpose}` : '';
-  const context = questionContext ? `\n- Ngữ cảnh câu hỏi / đề bài: "${questionContext}"` : '';
-
-  return `[${chunk.icon}] Từ / Cụm từ: "${chunk.englishText}"
-- Dịch nghĩa trong ngữ cảnh của câu: ${meaning}${purpose}${context}
-
-Hãy đóng vai là Giảng viên IELTS Band 9.0:
-1. Giải thích chi tiết ý nghĩa và cách dùng của từ/cụm từ này trong ngữ cảnh câu văn trên.
-2. Tạo các tình huống và câu hỏi thực tế trong phòng thi IELTS (Speaking & Writing) mà tôi nên dùng từ này.
-3. Trình bày dưới dạng BẢNG GIẢI THÍCH rõ ràng, có icon sinh động, bắt buộc gồm 4 CỘT:
-   - 🎯 Tình huống / Ngữ cảnh sử dụng (Context & Situation)
-   - 💬 Câu hỏi / Câu đối thoại mẫu chứa từ này (Example Sentence)
-   - 🇻🇳 Dịch nghĩa của ví dụ giải thích theo các ngữ cảnh sử dụng (Vietnamese Translation)
-   - 💡 Phân tích lý do dùng & Điểm cộng từ vựng (Vocabulary Impact & Band Boost)`;
-};
-
-/**
- * Ghép toàn bộ các prompt nhỏ của từng từ/cụm từ trong cả câu thành 1 prompt hoàn chỉnh
- * để gửi cho AI giải thích chi tiết toàn bộ từng từ cùng lúc.
- */
-export const buildAllAnnotatedChunksPrompt = (
-  chunks: AnnotatedPhraseChunk[],
-  questionContext?: string
-): string => {
-  const fullSentence = chunks.map((c) => c.englishText).join(' ');
-  const contextStr = questionContext ? `\n- Ngữ cảnh đề bài / câu hỏi: "${questionContext}"` : '';
-
-  const chunksListFormatted = chunks
-    .map((chunk, idx) => {
-      const meaning = chunk.vietnameseMeaning ? `"${chunk.vietnameseMeaning}"` : 'Dịch nghĩa chính xác theo ngữ cảnh';
-      const purpose = chunk.purpose ? `\n  * Ý nghĩa & Band 8.0+ Impact: ${chunk.purpose}` : '';
-      return `### [CỤM #${idx + 1}] ${chunk.icon} "${chunk.englishText}"
-- Nghĩa trong câu: ${meaning}${purpose}`;
-    })
-    .join('\n\n');
-
-  return `[📚 TỔNG HỢP PROMPT PHÂN TÍCH TỪNG TỪ TRONG CÂU]
-- Câu văn gốc hoàn chỉnh: "${fullSentence}"${contextStr}
-- Tổng số từ / cụm từ được tách: ${chunks.length} cụm
-
-DANH SÁCH CHI TIẾT CÁC TỪ & CỤM TỪ TRONG CÂU CẦN PHÂN TÍCH:
-${chunksListFormatted}
-
-================================================================================
-YÊU CẦU ĐỐI VỚI GIẢNG VIÊN IELTS BAND 9.0:
-Hãy phân tích CHI TIẾT TỪNG TỪ / CỤM TỪ trong danh sách trên theo ngữ cảnh của câu văn:
-1. Giải thích cặn kẽ ý nghĩa và vai trò ngữ pháp / từ vựng của từng cụm trong câu.
-2. Tạo các tình huống và câu hỏi thực tế trong phòng thi IELTS (Speaking & Writing) mà tôi nên dùng cụm này.
-3. Trình bày BẢNG GIẢI THÍCH cho từng cụm hoặc bảng tổng hợp rõ ràng, có icon sinh động, bắt buộc gồm 4 CỘT:
-   - 🎯 Tình huống / Ngữ cảnh sử dụng (Context & Situation)
-   - 💬 Câu hỏi / Câu đối thoại mẫu chứa từ này (Example Sentence)
-   - 🇻🇳 Dịch nghĩa của ví dụ giải thích theo các ngữ cảnh sử dụng (Vietnamese Translation)
-   - 💡 Phân tích lý do dùng & Điểm cộng từ vựng (Vocabulary Impact & Band Boost)
-
-Hãy giải thích lần lượt từng từ/cụm từ thật chi tiết, trực quan và dễ học!`;
-};
+// Re-export prompt builders for backwards compatibility
+export const buildAnnotatedChunkPrompt = buildExplanationPromptForChunk;
+export const buildAllAnnotatedChunksPrompt = buildAllExplanationPromptForChunks;
 
 export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProps> = ({
   chunks,
@@ -101,6 +55,13 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
   const [copiedAllPrompt, setCopiedAllPrompt] = useState(false);
   const [copiedAllGemini, setCopiedAllGemini] = useState(false);
+
+  // States for 20-turn dialogue prompt
+  const [copiedDialogueId, setCopiedDialogueId] = useState<string | null>(null);
+  const [copiedDialogueGeminiId, setCopiedDialogueGeminiId] = useState<string | null>(null);
+  const [copiedAllDialoguePrompt, setCopiedAllDialoguePrompt] = useState(false);
+  const [copiedAllDialogueGemini, setCopiedAllDialogueGemini] = useState(false);
+
   const [viewMode, setViewMode] = useState<'cards' | 'inline'>('cards');
   const [repetitionCounts, setRepetitionCounts] = useState<Record<string, number>>({});
 
@@ -124,7 +85,7 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
   const handleCopyGeminiPrompt = (chunk: AnnotatedPhraseChunk, e: React.MouseEvent) => {
     e.stopPropagation();
     audioService.playBeep('click');
-    const prompt = buildAnnotatedChunkPrompt(chunk, questionContext);
+    const prompt = buildExplanationPromptForChunk(chunk, questionContext);
 
     if (onSendToGemini) {
       onSendToGemini(prompt);
@@ -139,7 +100,7 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
     if (e) e.stopPropagation();
     if (!chunks || chunks.length === 0) return;
     audioService.playBeep('click');
-    const combinedPrompt = buildAllAnnotatedChunksPrompt(chunks, questionContext);
+    const combinedPrompt = buildAllExplanationPromptForChunks(chunks, questionContext);
     navigator.clipboard.writeText(combinedPrompt);
     setCopiedAllPrompt(true);
     setTimeout(() => setCopiedAllPrompt(false), 2500);
@@ -149,7 +110,7 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
     if (e) e.stopPropagation();
     if (!chunks || chunks.length === 0) return;
     audioService.playBeep('decision');
-    const combinedPrompt = buildAllAnnotatedChunksPrompt(chunks, questionContext);
+    const combinedPrompt = buildAllExplanationPromptForChunks(chunks, questionContext);
     if (onSendToGemini) {
       onSendToGemini(combinedPrompt);
     } else {
@@ -157,6 +118,53 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
     }
     setCopiedAllGemini(true);
     setTimeout(() => setCopiedAllGemini(false), 2500);
+  };
+
+  // Dedicated Dialogue Prompt Handlers (20 short turns)
+  const handleCopyChunkDialoguePrompt = (chunk: AnnotatedPhraseChunk, e: React.MouseEvent) => {
+    e.stopPropagation();
+    audioService.playBeep('click');
+    const prompt = buildDialoguePromptForChunk(chunk, questionContext);
+    navigator.clipboard.writeText(prompt);
+    setCopiedDialogueId(chunk.id);
+    setTimeout(() => setCopiedDialogueId(null), 2000);
+  };
+
+  const handleSendChunkDialogueToGemini = (chunk: AnnotatedPhraseChunk, e: React.MouseEvent) => {
+    e.stopPropagation();
+    audioService.playBeep('decision');
+    const prompt = buildDialoguePromptForChunk(chunk, questionContext);
+    if (onSendToGemini) {
+      onSendToGemini(prompt);
+    } else {
+      navigator.clipboard.writeText(prompt);
+    }
+    setCopiedDialogueGeminiId(chunk.id);
+    setTimeout(() => setCopiedDialogueGeminiId(null), 2500);
+  };
+
+  const handleCopyAllDialoguePrompt = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!chunks || chunks.length === 0) return;
+    audioService.playBeep('click');
+    const prompt = buildDialoguePromptForChunks(chunks, questionContext);
+    navigator.clipboard.writeText(prompt);
+    setCopiedAllDialoguePrompt(true);
+    setTimeout(() => setCopiedAllDialoguePrompt(false), 2500);
+  };
+
+  const handleSendAllDialogueToGemini = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!chunks || chunks.length === 0) return;
+    audioService.playBeep('decision');
+    const prompt = buildDialoguePromptForChunks(chunks, questionContext);
+    if (onSendToGemini) {
+      onSendToGemini(prompt);
+    } else {
+      navigator.clipboard.writeText(prompt);
+    }
+    setCopiedAllDialogueGemini(true);
+    setTimeout(() => setCopiedAllDialogueGemini(false), 2500);
   };
 
   const handleSpeak = (chunk: AnnotatedPhraseChunk, e: React.MouseEvent) => {
@@ -174,7 +182,7 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
 
   const handleCopy = (chunk: AnnotatedPhraseChunk, e: React.MouseEvent) => {
     e.stopPropagation();
-    const prompt = buildAnnotatedChunkPrompt(chunk, questionContext);
+    const prompt = buildExplanationPromptForChunk(chunk, questionContext);
     navigator.clipboard.writeText(prompt);
     setCopiedId(chunk.id);
     audioService.playBeep('click');
@@ -204,7 +212,7 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
 
   return (
     <div className={`space-y-3 ${className}`}>
-      {/* Top Toolbar with Copy All Chunks Prompt buttons */}
+      {/* Top Toolbar with Explanation Prompts & Dedicated 20-Turn Dialogue Prompt buttons */}
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
         <div className="flex items-center gap-2">
           <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
@@ -217,11 +225,11 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap">
-          {/* NÚT COPY PROMPT TẤT CẢ CÁC TỪ TRONG CÂU (GHÉP CÁC PROMPT NHỎ VỚI NHAU) */}
+          {/* NÚT COPY PROMPT GIẢI THÍCH TỪNG TỪ TRONG CÂU (KÈM CỘT ĐỐI TƯỢNG GIAO TIẾP) */}
           <button
             type="button"
             onClick={handleCopyAllChunksPrompt}
-            title="Sao chép prompt của TẤT CẢ các từ/cụm từ trong cả câu này (ghép các prompt nhỏ lại với nhau)"
+            title="Sao chép prompt phân tích giải thích TẤT CẢ các từ trong cả câu (kèm cột Đối tượng giao tiếp thường nói với ai)"
             className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition shadow-sm ${
               copiedAllPrompt
                 ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
@@ -236,16 +244,16 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
             ) : (
               <>
                 <Copy className="w-3.5 h-3.5 text-indigo-300" />
-                <span>Copy Prompt Từng Từ Cả Câu ({chunks.length})</span>
+                <span>Copy Prompt Cả Câu (Có Cột Đối Tượng)</span>
               </>
             )}
           </button>
 
-          {/* NÚT GỬI PROMPT TẤT CẢ CÁC TỪ SANG GEMINI */}
+          {/* NÚT GỬI PROMPT GIẢI THÍCH SANG GEMINI */}
           <button
             type="button"
             onClick={handleSendAllChunksToGemini}
-            title="Gửi prompt phân tích TẤT CẢ từ trong cả câu sang Gemini MiniWeb"
+            title="Gửi prompt phân tích giải thích TẤT CẢ từ trong cả câu sang Gemini MiniWeb"
             className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition shadow-sm ${
               copiedAllGemini
                 ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
@@ -262,6 +270,53 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
                 <Bot className="w-3.5 h-3.5 text-cyan-300" />
                 <span className="hidden sm:inline">Gửi Cả Câu Sang Gemini</span>
                 <span className="sm:hidden">Gemini</span>
+              </>
+            )}
+          </button>
+
+          {/* NÚT RIÊNG: PROMPT TẠO KỊCH BẢN HỘI THOẠI 20 CÂU NGẮN TỰ NHIÊN (CẢ CÂU) */}
+          <button
+            type="button"
+            onClick={handleCopyAllDialoguePrompt}
+            title="Sao chép Prompt tạo đoạn hội thoại ~20 câu ngắn tự nhiên (chào hỏi, đặt vấn đề, trao đổi dùng từ, kết thúc) giữa 2 nhân vật phù hợp"
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition shadow-sm ${
+              copiedAllDialoguePrompt
+                ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
+                : 'bg-gradient-to-r from-emerald-600/40 to-teal-600/40 border-emerald-500/50 text-emerald-200 hover:from-emerald-600 hover:to-teal-600 hover:text-white'
+            }`}
+          >
+            {copiedAllDialoguePrompt ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Đã Copy Prompt Hội Thoại!</span>
+              </>
+            ) : (
+              <>
+                <MessageSquare className="w-3.5 h-3.5 text-emerald-300" />
+                <span>💬 Prompt Hội Thoại 20 Câu (Cả Câu)</span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSendAllDialogueToGemini}
+            title="Gửi Prompt kịch bản hội thoại 20 câu ngắn tự nhiên cả câu sang Gemini MiniWeb"
+            className={`px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border transition shadow-sm ${
+              copiedAllDialogueGemini
+                ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
+                : 'bg-teal-600/30 border-teal-500/40 text-teal-200 hover:bg-teal-600 hover:text-white'
+            }`}
+          >
+            {copiedAllDialogueGemini ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Đã gửi Gemini!</span>
+              </>
+            ) : (
+              <>
+                <Bot className="w-3.5 h-3.5 text-teal-300" />
+                <span>Hội Thoại Sang Gemini</span>
               </>
             )}
           </button>
@@ -377,11 +432,11 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    {/* Gemini Prompt Button */}
+                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
+                    {/* Gemini Prompt Button (Phân tích có cột Đối tượng giao tiếp) */}
                     <button
                       onClick={(e) => handleCopyGeminiPrompt(chunk, e)}
-                      title="Mở/Gửi sang Gemini: Bảng câu hỏi & dịch nghĩa ví dụ theo ngữ cảnh"
+                      title="Mở/Gửi sang Gemini: Bảng 5 cột giải thích từ và đối tượng giao tiếp phù hợp (người trẻ, bạn bè, thầy cô...)"
                       className={`p-1.5 rounded-lg border text-xs flex items-center gap-1 transition shadow-sm ${
                         copiedPromptId === chunk.id
                           ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
@@ -394,8 +449,45 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
                         <Bot className="w-3.5 h-3.5" />
                       )}
                       <span className="text-[10px] font-bold hidden sm:inline">
-                        {copiedPromptId === chunk.id ? 'Đã copy Prompt' : 'Prompt Gemini'}
+                        {copiedPromptId === chunk.id ? 'Đã copy Prompt' : 'Prompt Phân Tích'}
                       </span>
+                    </button>
+
+                    {/* Nút Prompt Riêng: Tạo Hội Thoại 20 Câu Cho Riêng Từ Này */}
+                    <button
+                      onClick={(e) => handleSendChunkDialogueToGemini(chunk, e)}
+                      title="Tạo kịch bản đối thoại 20 câu ngắn tự nhiên (chào hỏi, đặt vấn đề, dùng từ, kết thúc) với đối tượng phù hợp và gửi sang Gemini"
+                      className={`p-1.5 rounded-lg border text-xs flex items-center gap-1 transition shadow-sm ${
+                        copiedDialogueGeminiId === chunk.id
+                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                          : 'bg-gradient-to-r from-emerald-600/30 to-teal-600/30 border-emerald-500/40 text-emerald-300 hover:text-white hover:from-emerald-600 hover:to-teal-600'
+                      }`}
+                    >
+                      {copiedDialogueGeminiId === chunk.id ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                      )}
+                      <span className="text-[10px] font-bold hidden sm:inline">
+                        {copiedDialogueGeminiId === chunk.id ? 'Đã gửi Gemini' : '💬 Hội Thoại 20c'}
+                      </span>
+                    </button>
+
+                    {/* Copy prompt hội thoại 20 câu ngắn riêng từ này */}
+                    <button
+                      onClick={(e) => handleCopyChunkDialoguePrompt(chunk, e)}
+                      title="Sao chép prompt kịch bản hội thoại 20 câu ngắn cho riêng từ này vào Clipboard"
+                      className={`p-1.5 rounded-lg border text-xs transition ${
+                        copiedDialogueId === chunk.id
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-emerald-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      {copiedDialogueId === chunk.id ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5 text-emerald-400/80" />
+                      )}
                     </button>
 
                     {/* Audio Listen */}
@@ -414,7 +506,7 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
                     {/* Copy Standard Prompt Button (ko gửi Gemini) */}
                     <button
                       onClick={(e) => handleCopy(chunk, e)}
-                      title="Sao chép Prompt thường (ko gửi Gemini): Kèm dịch nghĩa từ và cột dịch nghĩa ví dụ theo ngữ cảnh"
+                      title="Sao chép Prompt phân tích thường (kèm đối tượng giao tiếp và dịch nghĩa theo ngữ cảnh)"
                       className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 text-xs transition"
                     >
                       {copiedId === chunk.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-300" />}
@@ -445,6 +537,48 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
                     <p className="text-xs text-slate-200 leading-relaxed font-sans bg-indigo-950/20 border border-indigo-500/20 p-2.5 rounded-xl">
                       {chunk.purpose}
                     </p>
+
+                    {/* Dedicated 20-Turn Conversational Dialogue Box for this word */}
+                    <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-slate-900 p-3 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300">
+                          <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>KỊCH BẢN HỘI THOẠI 20 CÂU NGẮN TỰ NHIÊN (TRA TỪ NÀY):</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyChunkDialoguePrompt(chunk, e)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border transition shadow-sm ${
+                              copiedDialogueId === chunk.id
+                                ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
+                                : 'bg-emerald-600/30 border-emerald-500/40 text-emerald-200 hover:bg-emerald-600 hover:text-white'
+                            }`}
+                            title="Sao chép prompt tạo kịch bản hội thoại 20 câu ngắn tự nhiên cho từ này"
+                          >
+                            {copiedDialogueId === chunk.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedDialogueId === chunk.id ? 'Đã copy' : 'Copy Prompt Hội Thoại'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleSendChunkDialogueToGemini(chunk, e)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border transition shadow-sm ${
+                              copiedDialogueGeminiId === chunk.id
+                                ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
+                                : 'bg-teal-600/30 border-teal-500/40 text-teal-200 hover:bg-teal-600 hover:text-white'
+                            }`}
+                            title="Gửi prompt tạo kịch bản hội thoại 20 câu ngắn sang Gemini"
+                          >
+                            {copiedDialogueGeminiId === chunk.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Bot className="w-3.5 h-3.5" />}
+                            <span>Gửi Gemini Hội Thoại</span>
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        🌿 AI sẽ đóng vai 2 nhân vật phù hợp (người trẻ/bạn bè, người cùng tuổi, hoặc thầy cô giáo) trò chuyện tự nhiên từ chào hỏi, mở đầu/đặt vấn đề, trao đổi dùng từ <strong className="text-emerald-300">"{chunk.englishText}"</strong>, đến kết thúc mượt mà (~20 câu ngắn, song ngữ Anh - Việt).
+                      </p>
+                    </div>
 
                     {/* Contextual & Meaning Table Drawer */}
                     <div className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden text-xs">
@@ -506,19 +640,27 @@ export const IeltsAnnotatedPhraseViewer: React.FC<IeltsAnnotatedPhraseViewerProp
           {/* Details Drawer for selected chunk in inline mode */}
           {selectedChunk && (
             <div className="p-4 rounded-2xl bg-slate-900 border border-indigo-500/50 shadow-xl space-y-3 animate-fadeIn">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{selectedChunk.icon}</span>
                   <span className="text-sm font-bold text-white">{selectedChunk.englishText}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={(e) => handleSendChunkDialogueToGemini(selectedChunk, e)}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-600/30 border border-emerald-500/40 text-emerald-200 hover:bg-emerald-600 hover:text-white text-xs font-semibold flex items-center gap-1 transition"
+                    title="Gửi sang Gemini kịch bản đối thoại 20 câu"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Hội Thoại 20c</span>
+                  </button>
                   <button
                     onClick={(e) => handleCopyGeminiPrompt(selectedChunk, e)}
                     className="px-2.5 py-1 rounded-lg bg-blue-600/30 border border-blue-500/40 text-blue-200 hover:bg-blue-600 hover:text-white text-xs font-semibold flex items-center gap-1 transition"
-                    title="Gửi sang Gemini Prompt"
+                    title="Gửi sang Gemini Prompt phân tích có cột đối tượng"
                   >
                     <Bot className="w-3.5 h-3.5" />
-                    <span>Prompt Gemini</span>
+                    <span>Prompt Phân Tích</span>
                   </button>
                   <button
                     onClick={(e) => handleCopy(selectedChunk, e)}

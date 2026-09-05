@@ -7,16 +7,19 @@ import {
   Sparkles, 
   FileText, 
   Languages, 
-  HelpCircle,
+  HelpCircle, 
   Image as ImageIcon,
   Maximize2,
-  X
+  X,
+  MessageSquare,
+  Bot
 } from 'lucide-react';
 import { audioService } from '../../services/audioService';
 import { IeltsQuestionPartType, IeltsVocabItem } from '../../types/ielts';
 import { IeltsAnnotatedPhraseViewer } from '../common/IeltsAnnotatedPhraseViewer';
 import { annotateSpeakingAnswer, annotateWritingParagraph } from '../../utils/ieltsTextAnnotator';
 import { getStandardizedSpeakingAnswer } from '../../utils/ieltsSpeakingExpander';
+import { buildDialoguePromptForLesson } from '../../utils/ieltsConversationPrompts';
 
 interface IeltsSpeakingAnswerProps {
   topic: string;
@@ -44,6 +47,8 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<'annotated' | 'plain'>('annotated');
   const [copied, setCopied] = useState(false);
+  const [copiedDialogue, setCopiedDialogue] = useState(false);
+  const [copiedDialogueGemini, setCopiedDialogueGemini] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
@@ -58,6 +63,38 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
     navigator.clipboard.writeText(`${question}\n\n${standardizedAnswer}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyDialoguePrompt = () => {
+    audioService.playBeep('click');
+    const prompt = buildDialoguePromptForLesson({
+      topic,
+      question,
+      part,
+      fullAnswer: standardizedAnswer,
+      vocabList
+    });
+    navigator.clipboard.writeText(prompt);
+    setCopiedDialogue(true);
+    setTimeout(() => setCopiedDialogue(false), 2500);
+  };
+
+  const handleSendDialogueToGemini = () => {
+    audioService.playBeep('decision');
+    const prompt = buildDialoguePromptForLesson({
+      topic,
+      question,
+      part,
+      fullAnswer: standardizedAnswer,
+      vocabList
+    });
+    if (onSendToGemini) {
+      onSendToGemini(prompt);
+    } else {
+      navigator.clipboard.writeText(prompt);
+    }
+    setCopiedDialogueGemini(true);
+    setTimeout(() => setCopiedDialogueGemini(false), 2500);
   };
 
   const handleTogglePlay = () => {
@@ -76,7 +113,7 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
     <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl relative">
       {/* Header with Question */}
       <div className="border-b border-slate-800/80 pb-4 mb-5">
-        <div className="flex items-center justify-between gap-3 mb-2">
+        <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
           <div className="flex items-center gap-2">
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
               part === 'Writing Task 1'
@@ -92,7 +129,34 @@ export const IeltsSpeakingAnswer: React.FC<IeltsSpeakingAnswerProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {/* NÚT RIÊNG: PROMPT KỊCH BẢN HỘI THOẠI 20 CÂU NGẮN (CHO CẢ ĐỀ BÀI & BÀI MẪU) */}
+            <button
+              onClick={handleCopyDialoguePrompt}
+              title="Sao chép prompt kịch bản hội thoại tự nhiên ~20 câu ngắn (chào hỏi, đặt vấn đề, thảo luận quan điểm, kết thúc) giữa 2 nhân vật phù hợp với đề bài này"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition shadow-sm ${
+                copiedDialogue
+                  ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
+                  : 'bg-gradient-to-r from-emerald-600/40 to-teal-600/40 border-emerald-500/50 text-emerald-200 hover:from-emerald-600 hover:to-teal-600 hover:text-white'
+              }`}
+            >
+              {copiedDialogue ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <MessageSquare className="w-3.5 h-3.5 text-emerald-300" />}
+              <span>{copiedDialogue ? 'Đã copy Prompt!' : '💬 Prompt Hội Thoại 20 Câu (Đề & Bài)'}</span>
+            </button>
+
+            <button
+              onClick={handleSendDialogueToGemini}
+              title="Gửi prompt tạo kịch bản đối thoại tự nhiên 20 câu sang Gemini MiniWeb"
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition shadow-sm ${
+                copiedDialogueGemini
+                  ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
+                  : 'bg-teal-600/30 border-teal-500/40 text-teal-200 hover:bg-teal-600 hover:text-white'
+              }`}
+            >
+              {copiedDialogueGemini ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Bot className="w-3.5 h-3.5 text-teal-300" />}
+              <span>Hội Thoại Gemini</span>
+            </button>
+
             <button
               onClick={handleTogglePlay}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${

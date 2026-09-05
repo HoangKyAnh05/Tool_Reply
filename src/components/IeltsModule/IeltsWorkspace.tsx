@@ -43,6 +43,7 @@ import { ieltsWritingTask1Bank } from '../../data/ieltsWritingTask1Bank';
 import { ieltsWritingTask2Bank } from '../../data/ieltsWritingTask2Bank';
 import { audioService } from '../../services/audioService';
 import { toggleNativeFullscreen } from '../../utils/fullscreen';
+import { buildDialoguePromptForLesson } from '../../utils/ieltsConversationPrompts';
 
 interface IeltsWorkspaceProps {
   openPartBankSignal?: number;
@@ -355,6 +356,14 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
     readingText: readingInput || 'Economic impact of minimum wage increase',
     noOldVocab,
     partPreference
+  });
+
+  const currentDialoguePrompt = buildDialoguePromptForLesson({
+    topic: currentLesson.topic,
+    question: currentLesson.question,
+    part: currentLesson.part,
+    fullAnswer: currentLesson.fullSpeakingAnswer,
+    vocabList: currentLesson.vocabList
   });
 
   return (
@@ -917,6 +926,7 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
             {activeSubTab === 'vocab' && (
               <IeltsVocabTable 
                 vocabList={currentLesson.vocabList} 
+                topicOrQuestion={currentLesson.question}
                 onSendToGemini={onSendToGemini}
               />
             )}
@@ -937,6 +947,7 @@ export const IeltsWorkspace: React.FC<IeltsWorkspaceProps> = ({ openPartBankSign
         isOpen={isPromptModalOpen}
         onClose={() => setIsPromptModalOpen(false)}
         masterPrompt={masterPrompt}
+        dialoguePrompt={currentDialoguePrompt}
         onImportJson={(importedLesson: IeltsSpeakingLesson) => {
           setCurrentLesson(importedLesson);
           storageService.saveIeltsLesson(importedLesson);
